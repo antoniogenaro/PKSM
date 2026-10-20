@@ -1,0 +1,105 @@
+.SUFFIXES:
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error Please set DEVKITPRO in your environment)
+endif
+
+TOPDIR ?= $(CURDIR)
+TARGET		:=	pksm-switch
+BUILD		:=	build
+APP_TITLE	:=	PKSM Switch
+APP_AUTHOR	:=	FlagBrew
+APP_VERSION	:=	0.1.0
+ROMFS		:=	romfs
+
+include $(DEVKITPRO)/libnx/switch_rules
+
+SOURCES		:=	source \
+				../core/memecrypto \
+				../core/source/i18n \
+				../core/source/personal \
+				../core/source/pkx \
+				../core/source/sav \
+				../core/source/utils \
+				../core/source/wcx
+INCLUDES	:=	include \
+				../core/include \
+				../core/include/enums \
+				../core/include/personal \
+				../core/include/pkx \
+				../core/include/sav \
+				../core/include/utils \
+				../core/include/wcx \
+				../core/memecrypto \
+				../core/pcg-cpp/include
+
+ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
+CFLAGS		:=	-g -Wall -Wextra -Werror -Wno-unused-parameter \
+				-Wno-missing-field-initializers -O2 \
+				-ffunction-sections $(ARCH) -D__SWITCH__ -D_GNU_SOURCE=1
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++20
+LDFLAGS		=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) \
+				-Wl,-Map,$(notdir $*.map)
+LIBS		:=	-lnx
+
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+export ROMFS_PATH	:=	$(CURDIR)/$(ROMFS)
+export NROFLAGS	+=	--icon=$(DEVKITPRO)/libnx/default_icon.jpg \
+				--nacp=$(OUTPUT).nacp \
+				--romfsdir=$(ROMFS_PATH)
+export LD	:=	$(CXX)
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
+export DEPSDIR	:=	$(CURDIR)/$(BUILD)
+
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+export OFILES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
+export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+				-I$(CURDIR)/$(BUILD) \
+				-I$(DEVKITPRO)/libnx/include
+export CPPFLAGS	:=	$(INCLUDE)
+export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
+
+CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
+CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
+
+.PHONY: all clean $(BUILD)
+
+all: $(BUILD)
+
+$(BUILD):
+	@mkdir -p $(BUILD)
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+clean:
+	@rm -rf $(BUILD) $(ROMFS) $(TARGET).nro $(TARGET).nacp $(TARGET).elf
+
+else
+
+.PHONY: all
+
+all: $(OUTPUT).nro
+
+$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(ROMFS_PATH)/i18n $(ROMFS_PATH)/personal
+
+$(ROMFS_PATH)/i18n: $(CORE_STRING_FILES)
+	@mkdir -p $@
+	@cp -R $(TOPDIR)/../core/strings/* $@
+
+$(ROMFS_PATH)/personal: $(CORE_PERSONAL_FILES)
+	@mkdir -p $@
+	@cp $(TOPDIR)/../core/personals/* $@
+
+$(OFILES): | $(DEPSDIR)
+
+$(OUTPUT).elf: $(OFILES)
+
+$(DEPSDIR):
+	@mkdir -p $@
+
+-include $(wildcard $(DEPSDIR)/*.d)
+
+endif

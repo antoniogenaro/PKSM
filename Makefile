@@ -25,6 +25,8 @@ else
 endif
 
 debug: 3ds-debug
+switch:
+	$(MAKE) -C switch
 
 release: 3ds-release docs
 
@@ -101,4 +103,4 @@ cppcheck:
 cppclean:
 	$(MAKE) -C 3ds cppclean
 
-.PHONY: debug release 3ds-debug no-deps 3ds-release tests docs clean spotless format cppcheck cppclean
+.PHONY: debug release switch 3ds-debug no-deps 3ds-release tests docs clean spotless format cppcheck cppclean
