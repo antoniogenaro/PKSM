@@ -120,6 +120,28 @@ https://github.com/FlagBrew/PKSM.git` if initially cloning, `git submodule init`
 and `git submodule update` if running from an existing clone) and run `make
 all`.
 
+### Nintendo Switch homebrew prototype
+
+The experimental Switch target is a separate, minimal homebrew application. It
+uses devkitPro's devkitA64/libnx toolchain and the shared PKSM core; it does not
+use the active-save services or APIs from the 3DS version.
+
+Install devkitPro and its `switch-dev` package group, then build from the
+devkitPro MSYS2 shell:
+
+```sh
+make switch
+```
+
+Copy `switch/pksm-switch.nro` to the SD card. Place a Sword/Shield save backup
+anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
+backup directory) and launch the application. Core language and personal data
+are packaged into the NRO at build time. The prototype can validate a
+Sword/Shield backup, adjust the money value, and export a new `.pksm-edited`
+file alongside the source; it never overwrites the imported backup. This is an
+early, controller-driven proof of concept, not the full 3DS interface or a tool
+for accessing active game saves.
+
 ## Credits
 
 - [Bernardo](https://github.com/BernardoGiordano/) for creating PKSM
