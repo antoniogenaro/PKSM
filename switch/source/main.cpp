@@ -24,6 +24,7 @@
 
 #include "sav/Sav.hpp"
 #include "sav/SavSWSH.hpp"
+#include "SwitchUi.hpp"
 #include <switch.h>
 #include <algorithm>
 #include <cerrno>
@@ -42,6 +43,14 @@ namespace
 {
     constexpr char SAVE_DIRECTORY[] = "sdmc:/switch/pksm";
     constexpr size_t MAX_SAVE_SIZE  = 16 * 1024 * 1024;
+
+    struct RomfsCleanup
+    {
+        ~RomfsCleanup()
+        {
+            romfsExit();
+        }
+    };
 
     struct LoadedSave
     {
@@ -252,48 +261,24 @@ namespace
         return true;
     }
 
-    void drawFilePicker(
-        const std::vector<std::string>& files, size_t selected, const std::string& storageError)
-    {
-        consoleClear();
-        std::printf("PKSM Switch - respaldo de Sword/Shield\n\n");
-        std::printf("Carpeta: %s/\n", SAVE_DIRECTORY);
-        std::printf("Busca respaldos en subcarpetas; no se leen guardados activos.\n\n");
-        if (!storageError.empty())
-        {
-            std::printf("%s\n", storageError.c_str());
-            return;
-        }
-        if (files.empty())
-        {
-            std::printf("No se encontraron archivos.\n");
-            return;
-        }
-
-        const size_t first = selected > 7 ? selected - 7 : 0;
-        const size_t last  = std::min(files.size(), first + 15);
-        for (size_t i = first; i < last; ++i)
-        {
-            std::printf("%s %s\n", i == selected ? ">" : " ", files[i].c_str());
-        }
-    }
 }
 
 int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
-    consoleInit(nullptr);
     if (R_FAILED(romfsInit()))
     {
-        std::printf("No se pudo montar los datos internos de PKSM.\n");
-        consoleUpdate(nullptr);
-        consoleExit(nullptr);
         return 1;
     }
-    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
-    PadState pad;
-    padInitializeDefault(&pad);
+    RomfsCleanup romfsCleanup;
+    pksm::switchui::SwitchUi ui;
+    std::string uiError;
+    if (!ui.initialize(uiError))
+    {
+        SDL_Log("%s", uiError.c_str());
+        return 1;
+    }
 
     std::string storageError;
     if (mkdir("sdmc:/switch", 0777) != 0 && errno != EEXIST)
@@ -308,32 +293,28 @@ int main(int argc, char* argv[])
     std::vector<std::string> files =
         storageError.empty() ? listSaveFiles(storageError) : std::vector<std::string>{};
     size_t selected = 0;
+    bool quitRequested = false;
 
-    while (appletMainLoop())
+    while (appletMainLoop() && !quitRequested)
     {
-        padUpdate(&pad);
-        const u64 buttons = padGetButtonsDown(&pad);
-        if (buttons & HidNpadButton_Plus)
+        const auto action = ui.pollAction();
+        if (action == pksm::switchui::Action::Quit)
         {
             break;
         }
-        if (!files.empty() && (buttons & HidNpadButton_Down))
+        if (!files.empty() && action == pksm::switchui::Action::Down)
         {
             selected = (selected + 1) % files.size();
         }
-        if (!files.empty() && (buttons & HidNpadButton_Up))
+        if (!files.empty() && action == pksm::switchui::Action::Up)
         {
             selected = selected == 0 ? files.size() - 1 : selected - 1;
         }
 
-        drawFilePicker(files, selected, storageError);
-        if (storageError.empty())
-        {
-            std::printf("\nA: abrir    +: salir\n");
-        }
-        consoleUpdate(nullptr);
+        ui.drawFiles(files, selected, storageError);
+        SDL_Delay(16);
 
-        if (!files.empty() && (buttons & HidNpadButton_A))
+        if (!files.empty() && action == pksm::switchui::Action::Confirm)
         {
             LoadedSave loaded;
             std::string error;
@@ -343,39 +324,46 @@ int main(int argc, char* argv[])
                 auto& save = static_cast<pksm::SavSWSH&>(*loaded.save);
                 bool dirty = false;
                 bool finish = false;
+                size_t selectedField = 0;
                 while (appletMainLoop() && !finish)
                 {
-                    padUpdate(&pad);
-                    const u64 editButtons = padGetButtonsDown(&pad);
-                    if (editButtons & HidNpadButton_Plus)
+                    const auto editAction = ui.pollAction();
+                    if (editAction == pksm::switchui::Action::Quit)
                     {
                         if (dirty)
                         {
-                            error = "Hay cambios sin exportar; pulsa Y para guardar o X para descartar.";
+                            error = "Exporta con Y o descarta con X antes de salir.";
+                        }
+                        else
+                        {
+                            finish = true;
+                            quitRequested = true;
+                        }
+                    }
+                    if (editAction == pksm::switchui::Action::Up)
+                    {
+                        selectedField = selectedField == 0 ? 7 : selectedField - 1;
+                    }
+                    else if (editAction == pksm::switchui::Action::Down)
+                    {
+                        selectedField = (selectedField + 1) % 8;
+                    }
+                    else if (editAction == pksm::switchui::Action::Back)
+                    {
+                        if (dirty)
+                        {
+                            error = "Exporta con Y o descarta con X antes de volver.";
                         }
                         else
                         {
                             finish = true;
                         }
                     }
-                    if ((editButtons & HidNpadButton_Right) && save.money() < 9999999)
+                    else if (editAction == pksm::switchui::Action::Discard)
                     {
-                        save.money(save.money() + 1000);
-                        dirty = true;
-                        error.clear();
-                    }
-                    if ((editButtons & HidNpadButton_Left) && save.money() > 0)
-                    {
-                        save.money(save.money() > 1000 ? save.money() - 1000 : 0);
-                        dirty = true;
-                        error.clear();
-                    }
-                    if (editButtons & HidNpadButton_X)
-                    {
-                        dirty = false;
                         finish = true;
                     }
-                    if ((editButtons & HidNpadButton_Y) && dirty)
+                    else if (editAction == pksm::switchui::Action::Save && dirty)
                     {
                         std::string outputPath;
                         if (exportSave(loaded, outputPath, error))
@@ -384,46 +372,149 @@ int main(int argc, char* argv[])
                             error = "Exportado a " + outputPath;
                         }
                     }
+                    else if (editAction == pksm::switchui::Action::Confirm && selectedField == 0)
+                    {
+                        std::string name;
+                        if (ui.editTrainerName(save.otName(), name) && name != save.otName())
+                        {
+                            save.otName(name);
+                            dirty = true;
+                            error.clear();
+                        }
+                    }
+                    else if (editAction == pksm::switchui::Action::Left ||
+                             editAction == pksm::switchui::Action::Right)
+                    {
+                        const bool increase = editAction == pksm::switchui::Action::Right;
+                        bool changed = false;
+                        switch (selectedField)
+                        {
+                            case 1:
+                                if ((increase && save.TID() < UINT16_MAX) ||
+                                    (!increase && save.TID() > 0))
+                                {
+                                    save.TID(static_cast<u16>(
+                                        increase ? save.TID() + 1 : save.TID() - 1));
+                                    changed = true;
+                                }
+                                break;
+                            case 2:
+                                if ((increase && save.SID() < UINT16_MAX) ||
+                                    (!increase && save.SID() > 0))
+                                {
+                                    save.SID(static_cast<u16>(
+                                        increase ? save.SID() + 1 : save.SID() - 1));
+                                    changed = true;
+                                }
+                                break;
+                            case 3:
+                            {
+                                const u32 current = save.money();
+                                const u32 next = increase
+                                    ? std::min<u32>(9999999, current + 1000)
+                                    : (current > 1000 ? current - 1000 : 0);
+                                if (next != current)
+                                {
+                                    save.money(next);
+                                    changed = true;
+                                }
+                                break;
+                            }
+                            case 4:
+                            {
+                                const u32 current = save.BP();
+                                const u32 next = increase
+                                    ? std::min<u32>(9999, current + 100)
+                                    : (current > 100 ? current - 100 : 0);
+                                if (next != current)
+                                {
+                                    save.BP(next);
+                                    changed = true;
+                                }
+                                break;
+                            }
+                            case 5:
+                                if ((increase && save.playedHours() < UINT16_MAX) ||
+                                    (!increase && save.playedHours() > 0))
+                                {
+                                    save.playedHours(static_cast<u16>(
+                                        increase ? save.playedHours() + 1 : save.playedHours() - 1));
+                                    changed = true;
+                                }
+                                break;
+                            case 6:
+                            {
+                                const u8 current = save.playedMinutes();
+                                const u8 next = increase
+                                    ? static_cast<u8>((current + 1) % 60)
+                                    : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                if (next != current)
+                                {
+                                    save.playedMinutes(next);
+                                    changed = true;
+                                }
+                                break;
+                            }
+                            case 7:
+                            {
+                                const u8 current = save.playedSeconds();
+                                const u8 next = increase
+                                    ? static_cast<u8>((current + 1) % 60)
+                                    : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                if (next != current)
+                                {
+                                    save.playedSeconds(next);
+                                    changed = true;
+                                }
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                        if (changed)
+                        {
+                            dirty = true;
+                            error.clear();
+                        }
+                    }
 
-                    consoleClear();
-                    std::printf("PKSM Switch - Pokemon %s\n\n",
-                        save.version() == pksm::GameVersion::SW ? "Sword" : "Shield");
-                    std::printf("Archivo: %s\n", files[selected].c_str());
-                    std::printf("Entrenador: %s\n", save.otName().c_str());
-                    std::printf("Dinero: %u\n\n", save.money());
-                    if (dirty)
-                    {
-                        std::printf("Cambios pendientes de exportar.\n");
-                    }
-                    std::printf("Izq/Der: -/+ 1000 de dinero\n");
-                    std::printf("Y: exportar copia    X: descartar y volver\n");
-                    std::printf("+: volver al selector\n");
-                    if (!error.empty())
-                    {
-                        std::printf("\n%s\n", error.c_str());
-                    }
-                    consoleUpdate(nullptr);
+                    const std::vector<pksm::switchui::Field> fields{
+                        {"Nombre", save.otName()},
+                        {"TID", std::to_string(save.TID())},
+                        {"SID", std::to_string(save.SID())},
+                        {"Dinero", std::to_string(save.money())},
+                        {"BP", std::to_string(save.BP())},
+                        {"Horas jugadas", std::to_string(save.playedHours())},
+                        {"Minutos jugados", std::to_string(save.playedMinutes())},
+                        {"Segundos jugados", std::to_string(save.playedSeconds())},
+                    };
+                    ui.drawTrainer(save.version() == pksm::GameVersion::SW ? "Pokemon Sword" :
+                                                                              "Pokemon Shield",
+                        files[selected], fields, selectedField, dirty, error);
+                    SDL_Delay(16);
                 }
             }
             else
             {
-                consoleClear();
-                std::printf("No se pudo cargar el respaldo:\n\n%s\n\n", error.c_str());
-                std::printf("Pulsa A para volver al selector.\n");
-                consoleUpdate(nullptr);
                 while (appletMainLoop())
                 {
-                    padUpdate(&pad);
-                    if (padGetButtonsDown(&pad) & HidNpadButton_A)
+                    ui.drawFiles(files, selected, error);
+                    const auto loadAction = ui.pollAction();
+                    if (loadAction == pksm::switchui::Action::Confirm ||
+                        loadAction == pksm::switchui::Action::Back)
                     {
                         break;
                     }
+                    if (loadAction == pksm::switchui::Action::Quit)
+                    {
+                        quitRequested = true;
+                        break;
+                    }
+                    SDL_Delay(16);
                 }
             }
         }
     }
 
-    consoleExit(nullptr);
-    romfsExit();
     return 0;
 }

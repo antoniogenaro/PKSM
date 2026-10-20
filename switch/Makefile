@@ -40,7 +40,16 @@ CFLAGS		:=	-g -Wall -Wextra -Werror -Wno-unused-parameter \
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++20
 LDFLAGS		=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) \
 				-Wl,-Map,$(notdir $*.map)
-LIBS		:=	-lnx
+SDL_PKG_CONFIG_PATH := $(PORTLIBS)/lib/pkgconfig
+SDL_CFLAGS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --cflags sdl2 SDL2_ttf)
+SDL_LIBS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --static --libs sdl2 SDL2_ttf)
+CFLAGS		+=	$(SDL_CFLAGS)
+CXXFLAGS	+=	$(SDL_CFLAGS)
+LIBS		:=	$(SDL_LIBS) -lnx
+
+ifeq ($(strip $(SDL_CFLAGS)),)
+$(error SDL2 and SDL2_ttf development packages are required)
+endif
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
@@ -83,7 +92,9 @@ else
 
 all: $(OUTPUT).nro
 
-$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(ROMFS_PATH)/i18n $(ROMFS_PATH)/personal
+$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(ROMFS_PATH)/i18n \
+		$(ROMFS_PATH)/personal $(ROMFS_PATH)/fonts/Roboto.ttf \
+		$(ROMFS_PATH)/fonts/OFL-Roboto.txt
 
 $(ROMFS_PATH)/i18n: $(CORE_STRING_FILES)
 	@mkdir -p $@
@@ -92,6 +103,14 @@ $(ROMFS_PATH)/i18n: $(CORE_STRING_FILES)
 $(ROMFS_PATH)/personal: $(CORE_PERSONAL_FILES)
 	@mkdir -p $@
 	@cp $(TOPDIR)/../core/personals/* $@
+
+$(ROMFS_PATH)/fonts/Roboto.ttf: $(TOPDIR)/../assets/gfx/ui/Roboto.ttf
+	@mkdir -p $(dir $@)
+	@cp $< $@
+
+$(ROMFS_PATH)/fonts/OFL-Roboto.txt: $(TOPDIR)/../assets/gfx/ui/OFL-Roboto.txt
+	@mkdir -p $(dir $@)
+	@cp $< $@
 
 $(OFILES): | $(DEPSDIR)
 
