@@ -126,8 +126,8 @@ The experimental Switch target is a separate, minimal homebrew application. It
 uses devkitPro's devkitA64/libnx toolchain and the shared PKSM core; it does not
 use the active-save services or APIs from the 3DS version.
 
-Install devkitPro and its `switch-dev` package group, then build from the
-devkitPro MSYS2 shell:
+Install devkitPro and its `switch-dev` package group, plus the `switch-sdl2`
+and `switch-sdl2_ttf` packages, then build from the devkitPro MSYS2 shell:
 
 ```sh
 make switch
@@ -135,12 +135,15 @@ make switch
 
 Copy `switch/pksm-switch.nro` to the SD card. Place a Sword/Shield save backup
 anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
-backup directory) and launch the application. Core language and personal data
-are packaged into the NRO at build time. The prototype can validate a
-Sword/Shield backup, adjust the money value, and export a new `.pksm-edited`
-file alongside the source; it never overwrites the imported backup. This is an
-early, controller-driven proof of concept, not the full 3DS interface or a tool
-for accessing active game saves.
+backup directory) and launch the application. Core language and personal data,
+as well as the Roboto interface font and its SIL Open Font License, are
+packaged into the NRO at build time. The
+SDL2 interface can edit the trainer name, TID, SID, money, BP, and play time,
+then export a new `.pksm-edited` file alongside the source; it never overwrites
+the imported backup. Navigate with the directional controls, press A to edit
+the name, B to return without changes, Y to export, and X to discard changes.
+This remains an early controller-driven proof of concept, not the full 3DS
+interface or a tool for accessing active game saves.
 
 ## Credits
 
