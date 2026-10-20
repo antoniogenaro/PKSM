@@ -24,6 +24,7 @@
 
 #include "sav/Sav.hpp"
 #include "sav/SavSWSH.hpp"
+#include "SwitchSaveFiles.hpp"
 #include "SwitchUi.hpp"
 #include <switch.h>
 #include <algorithm>
@@ -139,6 +140,7 @@ namespace
             files.clear();
             return files;
         }
+        files = pksm::switchui::filterMainSaveFiles(std::move(files));
         std::sort(files.begin(), files.end());
         return files;
     }

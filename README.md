@@ -135,10 +135,12 @@ make switch
 
 Copy `switch/pksm-switch.nro` to the SD card. Place a Sword/Shield save backup
 anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
-backup directory) and launch the application. Core language and personal data,
-as well as the Roboto interface font and its SIL Open Font License, are
-packaged into the NRO at build time. The
-SDL2 interface can edit the trainer name, TID, SID, money, BP, and play time,
+backup directory) and launch the application. In folders containing a `main`
+save, the file list shows only `main`, hiding the other files in that backup
+folder. Files in folders without `main` remain available. Core language and
+personal data, as well as the Roboto interface font and its SIL Open Font
+License, are packaged into the NRO at build time. The SDL2 interface can edit
+the trainer name, TID, SID, money, BP, and play time,
 then export a new `.pksm-edited` file alongside the source; it never overwrites
 the imported backup. Navigate with the directional controls, press A to edit
 the name, B to return without changes, Y to export, and X to discard changes.

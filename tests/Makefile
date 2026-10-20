@@ -13,7 +13,7 @@ TARGETS := $(BUILD)/BankFileTests $(BUILD)/CameraFrameTests \
 	$(BUILD)/ConfigurationFileTests $(BUILD)/DirectoryBrowserTests \
 	$(BUILD)/GpssPageTests $(BUILD)/PresenterTests \
 	$(BUILD)/SaveIndexTests $(BUILD)/SaveRecognitionTests $(BUILD)/ScreenStackTests \
-	$(BUILD)/SubsystemsTests \
+	$(BUILD)/SubsystemsTests $(BUILD)/SwitchSaveFilesTests \
   $(BUILD)/TransferProtocolTests
 
 QUIRC_OBJECTS := $(BUILD)/quirc.o $(BUILD)/quirc_decode.o $(BUILD)/quirc_identify.o \
@@ -65,6 +65,10 @@ $(BUILD)/ScreenStackTests: ScreenStackTests.cpp ../common/source/gui/ScreenStack
 
 $(BUILD)/SubsystemsTests: SubsystemsTests.cpp ../common/source/Subsystems.cpp | $(BUILD)
 	@$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^
+
+$(BUILD)/SwitchSaveFilesTests: SwitchSaveFilesTests.cpp \
+		../switch/include/SwitchSaveFiles.hpp | $(BUILD)
+	@$(CXX) $(CXXFLAGS) -I../switch/include -o $@ $<
 
 $(BUILD)/TransferProtocolTests: TransferProtocolTests.cpp \
 		../common/source/utils/TransferProtocol.cpp | $(BUILD)
