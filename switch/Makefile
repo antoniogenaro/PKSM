@@ -56,7 +56,7 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 export ROMFS_PATH	:=	$(CURDIR)/$(ROMFS)
-export NROFLAGS	+=	--icon=$(DEVKITPRO)/libnx/default_icon.jpg \
+export NROFLAGS	+=	--icon=$(TOPDIR)/icon.jpg \
 				--nacp=$(OUTPUT).nacp \
 				--romfsdir=$(ROMFS_PATH)
 export LD	:=	$(CXX)
@@ -92,7 +92,7 @@ else
 
 all: $(OUTPUT).nro
 
-$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(ROMFS_PATH)/i18n \
+$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg $(ROMFS_PATH)/i18n \
 		$(ROMFS_PATH)/personal $(ROMFS_PATH)/fonts/Roboto.ttf \
 		$(ROMFS_PATH)/fonts/OFL-Roboto.txt
 
