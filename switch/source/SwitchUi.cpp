@@ -367,6 +367,67 @@ namespace pksm::switchui
         SDL_RenderPresent(renderer_);
     }
 
+    void SwitchUi::drawGameMenu(const std::string& game, const std::string& path,
+        const std::string& details, size_t selected, const std::string& message)
+    {
+        struct MenuOption
+        {
+            const char* label;
+            const char* description;
+            bool available;
+        };
+        static constexpr MenuOption options[] = {
+            {"Almacenamiento", "Gestiona tus cajas y Pokémon", false},
+            {"Editor", "Edita los datos del entrenador", true},
+            {"Eventos", "Gestiona regalos misteriosos", false},
+            {"Scripts", "Ejecuta scripts para el guardado", false},
+            {"Bolsa", "Edita los objetos de la bolsa", false},
+            {"Ajustes", "Configura las opciones de PKSM", false},
+        };
+
+        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+        SDL_RenderClear(renderer_);
+        drawHeader(game, path);
+
+        const SDL_Rect detailsPanel{52, 151, SCREEN_WIDTH - 104, 70};
+        drawRect(detailsPanel, PANEL, PANEL_BORDER);
+        drawText(details, 76, 174, 24, TEXT, detailsPanel.w - 48);
+
+        constexpr int columns = 2;
+        constexpr int cardWidth = (SCREEN_WIDTH - 120) / columns;
+        constexpr int cardHeight = 92;
+        constexpr int horizontalGap = 16;
+        constexpr int verticalGap = 14;
+        constexpr int startY = 238;
+        for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i)
+        {
+            const int column = static_cast<int>(i % columns);
+            const int row = static_cast<int>(i / columns);
+            const SDL_Rect card{52 + column * (cardWidth + horizontalGap),
+                startY + row * (cardHeight + verticalGap), cardWidth, cardHeight};
+            const SDL_Color fill = i == selected ? SELECTED : PANEL;
+            const SDL_Color border =
+                i == selected && options[i].available ? ACCENT : PANEL_BORDER;
+            const SDL_Color labelColor = options[i].available ? TEXT : MUTED;
+            const SDL_Color descriptionColor = options[i].available ? MUTED : PANEL_BORDER;
+            drawRect(card, fill, border);
+            drawText(options[i].label, card.x + 24, card.y + 15, 24, labelColor);
+            drawText(options[i].description, card.x + 24, card.y + 51, 24, descriptionColor,
+                card.w - 48);
+            if (!options[i].available)
+            {
+                drawText("Próximamente", card.x + card.w - 184, card.y + 15, 24, PANEL_BORDER);
+            }
+        }
+
+        if (!message.empty())
+        {
+            drawText(message, 70, 590, 24, ACCENT, SCREEN_WIDTH - 140);
+        }
+        drawFooter("A: abrir    B: volver    +: salir");
+        SDL_RenderPresent(renderer_);
+    }
+
     void SwitchUi::drawTrainer(const std::string& game, const std::string& path,
         const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error)
     {
@@ -395,7 +456,8 @@ namespace pksm::switchui
         {
             drawText(error, 70, 612, 24, ERROR, SCREEN_WIDTH - 140);
         }
-        drawFooter("Arriba/abajo: campo    Izq/der: cambiar    A: editar nombre    Y: exportar copia");
+        drawFooter(
+            "D-pad: mover/cambiar    A: nombre    Y: exportar    B: menu    X: descartar");
         SDL_RenderPresent(renderer_);
     }
 
