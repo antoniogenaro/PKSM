@@ -42,6 +42,8 @@ namespace pksm::switchui
         Action pollAction();
         void drawFiles(
             const std::vector<std::string>& files, size_t selected, const std::string& error);
+        void drawGameMenu(const std::string& game, const std::string& path,
+            const std::string& details, size_t selected, const std::string& message);
         void drawTrainer(const std::string& game, const std::string& path,
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
         bool editTrainerName(

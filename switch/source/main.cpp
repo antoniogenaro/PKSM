@@ -341,191 +341,255 @@ int main(int argc, char* argv[])
                     version == pksm::GameVersion::SW ? "Pokemon Sword" :
                     version == pksm::GameVersion::SH ? "Pokemon Shield" :
                                                        "Pokemon Rojo Fuego / Verde Hoja";
-                bool dirty = false;
+                const std::string details =
+                    "Entrenador: " + save.otName() + "    TID/SID: " +
+                    std::to_string(save.displayTID()) + "/" +
+                    std::to_string(save.displaySID());
                 bool finish = false;
-                size_t selectedField = 0;
-                while (appletMainLoop() && !finish)
+                size_t selectedMenuOption = 0;
+                std::string menuMessage;
+                while (appletMainLoop() && !finish && !quitRequested)
                 {
-                    const auto editAction = ui.pollAction();
-                    if (editAction == pksm::switchui::Action::Quit)
+                    const auto menuAction = ui.pollAction();
+                    if (menuAction == pksm::switchui::Action::Quit)
                     {
-                        if (dirty)
-                        {
-                            error = "Exporta con Y o descarta con X antes de salir.";
-                        }
-                        else
-                        {
-                            finish = true;
-                            quitRequested = true;
-                        }
+                        finish = true;
+                        quitRequested = true;
                     }
-                    if (editAction == pksm::switchui::Action::Up)
-                    {
-                        selectedField = selectedField == 0 ? fieldCount - 1 : selectedField - 1;
-                    }
-                    else if (editAction == pksm::switchui::Action::Down)
-                    {
-                        selectedField = (selectedField + 1) % fieldCount;
-                    }
-                    else if (editAction == pksm::switchui::Action::Back)
-                    {
-                        if (dirty)
-                        {
-                            error = "Exporta con Y o descarta con X antes de volver.";
-                        }
-                        else
-                        {
-                            finish = true;
-                        }
-                    }
-                    else if (editAction == pksm::switchui::Action::Discard)
+                    else if (menuAction == pksm::switchui::Action::Back)
                     {
                         finish = true;
                     }
-                    else if (editAction == pksm::switchui::Action::Save && dirty)
+                    else if (menuAction == pksm::switchui::Action::Up)
                     {
-                        std::string outputPath;
-                        if (exportSave(loaded, outputPath, error))
-                        {
-                            dirty = false;
-                            error = "Exportado a " + outputPath;
-                        }
+                        selectedMenuOption =
+                            selectedMenuOption < 2 ? selectedMenuOption + 4 :
+                                                     selectedMenuOption - 2;
+                        menuMessage.clear();
                     }
-                    else if (editAction == pksm::switchui::Action::Confirm && selectedField == 0)
+                    else if (menuAction == pksm::switchui::Action::Down)
                     {
-                        std::string name;
-                        if (ui.editTrainerName(save.otName(), name, nameLength) &&
-                            name != save.otName())
-                        {
-                            save.otName(name);
-                            dirty = true;
-                            error.clear();
-                        }
+                        selectedMenuOption = (selectedMenuOption + 2) % 6;
+                        menuMessage.clear();
                     }
-                    else if (editAction == pksm::switchui::Action::Left ||
-                             editAction == pksm::switchui::Action::Right)
+                    else if (menuAction == pksm::switchui::Action::Left &&
+                             selectedMenuOption % 2 != 0)
                     {
-                        const bool increase = editAction == pksm::switchui::Action::Right;
-                        bool changed = false;
-                        switch (selectedField)
+                        --selectedMenuOption;
+                        menuMessage.clear();
+                    }
+                    else if (menuAction == pksm::switchui::Action::Right &&
+                             selectedMenuOption % 2 == 0)
+                    {
+                        ++selectedMenuOption;
+                        menuMessage.clear();
+                    }
+
+                    ui.drawGameMenu(
+                        gameName, files[selected], details, selectedMenuOption, menuMessage);
+                    SDL_Delay(16);
+
+                    if (menuAction != pksm::switchui::Action::Confirm)
+                    {
+                        continue;
+                    }
+                    if (selectedMenuOption != 1)
+                    {
+                        menuMessage = "Esta opción todavía no está disponible.";
+                        continue;
+                    }
+
+                    bool dirty = false;
+                    bool finishEditing = false;
+                    size_t selectedField = 0;
+                    while (appletMainLoop() && !finishEditing && !quitRequested)
+                    {
+                        const auto editAction = ui.pollAction();
+                        if (editAction == pksm::switchui::Action::Quit)
                         {
-                            case 1:
-                                if ((increase && save.TID() < UINT16_MAX) ||
-                                    (!increase && save.TID() > 0))
-                                {
-                                    save.TID(static_cast<u16>(
-                                        increase ? save.TID() + 1 : save.TID() - 1));
-                                    changed = true;
-                                }
-                                break;
-                            case 2:
-                                if ((increase && save.SID() < UINT16_MAX) ||
-                                    (!increase && save.SID() > 0))
-                                {
-                                    save.SID(static_cast<u16>(
-                                        increase ? save.SID() + 1 : save.SID() - 1));
-                                    changed = true;
-                                }
-                                break;
-                            case 3:
+                            if (dirty)
                             {
-                                const u32 current = save.money();
-                                const u32 maxMoney = hasBattlePoints ? 9999999 : 999999;
-                                const u32 next = increase
-                                    ? std::min(maxMoney, current + 1000)
-                                    : (current > 1000 ? current - 1000 : 0);
-                                if (next != current)
-                                {
-                                    save.money(next);
-                                    changed = true;
-                                }
-                                break;
+                                error = "Exporta con Y o descarta con X antes de salir.";
                             }
-                            case 4:
+                            else
                             {
-                                if (hasBattlePoints)
-                                {
-                                    const u32 current = save.BP();
-                                    const u32 next = increase
-                                        ? std::min<u32>(9999, current + 100)
-                                        : (current > 100 ? current - 100 : 0);
-                                    if (next != current)
-                                    {
-                                        save.BP(next);
-                                        changed = true;
-                                    }
-                                }
-                                break;
+                                finishEditing = true;
+                                quitRequested = true;
                             }
-                            default:
-                                break;
                         }
-                        if (selectedField >= hoursField)
+                        if (editAction == pksm::switchui::Action::Up)
                         {
-                            switch (selectedField - hoursField)
+                            selectedField = selectedField == 0 ? fieldCount - 1 : selectedField - 1;
+                        }
+                        else if (editAction == pksm::switchui::Action::Down)
+                        {
+                            selectedField = (selectedField + 1) % fieldCount;
+                        }
+                        else if (editAction == pksm::switchui::Action::Back)
+                        {
+                            if (dirty)
                             {
-                                case 0:
-                                    if ((increase && save.playedHours() < UINT16_MAX) ||
-                                        (!increase && save.playedHours() > 0))
-                                    {
-                                        save.playedHours(static_cast<u16>(
-                                            increase ? save.playedHours() + 1 :
-                                                       save.playedHours() - 1));
-                                        changed = true;
-                                    }
-                                    break;
+                                error = "Exporta con Y o descarta con X antes de volver.";
+                            }
+                            else
+                            {
+                                finishEditing = true;
+                            }
+                        }
+                        else if (editAction == pksm::switchui::Action::Discard)
+                        {
+                            finishEditing = true;
+                            finish = true;
+                        }
+                        else if (editAction == pksm::switchui::Action::Save && dirty)
+                        {
+                            std::string outputPath;
+                            if (exportSave(loaded, outputPath, error))
+                            {
+                                dirty = false;
+                                error = "Exportado a " + outputPath;
+                            }
+                        }
+                        else if (editAction == pksm::switchui::Action::Confirm && selectedField == 0)
+                        {
+                            std::string name;
+                            if (ui.editTrainerName(save.otName(), name, nameLength) &&
+                                name != save.otName())
+                            {
+                                save.otName(name);
+                                dirty = true;
+                                error.clear();
+                            }
+                        }
+                        else if (editAction == pksm::switchui::Action::Left ||
+                                 editAction == pksm::switchui::Action::Right)
+                        {
+                            const bool increase = editAction == pksm::switchui::Action::Right;
+                            bool changed = false;
+                            switch (selectedField)
+                            {
                                 case 1:
+                                    if ((increase && save.TID() < UINT16_MAX) ||
+                                        (!increase && save.TID() > 0))
+                                    {
+                                        save.TID(static_cast<u16>(
+                                            increase ? save.TID() + 1 : save.TID() - 1));
+                                        changed = true;
+                                    }
+                                    break;
+                                case 2:
+                                    if ((increase && save.SID() < UINT16_MAX) ||
+                                        (!increase && save.SID() > 0))
+                                    {
+                                        save.SID(static_cast<u16>(
+                                            increase ? save.SID() + 1 : save.SID() - 1));
+                                        changed = true;
+                                    }
+                                    break;
+                                case 3:
                                 {
-                                    const u8 current = save.playedMinutes();
-                                    const u8 next = increase
-                                        ? static_cast<u8>((current + 1) % 60)
-                                        : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                    const u32 current = save.money();
+                                    const u32 maxMoney = hasBattlePoints ? 9999999 : 999999;
+                                    const u32 next = increase
+                                        ? std::min(maxMoney, current + 1000)
+                                        : (current > 1000 ? current - 1000 : 0);
                                     if (next != current)
                                     {
-                                        save.playedMinutes(next);
+                                        save.money(next);
                                         changed = true;
                                     }
                                     break;
                                 }
-                                case 2:
+                                case 4:
                                 {
-                                    const u8 current = save.playedSeconds();
-                                    const u8 next = increase
-                                        ? static_cast<u8>((current + 1) % 60)
-                                        : static_cast<u8>(current == 0 ? 59 : current - 1);
-                                    if (next != current)
+                                    if (hasBattlePoints)
                                     {
-                                        save.playedSeconds(next);
-                                        changed = true;
+                                        const u32 current = save.BP();
+                                        const u32 next = increase
+                                            ? std::min<u32>(9999, current + 100)
+                                            : (current > 100 ? current - 100 : 0);
+                                        if (next != current)
+                                        {
+                                            save.BP(next);
+                                            changed = true;
+                                        }
                                     }
                                     break;
                                 }
                                 default:
                                     break;
                             }
+                            if (selectedField >= hoursField)
+                            {
+                                switch (selectedField - hoursField)
+                                {
+                                    case 0:
+                                        if ((increase && save.playedHours() < UINT16_MAX) ||
+                                            (!increase && save.playedHours() > 0))
+                                        {
+                                            save.playedHours(static_cast<u16>(
+                                                increase ? save.playedHours() + 1 :
+                                                           save.playedHours() - 1));
+                                            changed = true;
+                                        }
+                                        break;
+                                    case 1:
+                                    {
+                                        const u8 current = save.playedMinutes();
+                                        const u8 next = increase
+                                            ? static_cast<u8>((current + 1) % 60)
+                                            : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                        if (next != current)
+                                        {
+                                            save.playedMinutes(next);
+                                            changed = true;
+                                        }
+                                        break;
+                                    }
+                                    case 2:
+                                    {
+                                        const u8 current = save.playedSeconds();
+                                        const u8 next = increase
+                                            ? static_cast<u8>((current + 1) % 60)
+                                            : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                        if (next != current)
+                                        {
+                                            save.playedSeconds(next);
+                                            changed = true;
+                                        }
+                                        break;
+                                    }
+                                    default:
+                                        break;
+                                }
+                            }
+                            if (changed)
+                            {
+                                dirty = true;
+                                error.clear();
+                            }
                         }
-                        if (changed)
-                        {
-                            dirty = true;
-                            error.clear();
-                        }
-                    }
 
-                    std::vector<pksm::switchui::Field> fields{
-                        {"Nombre", save.otName()},
-                        {"TID", std::to_string(save.TID())},
-                        {"SID", std::to_string(save.SID())},
-                        {"Dinero", std::to_string(save.money())},
-                    };
-                    if (hasBattlePoints)
-                    {
-                        fields.push_back({"BP", std::to_string(save.BP())});
+                        std::vector<pksm::switchui::Field> fields{
+                            {"Nombre", save.otName()},
+                            {"TID", std::to_string(save.TID())},
+                            {"SID", std::to_string(save.SID())},
+                            {"Dinero", std::to_string(save.money())},
+                        };
+                        if (hasBattlePoints)
+                        {
+                            fields.push_back({"BP", std::to_string(save.BP())});
+                        }
+                        fields.push_back({"Horas jugadas", std::to_string(save.playedHours())});
+                        fields.push_back({"Minutos jugados", std::to_string(save.playedMinutes())});
+                        fields.push_back({"Segundos jugados", std::to_string(save.playedSeconds())});
+                        ui.drawTrainer(gameName, files[selected], fields, selectedField, dirty, error);
+                        SDL_Delay(16);
                     }
-                    fields.push_back({"Horas jugadas", std::to_string(save.playedHours())});
-                    fields.push_back({"Minutos jugados", std::to_string(save.playedMinutes())});
-                    fields.push_back({"Segundos jugados", std::to_string(save.playedSeconds())});
-                    ui.drawTrainer(gameName, files[selected], fields, selectedField, dirty, error);
-                    SDL_Delay(16);
+                    if (finish || quitRequested)
+                    {
+                        break;
+                    }
                 }
             }
             else
