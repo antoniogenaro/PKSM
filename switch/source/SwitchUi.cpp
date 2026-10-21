@@ -329,7 +329,7 @@ namespace pksm::switchui
     {
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
-        drawHeader("PKSM / SWITCH", "Respaldos de Pokemon Sword y Shield");
+        drawHeader("PKSM / SWITCH", "Respaldos de Sword/Shield y Rojo Fuego/Verde Hoja");
 
         const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 465};
         drawRect(panel, PANEL, PANEL_BORDER);
@@ -399,7 +399,8 @@ namespace pksm::switchui
         SDL_RenderPresent(renderer_);
     }
 
-    bool SwitchUi::editTrainerName(const std::string& initial, std::string& result)
+    bool SwitchUi::editTrainerName(
+        const std::string& initial, std::string& result, size_t maxLength)
     {
         SwkbdConfig config;
         if (R_FAILED(swkbdCreate(&config, 0)))
@@ -409,7 +410,7 @@ namespace pksm::switchui
         swkbdConfigMakePresetDefault(&config);
         swkbdConfigSetHeaderText(&config, "Nombre del entrenador");
         swkbdConfigSetInitialText(&config, initial.c_str());
-        swkbdConfigSetStringLenMax(&config, 12);
+        swkbdConfigSetStringLenMax(&config, static_cast<u32>(maxLength));
         char output[256]{};
         const Result status = swkbdShow(&config, output, sizeof(output));
         swkbdClose(&config);
