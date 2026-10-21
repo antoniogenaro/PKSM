@@ -44,7 +44,8 @@ namespace pksm::switchui
             const std::vector<std::string>& files, size_t selected, const std::string& error);
         void drawTrainer(const std::string& game, const std::string& path,
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
-        bool editTrainerName(const std::string& initial, std::string& result);
+        bool editTrainerName(
+            const std::string& initial, std::string& result, size_t maxLength = 12);
 
     private:
         SDL_Texture* textTexture(const std::string& text, int fontSize, SDL_Color color);

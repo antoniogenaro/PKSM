@@ -23,7 +23,6 @@
  */
 
 #include "sav/Sav.hpp"
-#include "sav/SavSWSH.hpp"
 #include "SwitchSaveFiles.hpp"
 #include "SwitchUi.hpp"
 #include <switch.h>
@@ -58,6 +57,12 @@ namespace
         std::unique_ptr<pksm::Sav> save;
         std::string sourcePath;
     };
+
+    bool isSupportedVersion(pksm::GameVersion version)
+    {
+        return version == pksm::GameVersion::SW || version == pksm::GameVersion::SH ||
+               version == pksm::GameVersion::FR || version == pksm::GameVersion::LG;
+    }
 
     bool appendSaveFiles(const std::string& directoryPath, const std::string& relativeDirectory,
         std::vector<std::string>& files, std::string& error, size_t depth)
@@ -189,10 +194,9 @@ namespace
             error = std::string("No se pudo interpretar el guardado: ") + exception.what();
             return false;
         }
-        if (!save || (save->version() != pksm::GameVersion::SW &&
-                         save->version() != pksm::GameVersion::SH))
+        if (!save || !isSupportedVersion(save->version()))
         {
-            error = "El archivo no es un guardado valido de Sword/Shield.";
+            error = "El archivo no es un guardado compatible de Sword/Shield o Rojo Fuego/Verde Hoja.";
             return false;
         }
 
@@ -323,7 +327,20 @@ int main(int argc, char* argv[])
             const std::string path = std::string(SAVE_DIRECTORY) + "/" + files[selected];
             if (loadSave(path, loaded, error))
             {
-                auto& save = static_cast<pksm::SavSWSH&>(*loaded.save);
+                auto& save = *loaded.save;
+                const pksm::GameVersion version = save.version();
+                const bool hasBattlePoints = version == pksm::GameVersion::SW ||
+                                             version == pksm::GameVersion::SH;
+                const size_t hoursField = hasBattlePoints ? 5 : 4;
+                const size_t fieldCount = hasBattlePoints ? 8 : 7;
+                const size_t nameLength =
+                    version == pksm::GameVersion::FR || version == pksm::GameVersion::LG
+                        ? (save.language() == pksm::Language::JPN ? 5 : 7)
+                        : 12;
+                const char* gameName =
+                    version == pksm::GameVersion::SW ? "Pokemon Sword" :
+                    version == pksm::GameVersion::SH ? "Pokemon Shield" :
+                                                       "Pokemon Rojo Fuego / Verde Hoja";
                 bool dirty = false;
                 bool finish = false;
                 size_t selectedField = 0;
@@ -344,11 +361,11 @@ int main(int argc, char* argv[])
                     }
                     if (editAction == pksm::switchui::Action::Up)
                     {
-                        selectedField = selectedField == 0 ? 7 : selectedField - 1;
+                        selectedField = selectedField == 0 ? fieldCount - 1 : selectedField - 1;
                     }
                     else if (editAction == pksm::switchui::Action::Down)
                     {
-                        selectedField = (selectedField + 1) % 8;
+                        selectedField = (selectedField + 1) % fieldCount;
                     }
                     else if (editAction == pksm::switchui::Action::Back)
                     {
@@ -377,7 +394,8 @@ int main(int argc, char* argv[])
                     else if (editAction == pksm::switchui::Action::Confirm && selectedField == 0)
                     {
                         std::string name;
-                        if (ui.editTrainerName(save.otName(), name) && name != save.otName())
+                        if (ui.editTrainerName(save.otName(), name, nameLength) &&
+                            name != save.otName())
                         {
                             save.otName(name);
                             dirty = true;
@@ -412,8 +430,9 @@ int main(int argc, char* argv[])
                             case 3:
                             {
                                 const u32 current = save.money();
+                                const u32 maxMoney = hasBattlePoints ? 9999999 : 999999;
                                 const u32 next = increase
-                                    ? std::min<u32>(9999999, current + 1000)
+                                    ? std::min(maxMoney, current + 1000)
                                     : (current > 1000 ? current - 1000 : 0);
                                 if (next != current)
                                 {
@@ -424,54 +443,66 @@ int main(int argc, char* argv[])
                             }
                             case 4:
                             {
-                                const u32 current = save.BP();
-                                const u32 next = increase
-                                    ? std::min<u32>(9999, current + 100)
-                                    : (current > 100 ? current - 100 : 0);
-                                if (next != current)
+                                if (hasBattlePoints)
                                 {
-                                    save.BP(next);
-                                    changed = true;
-                                }
-                                break;
-                            }
-                            case 5:
-                                if ((increase && save.playedHours() < UINT16_MAX) ||
-                                    (!increase && save.playedHours() > 0))
-                                {
-                                    save.playedHours(static_cast<u16>(
-                                        increase ? save.playedHours() + 1 : save.playedHours() - 1));
-                                    changed = true;
-                                }
-                                break;
-                            case 6:
-                            {
-                                const u8 current = save.playedMinutes();
-                                const u8 next = increase
-                                    ? static_cast<u8>((current + 1) % 60)
-                                    : static_cast<u8>(current == 0 ? 59 : current - 1);
-                                if (next != current)
-                                {
-                                    save.playedMinutes(next);
-                                    changed = true;
-                                }
-                                break;
-                            }
-                            case 7:
-                            {
-                                const u8 current = save.playedSeconds();
-                                const u8 next = increase
-                                    ? static_cast<u8>((current + 1) % 60)
-                                    : static_cast<u8>(current == 0 ? 59 : current - 1);
-                                if (next != current)
-                                {
-                                    save.playedSeconds(next);
-                                    changed = true;
+                                    const u32 current = save.BP();
+                                    const u32 next = increase
+                                        ? std::min<u32>(9999, current + 100)
+                                        : (current > 100 ? current - 100 : 0);
+                                    if (next != current)
+                                    {
+                                        save.BP(next);
+                                        changed = true;
+                                    }
                                 }
                                 break;
                             }
                             default:
                                 break;
+                        }
+                        if (selectedField >= hoursField)
+                        {
+                            switch (selectedField - hoursField)
+                            {
+                                case 0:
+                                    if ((increase && save.playedHours() < UINT16_MAX) ||
+                                        (!increase && save.playedHours() > 0))
+                                    {
+                                        save.playedHours(static_cast<u16>(
+                                            increase ? save.playedHours() + 1 :
+                                                       save.playedHours() - 1));
+                                        changed = true;
+                                    }
+                                    break;
+                                case 1:
+                                {
+                                    const u8 current = save.playedMinutes();
+                                    const u8 next = increase
+                                        ? static_cast<u8>((current + 1) % 60)
+                                        : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                    if (next != current)
+                                    {
+                                        save.playedMinutes(next);
+                                        changed = true;
+                                    }
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    const u8 current = save.playedSeconds();
+                                    const u8 next = increase
+                                        ? static_cast<u8>((current + 1) % 60)
+                                        : static_cast<u8>(current == 0 ? 59 : current - 1);
+                                    if (next != current)
+                                    {
+                                        save.playedSeconds(next);
+                                        changed = true;
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
                         }
                         if (changed)
                         {
@@ -480,19 +511,20 @@ int main(int argc, char* argv[])
                         }
                     }
 
-                    const std::vector<pksm::switchui::Field> fields{
+                    std::vector<pksm::switchui::Field> fields{
                         {"Nombre", save.otName()},
                         {"TID", std::to_string(save.TID())},
                         {"SID", std::to_string(save.SID())},
                         {"Dinero", std::to_string(save.money())},
-                        {"BP", std::to_string(save.BP())},
-                        {"Horas jugadas", std::to_string(save.playedHours())},
-                        {"Minutos jugados", std::to_string(save.playedMinutes())},
-                        {"Segundos jugados", std::to_string(save.playedSeconds())},
                     };
-                    ui.drawTrainer(save.version() == pksm::GameVersion::SW ? "Pokemon Sword" :
-                                                                              "Pokemon Shield",
-                        files[selected], fields, selectedField, dirty, error);
+                    if (hasBattlePoints)
+                    {
+                        fields.push_back({"BP", std::to_string(save.BP())});
+                    }
+                    fields.push_back({"Horas jugadas", std::to_string(save.playedHours())});
+                    fields.push_back({"Minutos jugados", std::to_string(save.playedMinutes())});
+                    fields.push_back({"Segundos jugados", std::to_string(save.playedSeconds())});
+                    ui.drawTrainer(gameName, files[selected], fields, selectedField, dirty, error);
                     SDL_Delay(16);
                 }
             }
