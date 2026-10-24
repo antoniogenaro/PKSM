@@ -70,7 +70,6 @@ namespace pksm::switchui
 
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
-        SDL_Joystick* joystick_ = nullptr;
         PadState pad_{};
         TTF_Font* headingFont_ = nullptr;
         TTF_Font* bodyFont_ = nullptr;
