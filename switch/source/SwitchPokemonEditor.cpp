@@ -880,7 +880,8 @@ namespace pksm::switchui
             {
                 const auto pokemon = save.pkm(box, slot);
                 fields.push_back({"Espacio " + numericValue(slot + 1),
-                    pokemon ? pokemonSummary(*pokemon) : "Error al leer"});
+                    pokemon ? pokemonSummary(*pokemon) : "Error al leer",
+                    pokemon ? static_cast<size_t>(pokemon->species()) : 0});
             }
             return fields;
         }
@@ -894,7 +895,8 @@ namespace pksm::switchui
             {
                 const auto pokemon = save.pkm(slot);
                 fields.push_back({"Equipo " + numericValue(slot + 1),
-                    pokemon ? pokemonSummary(*pokemon) : "Error al leer"});
+                    pokemon ? pokemonSummary(*pokemon) : "Error al leer",
+                    pokemon ? static_cast<size_t>(pokemon->species()) : 0});
             }
             return fields;
         }
@@ -971,7 +973,8 @@ namespace pksm::switchui
                     }
                 }
 
-                ui.drawPokemonEditor(game, path, title, displayFields, selected, dirty, error);
+                ui.drawPokemonEditor(game, path, title,
+                    static_cast<size_t>(pokemon->species()), displayFields, selected, dirty, error);
                 SDL_Delay(16);
             }
             return PokemonEditorResult::Quit;
