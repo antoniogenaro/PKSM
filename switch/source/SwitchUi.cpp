@@ -14,6 +14,8 @@ namespace pksm::switchui
         constexpr SDL_Color BACKGROUND{20, 27, 43, 255};
         constexpr SDL_Color PANEL{31, 42, 63, 255};
         constexpr SDL_Color PANEL_BORDER{61, 82, 112, 255};
+        constexpr SDL_Color ROW_ALT{31, 42, 63, 255};
+        constexpr SDL_Color ROW_DIVIDER{61, 82, 112, 255};
         constexpr SDL_Color TEXT{236, 241, 248, 255};
         constexpr SDL_Color MUTED{166, 181, 202, 255};
         constexpr SDL_Color ACCENT{91, 190, 170, 255};
@@ -395,8 +397,17 @@ namespace pksm::switchui
                 const SDL_Rect row{68, y - 5, panel.w - 32, 46};
                 drawRect(row, SELECTED, SELECTED);
             }
+            else if ((i - first) % 2 == 1)
+            {
+                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
+                SDL_SetRenderDrawColor(renderer_, ROW_ALT.r, ROW_ALT.g, ROW_ALT.b, ROW_ALT.a);
+                SDL_RenderFillRect(renderer_, &row);
+            }
             drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
             drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
+            SDL_SetRenderDrawColor(
+                renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
+            SDL_RenderDrawLine(renderer_, 82, y + 39, panel.w + 20, y + 39);
         }
         if (dirty)
         {
@@ -419,29 +430,60 @@ namespace pksm::switchui
         SDL_RenderClear(renderer_);
         drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + pokemon);
 
-        const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
+        const SDL_Rect panel{52, 151, 820, 444};
+        const SDL_Rect summaryPanel{890, 151, 338, 444};
         drawRect(panel, PANEL, PANEL_BORDER);
-        constexpr size_t visibleRows = 8;
+        drawRect(summaryPanel, PANEL, PANEL_BORDER);
+        constexpr size_t visibleRows = 7;
         const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
         const size_t last = std::min(fields.size(), first + visibleRows);
         for (size_t i = first; i < last; ++i)
         {
-            const int y = 164 + static_cast<int>(i - first) * 51;
+            const int y = 164 + static_cast<int>(i - first) * 58;
             if (i == selected)
             {
-                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
+                const SDL_Rect row{68, y - 5, panel.w - 32, 50};
                 drawRect(row, SELECTED, SELECTED);
             }
-            drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
-            drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
+            else if ((i - first) % 2 == 1)
+            {
+                const SDL_Rect row{68, y - 5, panel.w - 32, 50};
+                SDL_SetRenderDrawColor(renderer_, ROW_ALT.r, ROW_ALT.g, ROW_ALT.b, ROW_ALT.a);
+                SDL_RenderFillRect(renderer_, &row);
+            }
+            drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED, 320);
+            drawText(fields[i].value, 430, y, 24, TEXT, panel.w - 400);
+            SDL_SetRenderDrawColor(
+                renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
+            SDL_RenderDrawLine(renderer_, 82, y + 43, panel.x + panel.w - 16, y + 43);
+        }
+
+        const auto valueFor = [&fields](const char* label) -> std::string
+        {
+            const auto field = std::find_if(fields.begin(), fields.end(),
+                [label](const Field& candidate) { return candidate.label == label; });
+            return field == fields.end() ? std::string{} : field->value;
+        };
+        drawText("Resumen del Pokémon", 914, 174, 24, ACCENT, summaryPanel.w - 48);
+        drawText(valueFor("Especie"), 914, 224, 24, TEXT, summaryPanel.w - 48);
+        drawText(valueFor("Apodo"), 914, 264, 24, MUTED, summaryPanel.w - 48);
+        const char* summaryLabels[] = {"Nivel", "Naturaleza", "Género", "Variocolor"};
+        for (size_t i = 0; i < sizeof(summaryLabels) / sizeof(summaryLabels[0]); ++i)
+        {
+            const int y = 328 + static_cast<int>(i) * 48;
+            drawText(summaryLabels[i], 914, y, 24, MUTED, 154);
+            drawText(valueFor(summaryLabels[i]), 1070, y, 24, TEXT, 132);
+            SDL_SetRenderDrawColor(
+                renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
+            SDL_RenderDrawLine(renderer_, 914, y + 35, 1204, y + 35);
         }
         if (dirty)
         {
-            drawText("Cambios pendientes de exportar", 82, 562, 24, ACCENT);
+            drawText("Cambios pendientes de exportar", 82, 606, 24, ACCENT);
         }
         if (!error.empty())
         {
-            drawText(error, 70, 612, 24, ERROR, SCREEN_WIDTH - 140);
+            drawText(error, 70, 636, 24, ERROR, SCREEN_WIDTH - 140);
         }
         drawFooter("D-pad: mover/cambiar    A: editar    Y: exportar    B: volver    X: descartar");
         SDL_RenderPresent(renderer_);
@@ -463,6 +505,12 @@ namespace pksm::switchui
             {
                 const SDL_Rect row{68, y - 4, panel.w - 32, 43};
                 drawRect(row, SELECTED, SELECTED);
+            }
+            else if (i % 2 == 1)
+            {
+                const SDL_Rect row{68, y - 4, panel.w - 32, 43};
+                SDL_SetRenderDrawColor(renderer_, ROW_ALT.r, ROW_ALT.g, ROW_ALT.b, ROW_ALT.a);
+                SDL_RenderFillRect(renderer_, &row);
             }
             drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
             drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
