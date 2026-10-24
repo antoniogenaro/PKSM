@@ -2,7 +2,6 @@
 
 #include <switch.h>
 #include <algorithm>
-#include <cstdlib>
 #include <cstdio>
 #include <string>
 
@@ -51,10 +50,6 @@ namespace pksm::switchui
         {
             TTF_CloseFont(bodyFont_);
         }
-        if (joystick_)
-        {
-            SDL_JoystickClose(joystick_);
-        }
         if (renderer_)
         {
             SDL_DestroyRenderer(renderer_);
@@ -71,7 +66,7 @@ namespace pksm::switchui
     {
         padConfigureInput(1, HidNpadStyleSet_NpadStandard);
         padInitializeDefault(&pad_);
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
+        if (SDL_Init(SDL_INIT_VIDEO) != 0)
         {
             error = std::string("No se pudo iniciar SDL: ") + SDL_GetError();
             return false;
@@ -110,20 +105,20 @@ namespace pksm::switchui
         }
         TTF_SetFontHinting(headingFont_, TTF_HINTING_NORMAL);
         TTF_SetFontHinting(bodyFont_, TTF_HINTING_NORMAL);
-        if (SDL_NumJoysticks() > 0)
-        {
-            joystick_ = SDL_JoystickOpen(0);
-            if (!joystick_)
-            {
-                error = std::string("No se pudo abrir el mando: ") + SDL_GetError();
-                return false;
-            }
-        }
         return true;
     }
 
     Action SwitchUi::pollAction()
     {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                return Action::Quit;
+            }
+        }
+
         padUpdate(&pad_);
         const u64 buttons = padGetButtonsDown(&pad_);
         if (buttons & HidNpadButton_Up)
@@ -171,67 +166,6 @@ namespace pksm::switchui
             return Action::Quit;
         }
 
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_QUIT)
-            {
-                return Action::Quit;
-            }
-            if (event.type == SDL_JOYHATMOTION && event.jhat.which == 0)
-            {
-                if (event.jhat.value & SDL_HAT_UP)
-                {
-                    return Action::Up;
-                }
-                if (event.jhat.value & SDL_HAT_DOWN)
-                {
-                    return Action::Down;
-                }
-                if (event.jhat.value & SDL_HAT_LEFT)
-                {
-                    return Action::Left;
-                }
-                if (event.jhat.value & SDL_HAT_RIGHT)
-                {
-                    return Action::Right;
-                }
-            }
-            if (event.type == SDL_JOYAXISMOTION && event.jaxis.which == 0 &&
-                std::abs(event.jaxis.value) > 16000)
-            {
-                if (event.jaxis.axis == 0)
-                {
-                    return event.jaxis.value < 0 ? Action::Left : Action::Right;
-                }
-                if (event.jaxis.axis == 1)
-                {
-                    return event.jaxis.value < 0 ? Action::Up : Action::Down;
-                }
-            }
-            if (event.type == SDL_JOYBUTTONDOWN && event.jbutton.which == 0)
-            {
-                switch (event.jbutton.button)
-                {
-                    case 0:
-                        return Action::Confirm;
-                    case 1:
-                        return Action::Back;
-                    case 2:
-                        return Action::Discard;
-                    case 3:
-                        return Action::Save;
-                    case 4:
-                        return Action::PreviousPage;
-                    case 5:
-                        return Action::NextPage;
-                    case 10:
-                        return Action::Quit;
-                    default:
-                        break;
-                }
-            }
-        }
         return Action::None;
     }
 
