@@ -2,7 +2,10 @@
 
 #include <switch.h>
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <string>
 
 namespace pksm::switchui
@@ -22,6 +25,128 @@ namespace pksm::switchui
         constexpr SDL_Color SELECTED{50, 91, 111, 255};
         constexpr SDL_Color ERROR{255, 163, 145, 255};
         constexpr char FONT_PATH[] = "romfs:/fonts/Roboto.ttf";
+        constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
+
+        bool readU16(const std::vector<u8>& data, size_t offset, u16& result)
+        {
+            if (offset > data.size() || data.size() - offset < 2)
+            {
+                return false;
+            }
+            result = static_cast<u16>(data[offset]) |
+                     static_cast<u16>(static_cast<u16>(data[offset + 1]) << 8);
+            return true;
+        }
+
+        bool decodeLz11(
+            const std::vector<u8>& input, size_t offset, size_t outputSize, std::vector<u8>& output)
+        {
+            if (offset > input.size() || input.size() - offset < 4 || input[offset] != 0x11)
+            {
+                return false;
+            }
+            size_t cursor = offset + 1;
+            size_t encodedSize = static_cast<size_t>(input[cursor]) |
+                                 (static_cast<size_t>(input[cursor + 1]) << 8) |
+                                 (static_cast<size_t>(input[cursor + 2]) << 16);
+            cursor += 3;
+            if (encodedSize == 0)
+            {
+                if (input.size() - cursor < 4)
+                {
+                    return false;
+                }
+                encodedSize = static_cast<size_t>(input[cursor]) |
+                              (static_cast<size_t>(input[cursor + 1]) << 8) |
+                              (static_cast<size_t>(input[cursor + 2]) << 16) |
+                              (static_cast<size_t>(input[cursor + 3]) << 24);
+                cursor += 4;
+            }
+            if (encodedSize != outputSize)
+            {
+                return false;
+            }
+
+            output.resize(outputSize);
+            size_t written = 0;
+            while (written < outputSize)
+            {
+                if (cursor >= input.size())
+                {
+                    return false;
+                }
+                u8 flags = input[cursor++];
+                for (int bit = 7; bit >= 0 && written < outputSize; --bit, flags <<= 1)
+                {
+                    if ((flags & 0x80) == 0)
+                    {
+                        if (cursor >= input.size())
+                        {
+                            return false;
+                        }
+                        output[written++] = input[cursor++];
+                        continue;
+                    }
+
+                    if (cursor >= input.size())
+                    {
+                        return false;
+                    }
+                    const u8 first = input[cursor++];
+                    size_t length = 0;
+                    size_t distance = 0;
+                    const u8 lengthType = first >> 4;
+                    if (lengthType == 0)
+                    {
+                        if (input.size() - cursor < 2)
+                        {
+                            return false;
+                        }
+                        const u8 second = input[cursor++];
+                        const u8 third = input[cursor++];
+                        length = ((static_cast<size_t>(first & 0x0F) << 4) | (second >> 4)) +
+                                 0x11;
+                        distance = ((static_cast<size_t>(second & 0x0F) << 8) | third) + 1;
+                    }
+                    else if (lengthType == 1)
+                    {
+                        if (input.size() - cursor < 3)
+                        {
+                            return false;
+                        }
+                        const u8 second = input[cursor++];
+                        const u8 third = input[cursor++];
+                        const u8 fourth = input[cursor++];
+                        length = ((static_cast<size_t>(first & 0x0F) << 12) |
+                                     (static_cast<size_t>(second) << 4) | (third >> 4)) +
+                                 0x111;
+                        distance = ((static_cast<size_t>(third & 0x0F) << 8) | fourth) + 1;
+                    }
+                    else
+                    {
+                        if (cursor >= input.size())
+                        {
+                            return false;
+                        }
+                        length = lengthType + 1;
+                        distance =
+                            ((static_cast<size_t>(first & 0x0F) << 8) | input[cursor++]) + 1;
+                    }
+
+                    if (distance > written)
+                    {
+                        return false;
+                    }
+                    length = std::min(length, outputSize - written);
+                    for (size_t i = 0; i < length; ++i)
+                    {
+                        output[written] = output[written - distance];
+                        ++written;
+                    }
+                }
+            }
+            return true;
+        }
 
         void removeLastUtf8Character(std::string& text)
         {
@@ -40,6 +165,10 @@ namespace pksm::switchui
 
     SwitchUi::~SwitchUi()
     {
+        if (pokemonSpritesheet_)
+        {
+            SDL_DestroyTexture(pokemonSpritesheet_);
+        }
         for (const auto& entry : textCache_)
         {
             SDL_DestroyTexture(entry.second);
@@ -107,7 +236,157 @@ namespace pksm::switchui
         }
         TTF_SetFontHinting(headingFont_, TTF_HINTING_NORMAL);
         TTF_SetFontHinting(bodyFont_, TTF_HINTING_NORMAL);
+        if (!loadPokemonSprites(error))
+        {
+            return false;
+        }
         return true;
+    }
+
+    bool SwitchUi::loadPokemonSprites(std::string& error)
+    {
+        std::ifstream file(POKEMON_SPRITESHEET_PATH, std::ios::binary);
+        if (!file)
+        {
+            error = "No se pudo abrir el spritesheet de Pokémon.";
+            return false;
+        }
+        const std::vector<u8> data(
+            (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        if (file.bad() || data.size() < 5)
+        {
+            error = "El spritesheet de Pokémon está incompleto.";
+            return false;
+        }
+
+        u16 spriteCount = 0;
+        if (!readU16(data, 0, spriteCount) || spriteCount == 0 || spriteCount > 2048)
+        {
+            error = "El spritesheet de Pokémon no tiene un encabezado válido.";
+            return false;
+        }
+        const u8 dimensions = data[2];
+        const size_t width = size_t{1} << ((dimensions & 0x07) + 3);
+        const size_t height = size_t{1} << (((dimensions >> 3) & 0x07) + 3);
+        if ((dimensions & 0x40) != 0 || data[3] != 0 || data[4] != 0)
+        {
+            error = "El formato del spritesheet de Pokémon no es compatible.";
+            return false;
+        }
+
+        const size_t tableOffset = 5;
+        if (spriteCount > (data.size() - tableOffset) / 12)
+        {
+            error = "La tabla de sprites de Pokémon está incompleta.";
+            return false;
+        }
+        const size_t textureOffset = tableOffset + static_cast<size_t>(spriteCount) * 12;
+        const size_t textureSize = width * height * 4;
+        std::vector<u8> textureData;
+        if (!decodeLz11(data, textureOffset, textureSize, textureData))
+        {
+            error = "No se pudo descomprimir el spritesheet de Pokémon.";
+            return false;
+        }
+
+        std::vector<PokemonSprite> sprites;
+        sprites.reserve(spriteCount);
+        for (size_t i = 0; i < spriteCount; ++i)
+        {
+            const size_t offset = tableOffset + i * 12;
+            u16 spriteWidth = 0;
+            u16 spriteHeight = 0;
+            u16 left = 0;
+            u16 top = 0;
+            u16 right = 0;
+            u16 bottom = 0;
+            if (!readU16(data, offset, spriteWidth) ||
+                !readU16(data, offset + 2, spriteHeight) ||
+                !readU16(data, offset + 4, left) || !readU16(data, offset + 6, top) ||
+                !readU16(data, offset + 8, right) || !readU16(data, offset + 10, bottom))
+            {
+                error = "La tabla de sprites de Pokémon está incompleta.";
+                return false;
+            }
+
+            const bool rotated = top < bottom;
+            const int sourceX = rotated ? top : left;
+            const int sourceY = static_cast<int>(height) - (rotated ? right : top);
+            const int sourceWidth = rotated ? bottom - top : right - left;
+            const int sourceHeight = rotated ? right - left : top - bottom;
+            if (sourceX < 0 || sourceY < 0 || sourceWidth <= 0 || sourceHeight <= 0 ||
+                static_cast<size_t>(sourceX + sourceWidth) > width ||
+                static_cast<size_t>(sourceY + sourceHeight) > height)
+            {
+                error = "La tabla de sprites de Pokémon contiene coordenadas inválidas.";
+                return false;
+            }
+            sprites.push_back({{sourceX, sourceY, sourceWidth, sourceHeight}, spriteWidth,
+                spriteHeight, rotated});
+        }
+
+        std::vector<u8> pixels(textureSize);
+        const size_t tilesPerRow = width / 8;
+        for (size_t y = 0; y < height; ++y)
+        {
+            for (size_t x = 0; x < width; ++x)
+            {
+                const size_t tileX = x / 8;
+                const size_t tileY = y / 8;
+                const size_t localX = x & 7;
+                const size_t localY = y & 7;
+                const size_t morton = (localX & 1) | ((localY & 1) << 1) |
+                                      ((localX & 2) << 1) | ((localY & 2) << 2) |
+                                      ((localX & 4) << 2) | ((localY & 4) << 3);
+                const size_t source =
+                    ((tileY * tilesPerRow + tileX) * 64 + morton) * 4;
+                const size_t destination = (y * width + x) * 4;
+                pixels[destination] = textureData[source + 3];
+                pixels[destination + 1] = textureData[source + 2];
+                pixels[destination + 2] = textureData[source + 1];
+                pixels[destination + 3] = textureData[source];
+            }
+        }
+
+        SDL_Texture* texture =
+            SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
+                static_cast<int>(width), static_cast<int>(height));
+        if (!texture)
+        {
+            error = std::string("No se pudo crear la textura de Pokémon: ") + SDL_GetError();
+            return false;
+        }
+        if (SDL_UpdateTexture(texture, nullptr, pixels.data(), static_cast<int>(width * 4)) != 0 ||
+            SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) != 0)
+        {
+            error = std::string("No se pudo cargar la textura de Pokémon: ") + SDL_GetError();
+            SDL_DestroyTexture(texture);
+            return false;
+        }
+        pokemonSpritesheet_ = texture;
+        pokemonSprites_ = std::move(sprites);
+        return true;
+    }
+
+    void SwitchUi::drawPokemonSprite(size_t index, const SDL_Rect& destination)
+    {
+        if (!pokemonSpritesheet_ || index == 0 || index >= pokemonSprites_.size())
+        {
+            return;
+        }
+        const PokemonSprite& sprite = pokemonSprites_[index];
+        if (sprite.rotated)
+        {
+            const SDL_Rect rotatedDestination{destination.x + (destination.w - destination.h) / 2,
+                destination.y + (destination.h - destination.w) / 2, destination.h,
+                destination.w};
+            SDL_RenderCopyEx(renderer_, pokemonSpritesheet_, &sprite.source, &rotatedDestination,
+                90.0, nullptr, SDL_FLIP_NONE);
+        }
+        else
+        {
+            SDL_RenderCopy(renderer_, pokemonSpritesheet_, &sprite.source, &destination);
+        }
     }
 
     Action SwitchUi::pollAction()
@@ -420,7 +699,8 @@ namespace pksm::switchui
             }
             drawText(std::to_string(i + 1), x + 8, y + 5, 24,
                 i == selected ? TEXT : MUTED);
-            drawText(fields[i].value, x + 8, y + 38, 24, TEXT, tileWidth - 16);
+            drawPokemonSprite(fields[i].spriteIndex, {x + 5, y + 18, 36, 32});
+            drawText(fields[i].value, x + 46, y + 23, 24, TEXT, tileWidth - 54);
             SDL_SetRenderDrawColor(
                 renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
             SDL_RenderDrawLine(renderer_, x + 4, y + tileHeight - 1, x + tileWidth - 4,
@@ -434,6 +714,8 @@ namespace pksm::switchui
                 summaryPanel.w - 40);
             drawText(fields[selected].value, summaryPanel.x + 20, 270, 36, TEXT,
                 summaryPanel.w - 40);
+            drawPokemonSprite(fields[selected].spriteIndex,
+                {summaryPanel.x + 76, 348, 160, 140});
         }
         drawText("A: abrir editor", summaryPanel.x + 20, 522, 24, MUTED,
             summaryPanel.w - 40);
@@ -451,8 +733,8 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawPokemonEditor(const std::string& game, const std::string& path,
-        const std::string& pokemon, const std::vector<Field>& fields, size_t selected, bool dirty,
-        const std::string& error)
+        const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
+        size_t selected, bool dirty, const std::string& error)
     {
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
@@ -493,6 +775,7 @@ namespace pksm::switchui
             return field == fields.end() ? std::string{} : field->value;
         };
         drawText("Resumen del Pokémon", 914, 174, 24, ACCENT, summaryPanel.w - 48);
+        drawPokemonSprite(speciesIndex, {summaryPanel.x + 204, 206, 110, 100});
         drawText(valueFor("Especie"), 914, 224, 24, TEXT, summaryPanel.w - 48);
         drawText(valueFor("Apodo"), 914, 264, 24, MUTED, summaryPanel.w - 48);
         const char* summaryLabels[] = {"Nivel", "Naturaleza", "Género", "Variocolor"};

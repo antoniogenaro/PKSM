@@ -30,6 +30,7 @@ namespace pksm::switchui
     {
         std::string label;
         std::string value;
+        size_t spriteIndex = 0;
     };
 
     class SwitchUi
@@ -50,8 +51,8 @@ namespace pksm::switchui
             const std::string& section, const std::vector<Field>& fields, size_t selected,
             bool dirty, const std::string& error);
         void drawPokemonEditor(const std::string& game, const std::string& path,
-            const std::string& pokemon, const std::vector<Field>& fields, size_t selected,
-            bool dirty, const std::string& error);
+            const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
+            size_t selected, bool dirty, const std::string& error);
         void drawTrainer(const std::string& game, const std::string& path,
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
         bool editText(const std::string& title, const std::string& initial, std::string& result,
@@ -66,13 +67,25 @@ namespace pksm::switchui
         void drawHeader(const std::string& title, const std::string& subtitle);
         void drawFooter(const std::string& text);
         void drawRect(const SDL_Rect& rect, SDL_Color fill, SDL_Color border);
+        bool loadPokemonSprites(std::string& error);
+        void drawPokemonSprite(size_t index, const SDL_Rect& destination);
         std::string fitText(const std::string& text, int fontSize, int maxWidth);
+
+        struct PokemonSprite
+        {
+            SDL_Rect source;
+            int width;
+            int height;
+            bool rotated;
+        };
 
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
         PadState pad_{};
         TTF_Font* headingFont_ = nullptr;
         TTF_Font* bodyFont_ = nullptr;
+        SDL_Texture* pokemonSpritesheet_ = nullptr;
+        std::vector<PokemonSprite> pokemonSprites_;
         std::unordered_map<std::string, SDL_Texture*> textCache_;
     };
 }
