@@ -384,31 +384,59 @@ namespace pksm::switchui
         SDL_RenderClear(renderer_);
         drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + section);
 
-        const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
+        const SDL_Rect panel{52, 151, 846, 444};
+        const SDL_Rect summaryPanel{916, 151, 312, 444};
         drawRect(panel, PANEL, PANEL_BORDER);
-        constexpr size_t visibleRows = 8;
-        const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
-        const size_t last = std::min(fields.size(), first + visibleRows);
-        for (size_t i = first; i < last; ++i)
+        drawRect(summaryPanel, PANEL, PANEL_BORDER);
+        const size_t columns = fields.size() <= 6 ? 3 : 6;
+        constexpr int horizontalGap = 8;
+        constexpr int tileHeight = 72;
+        constexpr int verticalGap = 8;
+        const int gridX = panel.x + 16;
+        const int tileWidth =
+            (panel.w - 32 - static_cast<int>(columns - 1) * horizontalGap) /
+            static_cast<int>(columns);
+        for (size_t i = 0; i < fields.size(); ++i)
         {
-            const int y = 164 + static_cast<int>(i - first) * 51;
+            const size_t rowIndex = i / columns;
+            const size_t column = i % columns;
+            const int x = gridX + static_cast<int>(column) * (tileWidth + horizontalGap);
+            const int y = 163 + static_cast<int>(rowIndex) * (tileHeight + verticalGap);
+            const SDL_Rect tile{x, y, tileWidth, tileHeight};
             if (i == selected)
             {
-                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
-                drawRect(row, SELECTED, SELECTED);
+                drawRect(tile, SELECTED, SELECTED);
             }
-            else if ((i - first) % 2 == 1)
+            else if (rowIndex % 2 == 1)
             {
-                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
                 SDL_SetRenderDrawColor(renderer_, ROW_ALT.r, ROW_ALT.g, ROW_ALT.b, ROW_ALT.a);
-                SDL_RenderFillRect(renderer_, &row);
+                SDL_RenderFillRect(renderer_, &tile);
             }
-            drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
-            drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
+            if (i != selected)
+            {
+                SDL_SetRenderDrawColor(
+                    renderer_, PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, PANEL_BORDER.a);
+                SDL_RenderDrawRect(renderer_, &tile);
+            }
+            drawText(std::to_string(i + 1), x + 8, y + 5, 24,
+                i == selected ? TEXT : MUTED);
+            drawText(fields[i].value, x + 8, y + 38, 24, TEXT, tileWidth - 16);
             SDL_SetRenderDrawColor(
                 renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
-            SDL_RenderDrawLine(renderer_, 82, y + 39, panel.w + 20, y + 39);
+            SDL_RenderDrawLine(renderer_, x + 4, y + tileHeight - 1, x + tileWidth - 4,
+                y + tileHeight - 1);
         }
+        drawText("Pokémon seleccionado", summaryPanel.x + 20, 176, 24, ACCENT,
+            summaryPanel.w - 40);
+        if (selected < fields.size())
+        {
+            drawText(fields[selected].label, summaryPanel.x + 20, 230, 24, MUTED,
+                summaryPanel.w - 40);
+            drawText(fields[selected].value, summaryPanel.x + 20, 270, 36, TEXT,
+                summaryPanel.w - 40);
+        }
+        drawText("A: abrir editor", summaryPanel.x + 20, 522, 24, MUTED,
+            summaryPanel.w - 40);
         if (dirty)
         {
             drawText("Cambios pendientes de exportar", 82, 562, 24, ACCENT);
