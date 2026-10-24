@@ -17,6 +17,8 @@ namespace pksm::switchui
         Down,
         Left,
         Right,
+        PreviousPage,
+        NextPage,
         Confirm,
         Back,
         Discard,
@@ -44,8 +46,16 @@ namespace pksm::switchui
             const std::vector<std::string>& files, size_t selected, const std::string& error);
         void drawGameMenu(const std::string& game, const std::string& path,
             const std::string& details, size_t selected, const std::string& message);
+        void drawPokemonSlots(const std::string& game, const std::string& path,
+            const std::string& section, const std::vector<Field>& fields, size_t selected,
+            bool dirty, const std::string& error);
+        void drawPokemonEditor(const std::string& game, const std::string& path,
+            const std::string& pokemon, const std::vector<Field>& fields, size_t selected,
+            bool dirty, const std::string& error);
         void drawTrainer(const std::string& game, const std::string& path,
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
+        bool editText(const std::string& title, const std::string& initial, std::string& result,
+            size_t maxLength);
         bool editTrainerName(
             const std::string& initial, std::string& result, size_t maxLength = 12);
 

@@ -142,6 +142,14 @@ namespace pksm::switchui
         {
             return Action::Right;
         }
+        if (buttons & HidNpadButton_L)
+        {
+            return Action::PreviousPage;
+        }
+        if (buttons & HidNpadButton_R)
+        {
+            return Action::NextPage;
+        }
         if (buttons & HidNpadButton_A)
         {
             return Action::Confirm;
@@ -213,6 +221,10 @@ namespace pksm::switchui
                         return Action::Discard;
                     case 3:
                         return Action::Save;
+                    case 4:
+                        return Action::PreviousPage;
+                    case 5:
+                        return Action::NextPage;
                     case 10:
                         return Action::Quit;
                     default:
@@ -378,11 +390,11 @@ namespace pksm::switchui
         };
         static constexpr MenuOption options[] = {
             {"Almacenamiento", "Gestiona tus cajas y Pokémon", false},
-            {"Editor", "Edita los datos del entrenador", true},
+            {"Editor Pokémon", "Edita los datos de tus Pokémon", true},
             {"Eventos", "Gestiona regalos misteriosos", false},
             {"Scripts", "Ejecuta scripts para el guardado", false},
             {"Bolsa", "Edita los objetos de la bolsa", false},
-            {"Ajustes", "Configura las opciones de PKSM", false},
+            {"Editor entrenador", "Edita los datos del entrenador", true},
         };
 
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
@@ -424,7 +436,80 @@ namespace pksm::switchui
         {
             drawText(message, 70, 590, 24, ACCENT, SCREEN_WIDTH - 140);
         }
-        drawFooter("A: abrir    B: volver    +: salir");
+        drawFooter("A: abrir    B: volver    Y: exportar    X: descartar    +: salir");
+        SDL_RenderPresent(renderer_);
+    }
+
+    void SwitchUi::drawPokemonSlots(const std::string& game, const std::string& path,
+        const std::string& section, const std::vector<Field>& fields, size_t selected, bool dirty,
+        const std::string& error)
+    {
+        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+        SDL_RenderClear(renderer_);
+        drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + section);
+
+        const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
+        drawRect(panel, PANEL, PANEL_BORDER);
+        constexpr size_t visibleRows = 8;
+        const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
+        const size_t last = std::min(fields.size(), first + visibleRows);
+        for (size_t i = first; i < last; ++i)
+        {
+            const int y = 164 + static_cast<int>(i - first) * 51;
+            if (i == selected)
+            {
+                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
+                drawRect(row, SELECTED, SELECTED);
+            }
+            drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
+            drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
+        }
+        if (dirty)
+        {
+            drawText("Cambios pendientes de exportar", 82, 562, 24, ACCENT);
+        }
+        if (!error.empty())
+        {
+            drawText(error, 70, 612, 24, ERROR, SCREEN_WIDTH - 140);
+        }
+        drawFooter(
+            "D-pad: mover    L/R: cajas/equipo    A: editar    Y: exportar    B: volver");
+        SDL_RenderPresent(renderer_);
+    }
+
+    void SwitchUi::drawPokemonEditor(const std::string& game, const std::string& path,
+        const std::string& pokemon, const std::vector<Field>& fields, size_t selected, bool dirty,
+        const std::string& error)
+    {
+        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+        SDL_RenderClear(renderer_);
+        drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + pokemon);
+
+        const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
+        drawRect(panel, PANEL, PANEL_BORDER);
+        constexpr size_t visibleRows = 8;
+        const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
+        const size_t last = std::min(fields.size(), first + visibleRows);
+        for (size_t i = first; i < last; ++i)
+        {
+            const int y = 164 + static_cast<int>(i - first) * 51;
+            if (i == selected)
+            {
+                const SDL_Rect row{68, y - 5, panel.w - 32, 46};
+                drawRect(row, SELECTED, SELECTED);
+            }
+            drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED);
+            drawText(fields[i].value, 530, y, 24, TEXT, panel.w - 610);
+        }
+        if (dirty)
+        {
+            drawText("Cambios pendientes de exportar", 82, 562, 24, ACCENT);
+        }
+        if (!error.empty())
+        {
+            drawText(error, 70, 612, 24, ERROR, SCREEN_WIDTH - 140);
+        }
+        drawFooter("D-pad: mover/cambiar    A: editar    Y: exportar    B: volver    X: descartar");
         SDL_RenderPresent(renderer_);
     }
 
@@ -461,8 +546,8 @@ namespace pksm::switchui
         SDL_RenderPresent(renderer_);
     }
 
-    bool SwitchUi::editTrainerName(
-        const std::string& initial, std::string& result, size_t maxLength)
+    bool SwitchUi::editText(const std::string& title, const std::string& initial,
+        std::string& result, size_t maxLength)
     {
         SwkbdConfig config;
         if (R_FAILED(swkbdCreate(&config, 0)))
@@ -470,7 +555,7 @@ namespace pksm::switchui
             return false;
         }
         swkbdConfigMakePresetDefault(&config);
-        swkbdConfigSetHeaderText(&config, "Nombre del entrenador");
+        swkbdConfigSetHeaderText(&config, title.c_str());
         swkbdConfigSetInitialText(&config, initial.c_str());
         swkbdConfigSetStringLenMax(&config, static_cast<u32>(maxLength));
         char output[256]{};
@@ -482,5 +567,11 @@ namespace pksm::switchui
         }
         result = output;
         return true;
+    }
+
+    bool SwitchUi::editTrainerName(
+        const std::string& initial, std::string& result, size_t maxLength)
+    {
+        return editText("Nombre del entrenador", initial, result, maxLength);
     }
 }
