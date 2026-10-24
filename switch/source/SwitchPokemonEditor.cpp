@@ -1016,14 +1016,31 @@ namespace pksm::switchui
                 }
                 error = "Exporta con Y o descarta con X antes de salir.";
             }
-            else if (action == Action::Up && !fields.empty())
+            else if ((action == Action::Up || action == Action::Down ||
+                         action == Action::Left || action == Action::Right) &&
+                     !fields.empty())
             {
-                selected = selected == 0 ? fields.size() - 1 : selected - 1;
-                error.clear();
-            }
-            else if (action == Action::Down && !fields.empty())
-            {
-                selected = (selected + 1) % fields.size();
+                const size_t columns = party ? 3 : 6;
+                const size_t rows = (fields.size() + columns - 1) / columns;
+                const size_t row = selected / columns;
+                const size_t column = selected % columns;
+                const size_t rowStart = row * columns;
+                const size_t rowLength = std::min(columns, fields.size() - rowStart);
+                if (action == Action::Left)
+                {
+                    selected = rowStart + (column == 0 ? rowLength - 1 : column - 1);
+                }
+                else if (action == Action::Right)
+                {
+                    selected = rowStart + (column + 1) % rowLength;
+                }
+                else
+                {
+                    const size_t nextRow = action == Action::Up
+                        ? (row == 0 ? rows - 1 : row - 1)
+                        : (row + 1) % rows;
+                    selected = std::min(nextRow * columns + column, fields.size() - 1);
+                }
                 error.clear();
             }
             else if (action == Action::PreviousPage)
