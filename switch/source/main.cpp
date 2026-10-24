@@ -23,6 +23,7 @@
  */
 
 #include "sav/Sav.hpp"
+#include "SwitchPokemonEditor.hpp"
 #include "SwitchSaveFiles.hpp"
 #include "SwitchUi.hpp"
 #include <switch.h>
@@ -345,6 +346,7 @@ int main(int argc, char* argv[])
                     "Entrenador: " + save.otName() + "    TID/SID: " +
                     std::to_string(save.displayTID()) + "/" +
                     std::to_string(save.displaySID());
+                bool dirty = false;
                 bool finish = false;
                 size_t selectedMenuOption = 0;
                 std::string menuMessage;
@@ -353,12 +355,43 @@ int main(int argc, char* argv[])
                     const auto menuAction = ui.pollAction();
                     if (menuAction == pksm::switchui::Action::Quit)
                     {
-                        finish = true;
-                        quitRequested = true;
+                        if (dirty)
+                        {
+                            menuMessage = "Exporta con Y o descarta con X antes de salir.";
+                        }
+                        else
+                        {
+                            finish = true;
+                            quitRequested = true;
+                        }
                     }
                     else if (menuAction == pksm::switchui::Action::Back)
                     {
+                        if (dirty)
+                        {
+                            menuMessage = "Exporta con Y o descarta con X antes de volver.";
+                        }
+                        else
+                        {
+                            finish = true;
+                        }
+                    }
+                    else if (menuAction == pksm::switchui::Action::Discard)
+                    {
                         finish = true;
+                    }
+                    else if (menuAction == pksm::switchui::Action::Save && dirty)
+                    {
+                        std::string outputPath;
+                        if (exportSave(loaded, outputPath, error))
+                        {
+                            dirty = false;
+                            menuMessage = "Exportado a " + outputPath;
+                        }
+                        else
+                        {
+                            menuMessage = error;
+                        }
                     }
                     else if (menuAction == pksm::switchui::Action::Up)
                     {
@@ -393,13 +426,37 @@ int main(int argc, char* argv[])
                     {
                         continue;
                     }
-                    if (selectedMenuOption != 1)
+                    if (selectedMenuOption == 1)
+                    {
+                        const auto result = pksm::switchui::runPokemonEditor(save, ui, gameName,
+                            files[selected], dirty, error, [&](std::string& exportError)
+                            {
+                                std::string outputPath;
+                                if (!exportSave(loaded, outputPath, exportError))
+                                {
+                                    return false;
+                                }
+                                exportError = "Exportado a " + outputPath;
+                                return true;
+                            });
+                        if (result == pksm::switchui::PokemonEditorResult::Discard)
+                        {
+                            finish = true;
+                        }
+                        else if (result == pksm::switchui::PokemonEditorResult::Quit)
+                        {
+                            finish = true;
+                            quitRequested = true;
+                        }
+                        menuMessage.clear();
+                        continue;
+                    }
+                    if (selectedMenuOption != 5)
                     {
                         menuMessage = "Esta opción todavía no está disponible.";
                         continue;
                     }
 
-                    bool dirty = false;
                     bool finishEditing = false;
                     size_t selectedField = 0;
                     while (appletMainLoop() && !finishEditing && !quitRequested)
