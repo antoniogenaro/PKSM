@@ -67,6 +67,23 @@ namespace
                version == pksm::GameVersion::FR || version == pksm::GameVersion::LG;
     }
 
+    const char* gameName(pksm::GameVersion version)
+    {
+        switch (version)
+        {
+            case pksm::GameVersion::SW:
+                return "Pokemon Espada";
+            case pksm::GameVersion::SH:
+                return "Pokemon Escudo";
+            case pksm::GameVersion::FR:
+                return "Pokemon Rojo Fuego";
+            case pksm::GameVersion::LG:
+                return "Pokemon Verde Hoja";
+            default:
+                return "Juego no identificado";
+        }
+    }
+
     bool appendSaveFiles(const std::string& directoryPath, const std::string& relativeDirectory,
         std::vector<std::string>& files, std::string& error, size_t depth)
     {
@@ -301,6 +318,17 @@ int main(int argc, char* argv[])
     }
     std::vector<std::string> files =
         storageError.empty() ? listSaveFiles(storageError) : std::vector<std::string>{};
+    std::vector<std::string> gameNames;
+    gameNames.reserve(files.size());
+    for (const auto& file : files)
+    {
+        LoadedSave identified;
+        std::string identifyError;
+        const std::string path = std::string(SAVE_DIRECTORY) + "/" + file;
+        gameNames.emplace_back(loadSave(path, identified, identifyError)
+                ? gameName(identified.save->version())
+                : "Juego no identificado");
+    }
     size_t selected = 0;
     bool quitRequested = false;
 
@@ -320,7 +348,7 @@ int main(int argc, char* argv[])
             selected = selected == 0 ? files.size() - 1 : selected - 1;
         }
 
-        ui.drawFiles(files, selected, storageError);
+        ui.drawFiles(files, gameNames, selected, storageError);
         SDL_Delay(16);
 
         if (!files.empty() && action == pksm::switchui::Action::Confirm)
@@ -341,10 +369,7 @@ int main(int argc, char* argv[])
                     version == pksm::GameVersion::FR || version == pksm::GameVersion::LG
                         ? (save.language() == pksm::Language::JPN ? 5 : 7)
                         : 12;
-                const char* gameName =
-                    version == pksm::GameVersion::SW ? "Pokemon Sword" :
-                    version == pksm::GameVersion::SH ? "Pokemon Shield" :
-                                                       "Pokemon Rojo Fuego / Verde Hoja";
+                const char* selectedGameName = gameName(version);
                 const std::string details =
                     "Entrenador: " + save.otName() + "    TID/SID: " +
                     std::to_string(save.displayTID()) + "/" +
@@ -422,7 +447,7 @@ int main(int argc, char* argv[])
                     }
 
                     ui.drawGameMenu(
-                        gameName, files[selected], details, selectedMenuOption, menuMessage);
+                        selectedGameName, files[selected], details, selectedMenuOption, menuMessage);
                     SDL_Delay(16);
 
                     if (menuAction != pksm::switchui::Action::Confirm)
@@ -431,8 +456,9 @@ int main(int argc, char* argv[])
                     }
                     if (selectedMenuOption == 1)
                     {
-                        const auto result = pksm::switchui::runPokemonEditor(save, ui, gameName,
-                            files[selected], dirty, error, [&](std::string& exportError)
+                        const auto result = pksm::switchui::runPokemonEditor(
+                            save, ui, selectedGameName, files[selected], dirty, error,
+                            [&](std::string& exportError)
                             {
                                 std::string outputPath;
                                 if (!exportSave(loaded, outputPath, exportError))
@@ -643,7 +669,8 @@ int main(int argc, char* argv[])
                         fields.push_back({"Horas jugadas", std::to_string(save.playedHours())});
                         fields.push_back({"Minutos jugados", std::to_string(save.playedMinutes())});
                         fields.push_back({"Segundos jugados", std::to_string(save.playedSeconds())});
-                        ui.drawTrainer(gameName, files[selected], fields, selectedField, dirty, error);
+                        ui.drawTrainer(
+                            selectedGameName, files[selected], fields, selectedField, dirty, error);
                         SDL_Delay(16);
                     }
                     if (finish || quitRequested)
@@ -656,7 +683,7 @@ int main(int argc, char* argv[])
             {
                 while (appletMainLoop())
                 {
-                    ui.drawFiles(files, selected, error);
+                    ui.drawFiles(files, gameNames, selected, error);
                     const auto loadAction = ui.pollAction();
                     if (loadAction == pksm::switchui::Action::Confirm ||
                         loadAction == pksm::switchui::Action::Back)
