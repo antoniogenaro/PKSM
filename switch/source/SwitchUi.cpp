@@ -16,6 +16,7 @@ namespace pksm::switchui
         constexpr int SCREEN_HEIGHT = 720;
         constexpr SDL_Color BACKGROUND{20, 27, 43, 255};
         constexpr SDL_Color PANEL{31, 42, 63, 255};
+        constexpr SDL_Color TABLE_HEADER{25, 34, 52, 255};
         constexpr SDL_Color PANEL_BORDER{61, 82, 112, 255};
         constexpr SDL_Color ROW_ALT{31, 42, 63, 255};
         constexpr SDL_Color ROW_DIVIDER{61, 82, 112, 255};
@@ -23,6 +24,7 @@ namespace pksm::switchui
         constexpr SDL_Color MUTED{166, 181, 202, 255};
         constexpr SDL_Color ACCENT{91, 190, 170, 255};
         constexpr SDL_Color SELECTED{50, 91, 111, 255};
+        constexpr SDL_Color YELLOW{255, 220, 92, 255};
         constexpr SDL_Color ERROR{255, 163, 145, 255};
         constexpr char FONT_PATH[] = "romfs:/fonts/Roboto.ttf";
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
@@ -972,6 +974,133 @@ namespace pksm::switchui
             drawText(std::to_string(index + 1) + " / " + std::to_string(options.size()),
                 SCREEN_WIDTH - 170, 556, 24, MUTED);
             drawFooter("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+            SDL_RenderPresent(renderer_);
+            SDL_Delay(16);
+        }
+        return false;
+    }
+
+    bool SwitchUi::selectNature(
+        const std::vector<std::string>& natures, size_t current, size_t& selected)
+    {
+        static constexpr size_t natureGrid[5][5] = {
+            {0, 1, 2, 3, 4},
+            {5, 6, 7, 8, 9},
+            {10, 11, 12, 13, 14},
+            {15, 16, 17, 18, 19},
+            {20, 21, 22, 23, 24},
+        };
+        static constexpr const char* columnLabels[] = {
+            "Neutra", "-Ataque", "-Defensa", "-Velocidad", "-At. Esp.", "-Def. Esp."};
+        static constexpr const char* rowLabels[] = {
+            "+Ataque", "+Defensa", "+Velocidad", "+At. Esp.", "+Def. Esp."};
+        if (natures.size() != 25)
+        {
+            return false;
+        }
+
+        size_t row = 0;
+        size_t column = 0;
+        bool found = false;
+        for (size_t y = 0; y < 5 && !found; ++y)
+        {
+            for (size_t x = 0; x < 5; ++x)
+            {
+                if (natureGrid[y][x] == current)
+                {
+                    row = y;
+                    column = x;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found)
+        {
+            row = 0;
+            column = 0;
+        }
+
+        constexpr int panelX = 52;
+        constexpr int panelY = 151;
+        constexpr int panelWidth = SCREEN_WIDTH - 104;
+        constexpr int panelHeight = 444;
+        constexpr int labelWidth = 180;
+        constexpr int cellWidth = (panelWidth - 24 - labelWidth) / 5;
+        constexpr int headerHeight = 58;
+        constexpr int cellHeight = 60;
+        while (appletMainLoop())
+        {
+            const Action action = pollAction();
+            if (action == Action::Confirm)
+            {
+                selected = natureGrid[row][column];
+                return true;
+            }
+            if (action == Action::Back || action == Action::Quit)
+            {
+                return false;
+            }
+            if (action == Action::Up && row > 0)
+            {
+                --row;
+            }
+            else if (action == Action::Down && row < 4)
+            {
+                ++row;
+            }
+            else if (action == Action::Left && column > 0)
+            {
+                --column;
+            }
+            else if (action == Action::Right && column < 4)
+            {
+                ++column;
+            }
+
+            SDL_SetRenderDrawColor(
+                renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
+            SDL_RenderClear(renderer_);
+            drawHeader("Naturaleza", "Selecciona una naturaleza según sus estadísticas");
+            const SDL_Rect panel{panelX, panelY, panelWidth, panelHeight};
+            drawRect(panel, PANEL, PANEL_BORDER);
+
+            const int gridX = panelX + 12;
+            const int gridY = panelY + 14;
+            const SDL_Rect corner{gridX, gridY, labelWidth, headerHeight};
+            drawRect(corner, TABLE_HEADER, PANEL_BORDER);
+            drawText(columnLabels[0], corner.x + 8, corner.y + 17, 24, YELLOW,
+                corner.w - 16);
+            for (size_t x = 0; x < 5; ++x)
+            {
+                const SDL_Rect header{gridX + labelWidth + static_cast<int>(x) * cellWidth,
+                    gridY, cellWidth, headerHeight};
+                drawRect(header, TABLE_HEADER, PANEL_BORDER);
+                drawText(columnLabels[x + 1], header.x + 4, header.y + 17, 24, TEXT,
+                    header.w - 8);
+            }
+            for (size_t y = 0; y < 5; ++y)
+            {
+                const int cellY = gridY + headerHeight + static_cast<int>(y) * cellHeight;
+                const SDL_Rect rowHeader{gridX, cellY, labelWidth, cellHeight};
+                drawRect(rowHeader, TABLE_HEADER, PANEL_BORDER);
+                drawText(rowLabels[y], rowHeader.x + 8, rowHeader.y + 18, 24, TEXT,
+                    rowHeader.w - 16);
+                for (size_t x = 0; x < 5; ++x)
+                {
+                    const SDL_Rect cell{
+                        gridX + labelWidth + static_cast<int>(x) * cellWidth, cellY, cellWidth,
+                        cellHeight};
+                    const size_t natureIndex = natureGrid[y][x];
+                    const bool isSelected = row == y && column == x;
+                    drawRect(cell, isSelected ? SELECTED : PANEL,
+                        isSelected ? ACCENT : PANEL_BORDER);
+                    const SDL_Color color = natureIndex % 6 == 0 ? YELLOW : TEXT;
+                    drawText(natures[natureIndex], cell.x + 5, cell.y + 18, 24, color,
+                        cell.w - 10);
+                }
+            }
+            drawFooter("Flechas: mover    A: seleccionar    B: volver");
             SDL_RenderPresent(renderer_);
             SDL_Delay(16);
         }
