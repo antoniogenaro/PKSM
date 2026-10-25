@@ -61,6 +61,8 @@ namespace pksm::switchui
             size_t maxLength);
         bool selectOption(const std::string& title, const std::vector<std::string>& options,
             size_t current, size_t& selected);
+        bool selectNature(const std::vector<std::string>& natures, size_t current,
+            size_t& selected);
         bool editTrainerName(
             const std::string& initial, std::string& result, size_t maxLength = 12);
 
