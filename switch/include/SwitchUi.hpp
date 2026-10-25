@@ -98,7 +98,9 @@ namespace pksm::switchui
         TTF_Font* headingFont_ = nullptr;
         TTF_Font* bodyFont_ = nullptr;
         SDL_Texture* pokemonSpritesheet_ = nullptr;
+        SDL_Texture* ballSpritesheet_ = nullptr;
         std::vector<PokemonSprite> pokemonSprites_;
+        std::vector<PokemonSprite> ballSprites_;
         std::unordered_map<std::string, SDL_Texture*> textCache_;
     };
 }

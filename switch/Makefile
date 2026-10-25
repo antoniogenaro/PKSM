@@ -77,6 +77,9 @@ CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
 export PKM_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_SHA256	:=	c54b464de9e56f5b04c7d679bdf0b9b6c84dbea5555bb7ae62862b1862081032
+export BALL_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/types_spritesheet.t3x
+export BALL_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/types_spritesheet.t3x
+export BALL_SPRITESHEET_SHA256	:=	9fbaa10fe205ce57cf8732c37f72420204f906d75c65ffaee8bf615a08e48685
 
 .PHONY: all clean $(BUILD)
 
@@ -97,7 +100,7 @@ all: $(OUTPUT).nro
 
 $(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg $(ROMFS_PATH)/i18n \
 		$(ROMFS_PATH)/personal $(ROMFS_PATH)/fonts/Roboto.ttf \
-		$(ROMFS_PATH)/fonts/OFL-Roboto.txt $(PKM_SPRITESHEET)
+		$(ROMFS_PATH)/fonts/OFL-Roboto.txt $(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
 
 $(ROMFS_PATH)/i18n: $(CORE_STRING_FILES)
 	@mkdir -p $@
@@ -119,6 +122,12 @@ $(PKM_SPRITESHEET):
 	@mkdir -p $(dir $@)
 	@curl --fail --location --silent --show-error "$(PKM_SPRITESHEET_URL)" --output "$@.tmp"
 	@echo "$(PKM_SPRITESHEET_SHA256)  $@.tmp" | sha256sum --check
+	@mv "$@.tmp" "$@"
+
+$(BALL_SPRITESHEET):
+	@mkdir -p $(dir $@)
+	@curl --fail --location --silent --show-error "$(BALL_SPRITESHEET_URL)" --output "$@.tmp"
+	@echo "$(BALL_SPRITESHEET_SHA256)  $@.tmp" | sha256sum --check
 	@mv "$@.tmp" "$@"
 
 $(OFILES): | $(DEPSDIR)

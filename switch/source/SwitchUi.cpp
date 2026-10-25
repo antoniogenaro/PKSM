@@ -2,8 +2,6 @@
 
 #include <switch.h>
 #include <algorithm>
-#include <array>
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -30,6 +28,9 @@ namespace pksm::switchui
         constexpr SDL_Color ERROR{255, 163, 145, 255};
         constexpr char FONT_PATH[] = "romfs:/fonts/Roboto.ttf";
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
+        constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
+        constexpr size_t BALL_SPRITE_BASE = 144;
+        constexpr size_t MAX_BALL_SPRITE = 25;
 
         bool readU16(const std::vector<u8>& data, size_t offset, u16& result)
         {
@@ -173,6 +174,10 @@ namespace pksm::switchui
         {
             SDL_DestroyTexture(pokemonSpritesheet_);
         }
+        if (ballSpritesheet_)
+        {
+            SDL_DestroyTexture(ballSpritesheet_);
+        }
         for (const auto& entry : textCache_)
         {
             SDL_DestroyTexture(entry.second);
@@ -241,8 +246,15 @@ namespace pksm::switchui
         TTF_SetFontHinting(headingFont_, TTF_HINTING_NORMAL);
         TTF_SetFontHinting(bodyFont_, TTF_HINTING_NORMAL);
         if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, "Pokémon", pokemonSpritesheet_,
-                pokemonSprites_, error))
+                pokemonSprites_, error) ||
+            !loadSpriteSheet(BALL_SPRITESHEET_PATH, "Poké Ball", ballSpritesheet_, ballSprites_,
+                error))
         {
+            return false;
+        }
+        if (ballSprites_.size() <= BALL_SPRITE_BASE + MAX_BALL_SPRITE)
+        {
+            error = "El spritesheet de Poké Ball no contiene todos los iconos.";
             return false;
         }
         return true;
@@ -315,11 +327,20 @@ namespace pksm::switchui
                 return false;
             }
 
+            const auto toPixelX = [width](u16 coordinate) {
+                return static_cast<int>(static_cast<size_t>(coordinate) * width / 1024);
+            };
+            const auto toPixelY = [height](u16 coordinate) {
+                return static_cast<int>(static_cast<size_t>(coordinate) * height / 1024);
+            };
             const bool rotated = top < bottom;
-            const int sourceX = rotated ? top : left;
-            const int sourceY = static_cast<int>(height) - (rotated ? right : top);
-            const int sourceWidth = rotated ? bottom - top : right - left;
-            const int sourceHeight = rotated ? right - left : top - bottom;
+            const int sourceX = rotated ? toPixelX(top) : toPixelX(left);
+            const int sourceY =
+                static_cast<int>(height) - toPixelY(rotated ? right : top);
+            const int sourceWidth =
+                rotated ? toPixelX(bottom) - toPixelX(top) : toPixelX(right) - toPixelX(left);
+            const int sourceHeight =
+                rotated ? toPixelY(right) - toPixelY(left) : toPixelY(top) - toPixelY(bottom);
             if (sourceX < 0 || sourceY < 0 || sourceWidth <= 0 || sourceHeight <= 0 ||
                 static_cast<size_t>(sourceX + sourceWidth) > width ||
                 static_cast<size_t>(sourceY + sourceHeight) > height)
@@ -397,57 +418,27 @@ namespace pksm::switchui
 
     void SwitchUi::drawBallSprite(size_t index, const SDL_Rect& destination)
     {
-        static constexpr std::array<SDL_Color, 27> topColors = {{
-            {190, 190, 190, 255}, {174, 70, 208, 255}, {234, 190, 35, 255},
-            {54, 125, 224, 255}, {225, 53, 52, 255}, {76, 170, 83, 255},
-            {56, 156, 112, 255}, {69, 171, 221, 255}, {104, 181, 77, 255},
-            {216, 76, 56, 255}, {226, 143, 49, 255}, {83, 79, 88, 255},
-            {229, 229, 229, 255}, {93, 79, 61, 255}, {236, 123, 168, 255},
-            {79, 174, 232, 255}, {235, 108, 167, 255}, {224, 88, 56, 255},
-            {192, 63, 63, 255}, {55, 144, 198, 255}, {91, 105, 120, 255},
-            {231, 119, 172, 255}, {89, 174, 91, 255}, {110, 102, 177, 255},
-            {220, 84, 76, 255}, {118, 95, 196, 255}, {89, 143, 207, 255},
-        }};
-        constexpr SDL_Color LOWER{238, 238, 238, 255};
-        constexpr SDL_Color OUTLINE{27, 31, 40, 255};
-        constexpr SDL_Color BUTTON{248, 248, 248, 255};
-        const int radius = std::max(2, std::min(destination.w, destination.h) / 2 - 1);
-        const int centerX = destination.x + destination.w / 2;
-        const int centerY = destination.y + destination.h / 2;
-        const SDL_Color upper = topColors[std::min(index, topColors.size() - 1)];
-        const int bandHalf = std::max(1, radius / 9);
-        for (int y = -radius; y <= radius; ++y)
+        if (!ballSpritesheet_)
         {
-            const int span = static_cast<int>(
-                std::sqrt(static_cast<double>(radius * radius - y * y)));
-            const SDL_Color fill = std::abs(y) <= bandHalf
-                ? OUTLINE
-                : (y < 0 ? upper : LOWER);
-            SDL_SetRenderDrawColor(renderer_, fill.r, fill.g, fill.b, fill.a);
-            SDL_RenderDrawLine(
-                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
-            SDL_SetRenderDrawColor(renderer_, OUTLINE.r, OUTLINE.g, OUTLINE.b, OUTLINE.a);
-            SDL_RenderDrawPoint(renderer_, centerX - span, centerY + y);
-            SDL_RenderDrawPoint(renderer_, centerX + span, centerY + y);
+            return;
         }
-
-        const int buttonRadius = std::max(2, radius / 3);
-        for (int y = -buttonRadius; y <= buttonRadius; ++y)
+        const size_t spriteIndex = BALL_SPRITE_BASE + std::min(index, MAX_BALL_SPRITE);
+        if (spriteIndex >= ballSprites_.size())
         {
-            const int span = static_cast<int>(std::sqrt(
-                static_cast<double>(buttonRadius * buttonRadius - y * y)));
-            SDL_SetRenderDrawColor(renderer_, OUTLINE.r, OUTLINE.g, OUTLINE.b, OUTLINE.a);
-            SDL_RenderDrawLine(
-                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
+            return;
         }
-        const int innerRadius = std::max(1, buttonRadius - 2);
-        for (int y = -innerRadius; y <= innerRadius; ++y)
+        const PokemonSprite& sprite = ballSprites_[spriteIndex];
+        if (sprite.rotated)
         {
-            const int span = static_cast<int>(
-                std::sqrt(static_cast<double>(innerRadius * innerRadius - y * y)));
-            SDL_SetRenderDrawColor(renderer_, BUTTON.r, BUTTON.g, BUTTON.b, BUTTON.a);
-            SDL_RenderDrawLine(
-                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
+            const SDL_Rect rotatedDestination{destination.x + (destination.w - destination.h) / 2,
+                destination.y + (destination.h - destination.w) / 2, destination.h,
+                destination.w};
+            SDL_RenderCopyEx(renderer_, ballSpritesheet_, &sprite.source, &rotatedDestination,
+                90.0, nullptr, SDL_FLIP_NONE);
+        }
+        else
+        {
+            SDL_RenderCopy(renderer_, ballSpritesheet_, &sprite.source, &destination);
         }
     }
 
