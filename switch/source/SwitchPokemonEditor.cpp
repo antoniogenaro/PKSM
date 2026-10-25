@@ -418,17 +418,22 @@ namespace pksm::switchui
                     }
                     if (direction == 0)
                     {
-                        pksm::Nature next = pokemon.nature();
-                        if (!selectValue(ui, "Naturaleza", natures, pokemon.nature(),
-                                [&pokemon](pksm::Nature value)
-                                {
-                                    return value.localize(pokemon.language());
-                                },
-                                next))
+                        std::vector<std::string> natureNames;
+                        natureNames.reserve(natures.size());
+                        for (const pksm::Nature nature : natures)
+                        {
+                            natureNames.push_back(nature.localize(pokemon.language()));
+                        }
+                        size_t selected = static_cast<unsigned int>(pokemon.nature());
+                        if (!ui.selectNature(natureNames, selected, selected))
                         {
                             return false;
                         }
-                        pokemon.nature(next);
+                        if (selected == static_cast<unsigned int>(pokemon.nature()))
+                        {
+                            return false;
+                        }
+                        pokemon.nature(pksm::Nature{static_cast<u8>(selected)});
                         return true;
                     }
                     unsigned int value = static_cast<unsigned int>(pokemon.nature());
