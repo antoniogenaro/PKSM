@@ -2,6 +2,8 @@
 
 #include <switch.h>
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -238,33 +240,35 @@ namespace pksm::switchui
         }
         TTF_SetFontHinting(headingFont_, TTF_HINTING_NORMAL);
         TTF_SetFontHinting(bodyFont_, TTF_HINTING_NORMAL);
-        if (!loadPokemonSprites(error))
+        if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, "Pokémon", pokemonSpritesheet_,
+                pokemonSprites_, error))
         {
             return false;
         }
         return true;
     }
 
-    bool SwitchUi::loadPokemonSprites(std::string& error)
+    bool SwitchUi::loadSpriteSheet(const char* path, const std::string& name,
+        SDL_Texture*& sheetTexture, std::vector<PokemonSprite>& sheetSprites, std::string& error)
     {
-        std::ifstream file(POKEMON_SPRITESHEET_PATH, std::ios::binary);
+        std::ifstream file(path, std::ios::binary);
         if (!file)
         {
-            error = "No se pudo abrir el spritesheet de Pokémon.";
+            error = "No se pudo abrir el spritesheet de " + name + ".";
             return false;
         }
         const std::vector<u8> data(
             (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         if (file.bad() || data.size() < 5)
         {
-            error = "El spritesheet de Pokémon está incompleto.";
+            error = "El spritesheet de " + name + " está incompleto.";
             return false;
         }
 
         u16 spriteCount = 0;
         if (!readU16(data, 0, spriteCount) || spriteCount == 0 || spriteCount > 2048)
         {
-            error = "El spritesheet de Pokémon no tiene un encabezado válido.";
+            error = "El spritesheet de " + name + " no tiene un encabezado válido.";
             return false;
         }
         const u8 dimensions = data[2];
@@ -272,14 +276,14 @@ namespace pksm::switchui
         const size_t height = size_t{1} << (((dimensions >> 3) & 0x07) + 3);
         if ((dimensions & 0x40) != 0 || data[3] != 0 || data[4] != 0)
         {
-            error = "El formato del spritesheet de Pokémon no es compatible.";
+            error = "El formato del spritesheet de " + name + " no es compatible.";
             return false;
         }
 
         const size_t tableOffset = 5;
         if (spriteCount > (data.size() - tableOffset) / 12)
         {
-            error = "La tabla de sprites de Pokémon está incompleta.";
+            error = "La tabla de sprites de " + name + " está incompleta.";
             return false;
         }
         const size_t textureOffset = tableOffset + static_cast<size_t>(spriteCount) * 12;
@@ -287,7 +291,7 @@ namespace pksm::switchui
         std::vector<u8> textureData;
         if (!decodeLz11(data, textureOffset, textureSize, textureData))
         {
-            error = "No se pudo descomprimir el spritesheet de Pokémon.";
+            error = "No se pudo descomprimir el spritesheet de " + name + ".";
             return false;
         }
 
@@ -307,7 +311,7 @@ namespace pksm::switchui
                 !readU16(data, offset + 4, left) || !readU16(data, offset + 6, top) ||
                 !readU16(data, offset + 8, right) || !readU16(data, offset + 10, bottom))
             {
-                error = "La tabla de sprites de Pokémon está incompleta.";
+                error = "La tabla de sprites de " + name + " está incompleta.";
                 return false;
             }
 
@@ -320,7 +324,7 @@ namespace pksm::switchui
                 static_cast<size_t>(sourceX + sourceWidth) > width ||
                 static_cast<size_t>(sourceY + sourceHeight) > height)
             {
-                error = "La tabla de sprites de Pokémon contiene coordenadas inválidas.";
+                error = "La tabla de sprites de " + name + " contiene coordenadas inválidas.";
                 return false;
             }
             sprites.push_back({{sourceX, sourceY, sourceWidth, sourceHeight}, spriteWidth,
@@ -355,18 +359,18 @@ namespace pksm::switchui
                 static_cast<int>(width), static_cast<int>(height));
         if (!texture)
         {
-            error = std::string("No se pudo crear la textura de Pokémon: ") + SDL_GetError();
+            error = "No se pudo crear la textura de " + name + ": " + SDL_GetError();
             return false;
         }
         if (SDL_UpdateTexture(texture, nullptr, pixels.data(), static_cast<int>(width * 4)) != 0 ||
             SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) != 0)
         {
-            error = std::string("No se pudo cargar la textura de Pokémon: ") + SDL_GetError();
+            error = "No se pudo cargar la textura de " + name + ": " + SDL_GetError();
             SDL_DestroyTexture(texture);
             return false;
         }
-        pokemonSpritesheet_ = texture;
-        pokemonSprites_ = std::move(sprites);
+        sheetTexture = texture;
+        sheetSprites = std::move(sprites);
         return true;
     }
 
@@ -388,6 +392,62 @@ namespace pksm::switchui
         else
         {
             SDL_RenderCopy(renderer_, pokemonSpritesheet_, &sprite.source, &destination);
+        }
+    }
+
+    void SwitchUi::drawBallSprite(size_t index, const SDL_Rect& destination)
+    {
+        static constexpr std::array<SDL_Color, 27> topColors = {{
+            {190, 190, 190, 255}, {174, 70, 208, 255}, {234, 190, 35, 255},
+            {54, 125, 224, 255}, {225, 53, 52, 255}, {76, 170, 83, 255},
+            {56, 156, 112, 255}, {69, 171, 221, 255}, {104, 181, 77, 255},
+            {216, 76, 56, 255}, {226, 143, 49, 255}, {83, 79, 88, 255},
+            {229, 229, 229, 255}, {93, 79, 61, 255}, {236, 123, 168, 255},
+            {79, 174, 232, 255}, {235, 108, 167, 255}, {224, 88, 56, 255},
+            {192, 63, 63, 255}, {55, 144, 198, 255}, {91, 105, 120, 255},
+            {231, 119, 172, 255}, {89, 174, 91, 255}, {110, 102, 177, 255},
+            {220, 84, 76, 255}, {118, 95, 196, 255}, {89, 143, 207, 255},
+        }};
+        constexpr SDL_Color LOWER{238, 238, 238, 255};
+        constexpr SDL_Color OUTLINE{27, 31, 40, 255};
+        constexpr SDL_Color BUTTON{248, 248, 248, 255};
+        const int radius = std::max(2, std::min(destination.w, destination.h) / 2 - 1);
+        const int centerX = destination.x + destination.w / 2;
+        const int centerY = destination.y + destination.h / 2;
+        const SDL_Color upper = topColors[std::min(index, topColors.size() - 1)];
+        const int bandHalf = std::max(1, radius / 9);
+        for (int y = -radius; y <= radius; ++y)
+        {
+            const int span = static_cast<int>(
+                std::sqrt(static_cast<double>(radius * radius - y * y)));
+            const SDL_Color fill = std::abs(y) <= bandHalf
+                ? OUTLINE
+                : (y < 0 ? upper : LOWER);
+            SDL_SetRenderDrawColor(renderer_, fill.r, fill.g, fill.b, fill.a);
+            SDL_RenderDrawLine(
+                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
+            SDL_SetRenderDrawColor(renderer_, OUTLINE.r, OUTLINE.g, OUTLINE.b, OUTLINE.a);
+            SDL_RenderDrawPoint(renderer_, centerX - span, centerY + y);
+            SDL_RenderDrawPoint(renderer_, centerX + span, centerY + y);
+        }
+
+        const int buttonRadius = std::max(2, radius / 3);
+        for (int y = -buttonRadius; y <= buttonRadius; ++y)
+        {
+            const int span = static_cast<int>(std::sqrt(
+                static_cast<double>(buttonRadius * buttonRadius - y * y)));
+            SDL_SetRenderDrawColor(renderer_, OUTLINE.r, OUTLINE.g, OUTLINE.b, OUTLINE.a);
+            SDL_RenderDrawLine(
+                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
+        }
+        const int innerRadius = std::max(1, buttonRadius - 2);
+        for (int y = -innerRadius; y <= innerRadius; ++y)
+        {
+            const int span = static_cast<int>(
+                std::sqrt(static_cast<double>(innerRadius * innerRadius - y * y)));
+            SDL_SetRenderDrawColor(renderer_, BUTTON.r, BUTTON.g, BUTTON.b, BUTTON.a);
+            SDL_RenderDrawLine(
+                renderer_, centerX - span, centerY + y, centerX + span, centerY + y);
         }
     }
 
@@ -511,6 +571,15 @@ namespace pksm::switchui
     void SwitchUi::drawFieldValue(
         const Field& field, int x, int y, int fontSize, SDL_Color color, int maxWidth)
     {
+        if (field.hasBallSprite)
+        {
+            const int size = fontSize + 8;
+            drawBallSprite(field.ballSpriteIndex, {x, y - 1, size, size});
+            const int textX = x + size + 10;
+            drawText(field.value, textX, y, fontSize, color,
+                maxWidth > 0 ? std::max(0, maxWidth - size - 10) : 0);
+            return;
+        }
         if (!field.checkbox)
         {
             drawText(field.value, x, y, fontSize, color, maxWidth);
@@ -742,8 +811,16 @@ namespace pksm::switchui
                 summaryPanel.w - 40);
             drawFieldValue(fields[selected], summaryPanel.x + 20, 270, 36, TEXT,
                 summaryPanel.w - 40);
-            drawPokemonSprite(fields[selected].spriteIndex,
-                {summaryPanel.x + 76, 348, 160, 140});
+            if (fields[selected].hasBallSprite)
+            {
+                drawBallSprite(fields[selected].ballSpriteIndex,
+                    {summaryPanel.x + 126, 385, 72, 72});
+            }
+            else
+            {
+                drawPokemonSprite(fields[selected].spriteIndex,
+                    {summaryPanel.x + 76, 348, 160, 140});
+            }
         }
         drawText("A: abrir editor", summaryPanel.x + 20, 522, 24, MUTED,
             summaryPanel.w - 40);
@@ -899,7 +976,8 @@ namespace pksm::switchui
     }
 
     bool SwitchUi::selectOption(const std::string& title,
-        const std::vector<std::string>& options, size_t current, size_t& selected)
+        const std::vector<std::string>& options, size_t current, size_t& selected,
+        const std::vector<size_t>& spriteIndices)
     {
         if (options.empty())
         {
@@ -969,7 +1047,16 @@ namespace pksm::switchui
                     const SDL_Rect row{68, y - 5, panel.w - 32, 40};
                     drawRect(row, SELECTED, SELECTED);
                 }
-                drawText(options[i], 88, y, 24, i == index ? TEXT : MUTED, panel.w - 72);
+                if (i < spriteIndices.size())
+                {
+                    drawBallSprite(spriteIndices[i], {88, y - 3, 32, 32});
+                    drawText(options[i], 130, y, 24, i == index ? TEXT : MUTED,
+                        panel.w - 114);
+                }
+                else
+                {
+                    drawText(options[i], 88, y, 24, i == index ? TEXT : MUTED, panel.w - 72);
+                }
             }
             drawText(std::to_string(index + 1) + " / " + std::to_string(options.size()),
                 SCREEN_WIDTH - 170, 556, 24, MUTED);
