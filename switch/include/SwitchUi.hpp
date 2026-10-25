@@ -33,6 +33,8 @@ namespace pksm::switchui
         size_t spriteIndex = 0;
         bool checkbox = false;
         bool checked = false;
+        bool hasBallSprite = false;
+        size_t ballSpriteIndex = 0;
     };
 
     class SwitchUi
@@ -60,13 +62,22 @@ namespace pksm::switchui
         bool editText(const std::string& title, const std::string& initial, std::string& result,
             size_t maxLength);
         bool selectOption(const std::string& title, const std::vector<std::string>& options,
-            size_t current, size_t& selected);
+            size_t current, size_t& selected,
+            const std::vector<size_t>& spriteIndices = {});
         bool selectNature(const std::vector<std::string>& natures, size_t current,
             size_t& selected);
         bool editTrainerName(
             const std::string& initial, std::string& result, size_t maxLength = 12);
 
     private:
+        struct PokemonSprite
+        {
+            SDL_Rect source;
+            int width;
+            int height;
+            bool rotated;
+        };
+
         SDL_Texture* textTexture(const std::string& text, int fontSize, SDL_Color color);
         void drawText(
             const std::string& text, int x, int y, int fontSize, SDL_Color color, int maxWidth = 0);
@@ -75,17 +86,11 @@ namespace pksm::switchui
         void drawHeader(const std::string& title, const std::string& subtitle);
         void drawFooter(const std::string& text);
         void drawRect(const SDL_Rect& rect, SDL_Color fill, SDL_Color border);
-        bool loadPokemonSprites(std::string& error);
         void drawPokemonSprite(size_t index, const SDL_Rect& destination);
+        void drawBallSprite(size_t index, const SDL_Rect& destination);
+        bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
+            std::vector<PokemonSprite>& sprites, std::string& error);
         std::string fitText(const std::string& text, int fontSize, int maxWidth);
-
-        struct PokemonSprite
-        {
-            SDL_Rect source;
-            int width;
-            int height;
-            bool rotated;
-        };
 
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
