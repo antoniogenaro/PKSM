@@ -84,6 +84,23 @@ namespace
         }
     }
 
+    size_t gameMascot(pksm::GameVersion version)
+    {
+        switch (version)
+        {
+            case pksm::GameVersion::SW:
+                return 888;
+            case pksm::GameVersion::SH:
+                return 889;
+            case pksm::GameVersion::FR:
+                return 6;
+            case pksm::GameVersion::LG:
+                return 3;
+            default:
+                return 0;
+        }
+    }
+
     bool appendSaveFiles(const std::string& directoryPath, const std::string& relativeDirectory,
         std::vector<std::string>& files, std::string& error, size_t depth)
     {
@@ -320,8 +337,10 @@ int main(int argc, char* argv[])
         storageError.empty() ? listSaveFiles(storageError) : std::vector<std::string>{};
     std::vector<std::string> supportedFiles;
     std::vector<std::string> gameNames;
+    std::vector<size_t> gameMascots;
     supportedFiles.reserve(files.size());
     gameNames.reserve(files.size());
+    gameMascots.reserve(files.size());
     for (const auto& file : files)
     {
         LoadedSave identified;
@@ -331,6 +350,7 @@ int main(int argc, char* argv[])
         {
             supportedFiles.push_back(file);
             gameNames.emplace_back(gameName(identified.save->version()));
+            gameMascots.push_back(gameMascot(identified.save->version()));
         }
     }
     files = std::move(supportedFiles);
@@ -353,7 +373,7 @@ int main(int argc, char* argv[])
             selected = selected == 0 ? files.size() - 1 : selected - 1;
         }
 
-        ui.drawFiles(files, gameNames, selected, storageError);
+        ui.drawFiles(files, gameNames, gameMascots, selected, storageError);
         SDL_Delay(16);
 
         if (!files.empty() && action == pksm::switchui::Action::Confirm)
@@ -688,7 +708,7 @@ int main(int argc, char* argv[])
             {
                 while (appletMainLoop())
                 {
-                    ui.drawFiles(files, gameNames, selected, error);
+                    ui.drawFiles(files, gameNames, gameMascots, selected, error);
                     const auto loadAction = ui.pollAction();
                     if (loadAction == pksm::switchui::Action::Confirm ||
                         loadAction == pksm::switchui::Action::Back)
