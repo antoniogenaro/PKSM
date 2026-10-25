@@ -26,6 +26,7 @@
 #include "SwitchPokemonEditor.hpp"
 #include "SwitchSaveFiles.hpp"
 #include "SwitchUi.hpp"
+#include "utils/i18n.hpp"
 #include <switch.h>
 #include <algorithm>
 #include <cerrno>
@@ -49,6 +50,7 @@ namespace
     {
         ~RomfsCleanup()
         {
+            i18n::exit();
             romfsExit();
         }
     };
@@ -329,6 +331,7 @@ int main(int argc, char* argv[])
             if (loadSave(path, loaded, error))
             {
                 auto& save = *loaded.save;
+                i18n::init(save.language());
                 const pksm::GameVersion version = save.version();
                 const bool hasBattlePoints = version == pksm::GameVersion::SW ||
                                              version == pksm::GameVersion::SH;

@@ -506,6 +506,32 @@ namespace pksm::switchui
         SDL_RenderCopy(renderer_, texture, nullptr, &destination);
     }
 
+    void SwitchUi::drawFieldValue(
+        const Field& field, int x, int y, int fontSize, SDL_Color color, int maxWidth)
+    {
+        if (!field.checkbox)
+        {
+            drawText(field.value, x, y, fontSize, color, maxWidth);
+            return;
+        }
+
+        const int size = fontSize;
+        const int boxY = y + 3;
+        const SDL_Rect box{x, boxY, size, size};
+        drawRect(box, PANEL, field.checked ? ACCENT : PANEL_BORDER);
+        if (field.checked)
+        {
+            SDL_SetRenderDrawColor(renderer_, ACCENT.r, ACCENT.g, ACCENT.b, ACCENT.a);
+            SDL_RenderDrawLine(renderer_, x + size / 5, boxY + size / 2,
+                x + size * 2 / 5, boxY + size * 4 / 5);
+            SDL_RenderDrawLine(renderer_, x + size * 2 / 5, boxY + size * 4 / 5,
+                x + size * 4 / 5, boxY + size / 5);
+        }
+        const int textX = x + size + 10;
+        drawText(field.value, textX, y, fontSize, color,
+            maxWidth > 0 ? std::max(0, maxWidth - size - 10) : 0);
+    }
+
     void SwitchUi::drawHeader(const std::string& title, const std::string& subtitle)
     {
         drawText(title, 52, 32, 36, TEXT);
@@ -712,7 +738,7 @@ namespace pksm::switchui
         {
             drawText(fields[selected].label, summaryPanel.x + 20, 230, 24, MUTED,
                 summaryPanel.w - 40);
-            drawText(fields[selected].value, summaryPanel.x + 20, 270, 36, TEXT,
+            drawFieldValue(fields[selected], summaryPanel.x + 20, 270, 36, TEXT,
                 summaryPanel.w - 40);
             drawPokemonSprite(fields[selected].spriteIndex,
                 {summaryPanel.x + 76, 348, 160, 140});
@@ -762,7 +788,7 @@ namespace pksm::switchui
                 SDL_RenderFillRect(renderer_, &row);
             }
             drawText(fields[i].label, 88, y, 24, i == selected ? TEXT : MUTED, 320);
-            drawText(fields[i].value, 430, y, 24, TEXT, panel.w - 400);
+            drawFieldValue(fields[i], 430, y, 24, TEXT, panel.w - 400);
             SDL_SetRenderDrawColor(
                 renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
             SDL_RenderDrawLine(renderer_, 82, y + 43, panel.x + panel.w - 16, y + 43);
@@ -783,7 +809,15 @@ namespace pksm::switchui
         {
             const int y = 328 + static_cast<int>(i) * 48;
             drawText(summaryLabels[i], 914, y, 24, MUTED, 154);
-            drawText(valueFor(summaryLabels[i]), 1070, y, 24, TEXT, 132);
+            const auto field = std::find_if(fields.begin(), fields.end(),
+                [label = summaryLabels[i]](const Field& candidate)
+                {
+                    return candidate.label == label;
+                });
+            if (field != fields.end())
+            {
+                drawFieldValue(*field, 1070, y, 24, TEXT, 132);
+            }
             SDL_SetRenderDrawColor(
                 renderer_, ROW_DIVIDER.r, ROW_DIVIDER.g, ROW_DIVIDER.b, ROW_DIVIDER.a);
             SDL_RenderDrawLine(renderer_, 914, y + 35, 1204, y + 35);
@@ -860,6 +894,88 @@ namespace pksm::switchui
         }
         result = output;
         return true;
+    }
+
+    bool SwitchUi::selectOption(const std::string& title,
+        const std::vector<std::string>& options, size_t current, size_t& selected)
+    {
+        if (options.empty())
+        {
+            return false;
+        }
+
+        constexpr size_t visibleRows = 9;
+        const size_t lastStart = options.size() > visibleRows ? options.size() - visibleRows : 0;
+        size_t index = std::min(current, options.size() - 1);
+        while (appletMainLoop())
+        {
+            const Action action = pollAction();
+            if (action == Action::Confirm)
+            {
+                selected = index;
+                return true;
+            }
+            if (action == Action::Back || action == Action::Quit)
+            {
+                return false;
+            }
+            if (action == Action::Up)
+            {
+                if (index > 0)
+                {
+                    --index;
+                }
+            }
+            else if (action == Action::Down)
+            {
+                if (index + 1 < options.size())
+                {
+                    ++index;
+                }
+            }
+            else if (action == Action::Left)
+            {
+                index = index > 10 ? index - 10 : 0;
+            }
+            else if (action == Action::Right)
+            {
+                index = std::min(options.size() - 1, index + 10);
+            }
+            else if (action == Action::PreviousPage)
+            {
+                index = index > 100 ? index - 100 : 0;
+            }
+            else if (action == Action::NextPage)
+            {
+                index = std::min(options.size() - 1, index + 100);
+            }
+
+            const size_t first = std::min(
+                index > visibleRows / 2 ? index - visibleRows / 2 : 0, lastStart);
+            SDL_SetRenderDrawColor(
+                renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
+            SDL_RenderClear(renderer_);
+            drawHeader(title, "Selecciona una opción");
+            const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
+            drawRect(panel, PANEL, PANEL_BORDER);
+            const size_t last = std::min(options.size(), first + visibleRows);
+            for (size_t i = first; i < last; ++i)
+            {
+                const int y = 171 + static_cast<int>(i - first) * 44;
+                if (i == index)
+                {
+                    const SDL_Rect row{68, y - 5, panel.w - 32, 40};
+                    drawRect(row, SELECTED, SELECTED);
+                }
+                drawText(options[i], 88, y, 24, i == index ? TEXT : MUTED, panel.w - 72);
+            }
+            drawText(std::to_string(index + 1) + " / " + std::to_string(options.size()),
+                SCREEN_WIDTH - 170, 556, 24, MUTED);
+            drawFooter("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+            SDL_RenderPresent(renderer_);
+            SDL_Delay(16);
+        }
+        return false;
     }
 
     bool SwitchUi::editTrainerName(

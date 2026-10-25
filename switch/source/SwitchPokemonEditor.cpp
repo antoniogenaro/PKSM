@@ -4,6 +4,7 @@
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
 #include "sav/Sav.hpp"
+#include "utils/i18n.hpp"
 #include "utils/utils.hpp"
 #include <algorithm>
 #include <array>
@@ -63,6 +64,9 @@ namespace pksm::switchui
         constexpr std::array<const char*, 6> statNames = {
             "PS", "Ataque", "Defensa", "Ataque Esp.", "Defensa Esp.", "Velocidad"};
         constexpr std::array<const char*, 3> genderNames = {"Macho", "Hembra", "Sin genero"};
+        constexpr std::array<const char*, 12> monthNames = {"Enero", "Febrero", "Marzo",
+            "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre",
+            "Noviembre", "Diciembre"};
 
         std::string numericValue(unsigned int value)
         {
@@ -74,9 +78,12 @@ namespace pksm::switchui
             const pksm::Language language = pokemon.language();
             std::vector<EditorField> fields;
             const auto add = [&fields](FieldKind kind, size_t index, std::string label,
-                               std::string value)
+                               std::string value, bool checkbox = false, bool checked = false)
             {
-                fields.push_back({kind, index, {std::move(label), std::move(value)}});
+                Field display{std::move(label), std::move(value)};
+                display.checkbox = checkbox;
+                display.checked = checked;
+                fields.push_back({kind, index, std::move(display)});
             };
 
             const unsigned int species = static_cast<unsigned int>(pokemon.species());
@@ -94,9 +101,13 @@ namespace pksm::switchui
             const u8 abilitySlot = pokemon.abilityNumber() >> 1;
             add(FieldKind::Ability, 0, "Habilidad",
                 pokemon.ability().localize(language) + " [" + numericValue(abilitySlot) + "]");
-            add(FieldKind::Item, 0, "Objeto", "#" + numericValue(pokemon.heldItem()));
-            add(FieldKind::Shiny, 0, "Variocolor", pokemon.shiny() ? "Sí" : "No");
-            add(FieldKind::Pokerus, 0, "Pokérus", pokemon.pkrsDays() > 0 ? "Sí" : "No");
+            add(FieldKind::Item, 0, "Objeto",
+                i18n::item(language, pokemon.heldItem()) + " (#" +
+                    numericValue(pokemon.heldItem()) + ")");
+            add(FieldKind::Shiny, 0, "Variocolor", pokemon.shiny() ? "Sí" : "No", true,
+                pokemon.shiny());
+            add(FieldKind::Pokerus, 0, "Pokérus", pokemon.pkrsDays() > 0 ? "Sí" : "No", true,
+                pokemon.pkrsDays() > 0);
             add(FieldKind::OriginalTrainer, 0, "Entrenador original", pokemon.otName());
 
             const unsigned int gender = static_cast<unsigned int>(pokemon.gender());
@@ -106,10 +117,13 @@ namespace pksm::switchui
             add(FieldKind::Ball, 0, "Poké Ball",
                 pokemon.ball().localize(language) + " (#" +
                     numericValue(static_cast<unsigned int>(pokemon.ball())) + ")");
-            add(FieldKind::Form, 0, "Forma", numericValue(pokemon.alternativeForm()));
-            add(FieldKind::Egg, 0, "Huevo", pokemon.egg() ? "Sí" : "No");
+            add(FieldKind::Form, 0, "Forma",
+                i18n::form(language, pokemon.version(), pokemon.species(),
+                    static_cast<u8>(pokemon.alternativeForm())) +
+                    " (#" + numericValue(pokemon.alternativeForm()) + ")");
+            add(FieldKind::Egg, 0, "Huevo", pokemon.egg() ? "Sí" : "No", true, pokemon.egg());
             add(FieldKind::FatefulEncounter, 0, "Encuentro fatídico",
-                pokemon.fatefulEncounter() ? "Sí" : "No");
+                pokemon.fatefulEncounter() ? "Sí" : "No", true, pokemon.fatefulEncounter());
             add(FieldKind::MetLevel, 0, "Nivel de encuentro", numericValue(pokemon.metLevel()));
             const Date metDate = pokemon.metDate();
             add(FieldKind::MetDay, 0, "Día de encuentro", numericValue(metDate.day()));
@@ -242,25 +256,54 @@ namespace pksm::switchui
             return true;
         }
 
-        template <typename T>
-        bool numericSelection(SwitchUi& ui, const std::string& title, const std::vector<T>& values,
-            T current, unsigned int maximumId, T& next, std::string& error)
+        template <typename T, typename Label>
+        bool selectValue(SwitchUi& ui, const std::string& title, const std::vector<T>& values,
+            T current, Label label, T& next)
         {
-            unsigned int id = static_cast<unsigned int>(current);
-            if (!editNumber(ui, title, id, maximumId, id, error))
+            if (values.empty())
             {
                 return false;
             }
-            const auto found = std::find_if(values.begin(), values.end(), [id](T value)
+            std::vector<std::string> options;
+            options.reserve(values.size());
+            for (const T& value : values)
             {
-                return static_cast<unsigned int>(value) == id;
-            });
-            if (found == values.end())
+                options.push_back(label(value));
+            }
+            const auto currentIt = std::find(values.begin(), values.end(), current);
+            const size_t currentIndex = currentIt == values.end()
+                ? 0
+                : static_cast<size_t>(currentIt - values.begin());
+            size_t selected = currentIndex;
+            if (!ui.selectOption(title, options, currentIndex, selected))
             {
-                error = "Ese valor no está disponible en este juego.";
                 return false;
             }
-            next = *found;
+            next = values[selected];
+            return next != current;
+        }
+
+        bool selectNumber(SwitchUi& ui, const std::string& title, unsigned int minimum,
+            unsigned int maximum, unsigned int current, unsigned int& next)
+        {
+            std::vector<unsigned int> values;
+            std::vector<std::string> options;
+            values.reserve(static_cast<size_t>(maximum - minimum) + 1);
+            options.reserve(values.capacity());
+            for (unsigned int value = minimum; value <= maximum; ++value)
+            {
+                values.push_back(value);
+                options.push_back(numericValue(value));
+            }
+            const size_t currentIndex = current >= minimum && current <= maximum
+                ? static_cast<size_t>(current - minimum)
+                : 0;
+            size_t selected = currentIndex;
+            if (!ui.selectOption(title, options, currentIndex, selected))
+            {
+                return false;
+            }
+            next = values[selected];
             return next != current;
         }
 
@@ -281,9 +324,13 @@ namespace pksm::switchui
                     pksm::Species next;
                     if (direction == 0)
                     {
-                        if (!numericSelection(ui, "Número de especie",
-                                species, pokemon.species(), static_cast<unsigned int>(save.maxSpecies()),
-                                next, error))
+                        if (!selectValue(ui, "Especie", species, pokemon.species(),
+                                [&pokemon](pksm::Species value)
+                                {
+                                    return value.localize(pokemon.language()) + " (#" +
+                                           numericValue(static_cast<unsigned int>(value)) + ")";
+                                },
+                                next))
                         {
                             return false;
                         }
@@ -363,18 +410,29 @@ namespace pksm::switchui
                     {
                         return false;
                     }
-                    unsigned int value = static_cast<unsigned int>(pokemon.nature());
+                    std::vector<pksm::Nature> natures;
+                    natures.reserve(25);
+                    for (u8 value = 0; value < 25; ++value)
+                    {
+                        natures.emplace_back(value);
+                    }
                     if (direction == 0)
                     {
-                        if (!editNumber(ui, "Naturaleza (0-24)", value, 24, value, error))
+                        pksm::Nature next = pokemon.nature();
+                        if (!selectValue(ui, "Naturaleza", natures, pokemon.nature(),
+                                [&pokemon](pksm::Nature value)
+                                {
+                                    return value.localize(pokemon.language());
+                                },
+                                next))
                         {
                             return false;
                         }
+                        pokemon.nature(next);
+                        return true;
                     }
-                    else
-                    {
-                        value = direction > 0 ? (value + 1) % 25 : (value == 0 ? 24 : value - 1);
-                    }
+                    unsigned int value = static_cast<unsigned int>(pokemon.nature());
+                    value = direction > 0 ? (value + 1) % 25 : (value == 0 ? 24 : value - 1);
                     if (static_cast<unsigned int>(pokemon.nature()) == value)
                     {
                         return false;
@@ -400,18 +458,16 @@ namespace pksm::switchui
                     u8 next = current;
                     if (direction == 0)
                     {
-                        unsigned int value = current;
-                        if (!editNumber(ui, "Ranura de habilidad", value, 2, value, error) ||
-                            std::find(slots.begin(), slots.end(), static_cast<u8>(value)) ==
-                                slots.end())
+                        if (!selectValue(ui, "Habilidad", slots, current,
+                                [&pokemon](u8 slot)
+                                {
+                                    return pokemon.abilities(slot).localize(pokemon.language()) +
+                                           " [Ranura " + numericValue(slot) + "]";
+                                },
+                                next))
                         {
-                            if (error.empty())
-                            {
-                                error = "Esa ranura de habilidad no existe.";
-                            }
                             return false;
                         }
-                        next = static_cast<u8>(value);
                     }
                     else
                     {
@@ -446,9 +502,13 @@ namespace pksm::switchui
                     u16 next = pokemon.heldItem();
                     if (direction == 0)
                     {
-                        if (!numericSelection(ui, "Número de objeto", items,
-                                pokemon.heldItem(), static_cast<unsigned int>(save.maxItem()), next,
-                                error))
+                        if (!selectValue(ui, "Objeto", items, pokemon.heldItem(),
+                                [&pokemon](u16 item)
+                                {
+                                    return i18n::item(pokemon.language(), item) + " (#" +
+                                           numericValue(item) + ")";
+                                },
+                                next))
                         {
                             return false;
                         }
@@ -465,31 +525,48 @@ namespace pksm::switchui
                     return true;
                 }
                 case FieldKind::Shiny:
-                    if (direction != 0)
-                    {
-                        pokemon.shiny(!pokemon.shiny());
-                        return true;
-                    }
-                    return false;
+                    pokemon.shiny(!pokemon.shiny());
+                    return true;
                 case FieldKind::Pokerus:
-                    if (direction != 0)
-                    {
-                        pokemon.pkrs(pokemon.pkrs() == 0 ? 0xF4 : 0);
-                        return true;
-                    }
-                    return false;
+                    pokemon.pkrs(pokemon.pkrs() == 0 ? 0xF4 : 0);
+                    return true;
                 case FieldKind::Gender:
                 {
+                    std::vector<pksm::Gender> genders;
+                    genders.reserve(genderNames.size());
+                    for (u8 value = 0; value < genderNames.size(); ++value)
+                    {
+                        genders.emplace_back(value);
+                    }
+                    pksm::Gender next = pokemon.gender();
                     if (direction == 0)
+                    {
+                        if (!selectValue(ui, "Género", genders, pokemon.gender(),
+                                [](pksm::Gender value)
+                                {
+                                    const unsigned int id = static_cast<unsigned int>(value);
+                                    return id < genderNames.size() ? genderNames[id] :
+                                                                     "Desconocido";
+                                },
+                                next))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        const unsigned int current = static_cast<unsigned int>(pokemon.gender());
+                        const unsigned int nextId = direction > 0
+                            ? (current + 1) % genderNames.size()
+                            : (current == 0 ? genderNames.size() - 1 : current - 1);
+                        next = pksm::Gender{static_cast<u8>(nextId)};
+                    }
+                    if (next == pokemon.gender())
                     {
                         return false;
                     }
-                    const unsigned int current = static_cast<unsigned int>(pokemon.gender());
-                    const unsigned int next =
-                        direction > 0 ? (current + 1) % genderNames.size() :
-                                        (current == 0 ? genderNames.size() - 1 : current - 1);
-                    pokemon.gender(pksm::Gender{static_cast<u8>(next)});
-                    return next != current;
+                    pokemon.gender(next);
+                    return true;
                 }
                 case FieldKind::Friendship:
                 {
@@ -518,8 +595,13 @@ namespace pksm::switchui
                     pksm::Ball next = pokemon.ball();
                     if (direction == 0)
                     {
-                        if (!numericSelection(ui, "Número de Poké Ball", balls, pokemon.ball(),
-                                static_cast<unsigned int>(save.maxBall()), next, error))
+                        if (!selectValue(ui, "Poké Ball", balls, pokemon.ball(),
+                                [&pokemon](pksm::Ball value)
+                                {
+                                    return value.localize(pokemon.language()) + " (#" +
+                                           numericValue(static_cast<unsigned int>(value)) + ")";
+                                },
+                                next))
                         {
                             return false;
                         }
@@ -536,19 +618,11 @@ namespace pksm::switchui
                     return true;
                 }
                 case FieldKind::Egg:
-                    if (direction != 0)
-                    {
-                        pokemon.egg(!pokemon.egg());
-                        return true;
-                    }
-                    return false;
+                    pokemon.egg(!pokemon.egg());
+                    return true;
                 case FieldKind::FatefulEncounter:
-                    if (direction != 0)
-                    {
-                        pokemon.fatefulEncounter(!pokemon.fatefulEncounter());
-                        return true;
-                    }
-                    return false;
+                    pokemon.fatefulEncounter(!pokemon.fatefulEncounter());
+                    return true;
                 case FieldKind::MetLevel:
                 {
                     unsigned int value = pokemon.metLevel();
@@ -598,14 +672,33 @@ namespace pksm::switchui
                         : 9999;
                     if (direction == 0)
                     {
-                        if (!editNumber(ui, field.display.label, value, maximum, value, error))
+                        const bool month = field.kind == FieldKind::MetMonth ||
+                                           field.kind == FieldKind::EggMonth;
+                        unsigned int next = value;
+                        const bool changed = month
+                            ? [&]()
+                              {
+                                  std::vector<unsigned int> months;
+                                  months.reserve(monthNames.size());
+                                  for (unsigned int monthValue = 1;
+                                       monthValue <= monthNames.size(); ++monthValue)
+                                  {
+                                      months.push_back(monthValue);
+                                  }
+                                  return selectValue(ui, field.display.label, months, value,
+                                      [](unsigned int monthValue)
+                                      {
+                                          return monthNames[monthValue - 1];
+                                      },
+                                      next);
+                              }()
+                            : selectNumber(ui, field.display.label,
+                                  maximum == 9999 ? 0 : 1, maximum, value, next);
+                        if (!changed)
                         {
                             return false;
                         }
-                        if (maximum != 9999)
-                        {
-                            value = std::max(1U, value);
-                        }
+                        value = next;
                     }
                     else
                     {
@@ -715,10 +808,23 @@ namespace pksm::switchui
                     {
                         return false;
                     }
+                    std::vector<unsigned int> forms;
+                    forms.reserve(count);
+                    for (unsigned int form = 0; form < count; ++form)
+                    {
+                        forms.push_back(form);
+                    }
                     unsigned int value = pokemon.alternativeForm();
                     if (direction == 0)
                     {
-                        if (!editNumber(ui, "Forma", value, count - 1, value, error))
+                        if (!selectValue(ui, "Forma", forms, value,
+                                [&pokemon, &save](unsigned int form)
+                                {
+                                    return i18n::form(pokemon.language(), save.version(),
+                                               pokemon.species(), static_cast<u8>(form)) +
+                                           " (#" + numericValue(form) + ")";
+                                },
+                                value))
                         {
                             return false;
                         }
@@ -813,8 +919,13 @@ namespace pksm::switchui
                     pksm::Move next = current;
                     if (direction == 0)
                     {
-                        if (!numericSelection(ui, "Número de movimiento", moves, current,
-                                static_cast<unsigned int>(save.maxMove()), next, error))
+                        if (!selectValue(ui, "Movimiento", moves, current,
+                                [&pokemon](pksm::Move value)
+                                {
+                                    return value.localize(pokemon.language()) + " (#" +
+                                           numericValue(static_cast<unsigned int>(value)) + ")";
+                                },
+                                next))
                         {
                             return false;
                         }
@@ -912,6 +1023,7 @@ namespace pksm::switchui
                 return PokemonEditorResult::Back;
             }
 
+            i18n::init(pokemon->language());
             size_t selected = 0;
             while (appletMainLoop())
             {
