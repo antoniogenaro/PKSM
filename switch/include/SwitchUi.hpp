@@ -49,7 +49,7 @@ namespace pksm::switchui
         Action pollAction();
         void drawFiles(
             const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
-            size_t selected, const std::string& error);
+            const std::vector<size_t>& gameMascots, size_t selected, const std::string& error);
         void drawGameMenu(const std::string& game, const std::string& path,
             const std::string& details, size_t selected, const std::string& message);
         void drawPokemonSlots(const std::string& game, const std::string& path,
