@@ -641,7 +641,7 @@ namespace pksm::switchui
 
     void SwitchUi::drawFiles(
         const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
-        size_t selected, const std::string& error)
+        const std::vector<size_t>& gameMascots, size_t selected, const std::string& error)
     {
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
@@ -671,9 +671,13 @@ namespace pksm::switchui
                     const SDL_Rect row{68, y - 4, panel.w - 32, 34};
                     drawRect(row, SELECTED, SELECTED);
                 }
+                if (i < gameMascots.size())
+                {
+                    drawPokemonSprite(gameMascots[i], {80, y - 2, 34, 34});
+                }
                 const std::string label =
                     i < gameNames.size() ? gameNames[i] + "  /  " + files[i] : files[i];
-                drawText(label, 82, y, 24, i == selected ? TEXT : MUTED, panel.w - 64);
+                drawText(label, 122, y, 24, i == selected ? TEXT : MUTED, panel.w - 104);
             }
             const std::string count = std::to_string(selected + 1) + " / " +
                                       std::to_string(files.size());
