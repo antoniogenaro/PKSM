@@ -318,17 +318,22 @@ int main(int argc, char* argv[])
     }
     std::vector<std::string> files =
         storageError.empty() ? listSaveFiles(storageError) : std::vector<std::string>{};
+    std::vector<std::string> supportedFiles;
     std::vector<std::string> gameNames;
+    supportedFiles.reserve(files.size());
     gameNames.reserve(files.size());
     for (const auto& file : files)
     {
         LoadedSave identified;
         std::string identifyError;
         const std::string path = std::string(SAVE_DIRECTORY) + "/" + file;
-        gameNames.emplace_back(loadSave(path, identified, identifyError)
-                ? gameName(identified.save->version())
-                : "Juego no identificado");
+        if (loadSave(path, identified, identifyError))
+        {
+            supportedFiles.push_back(file);
+            gameNames.emplace_back(gameName(identified.save->version()));
+        }
     }
+    files = std::move(supportedFiles);
     size_t selected = 0;
     bool quitRequested = false;
 

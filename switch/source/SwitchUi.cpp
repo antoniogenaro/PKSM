@@ -655,7 +655,7 @@ namespace pksm::switchui
         }
         else if (files.empty())
         {
-            drawText("No se encontraron respaldos.", 78, 181, 24, TEXT);
+            drawText("No se encontraron respaldos compatibles.", 78, 181, 24, TEXT);
             drawText("Copia tus archivos a /switch/pksm/ en la tarjeta SD.", 78, 220, 24, MUTED);
         }
         else
