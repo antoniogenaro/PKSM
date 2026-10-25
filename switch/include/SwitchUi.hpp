@@ -31,6 +31,8 @@ namespace pksm::switchui
         std::string label;
         std::string value;
         size_t spriteIndex = 0;
+        bool checkbox = false;
+        bool checked = false;
     };
 
     class SwitchUi
@@ -57,6 +59,8 @@ namespace pksm::switchui
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
         bool editText(const std::string& title, const std::string& initial, std::string& result,
             size_t maxLength);
+        bool selectOption(const std::string& title, const std::vector<std::string>& options,
+            size_t current, size_t& selected);
         bool editTrainerName(
             const std::string& initial, std::string& result, size_t maxLength = 12);
 
@@ -64,6 +68,8 @@ namespace pksm::switchui
         SDL_Texture* textTexture(const std::string& text, int fontSize, SDL_Color color);
         void drawText(
             const std::string& text, int x, int y, int fontSize, SDL_Color color, int maxWidth = 0);
+        void drawFieldValue(
+            const Field& field, int x, int y, int fontSize, SDL_Color color, int maxWidth = 0);
         void drawHeader(const std::string& title, const std::string& subtitle);
         void drawFooter(const std::string& text);
         void drawRect(const SDL_Rect& rect, SDL_Color fill, SDL_Color border);
