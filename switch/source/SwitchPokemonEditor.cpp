@@ -117,6 +117,9 @@ namespace pksm::switchui
             add(FieldKind::Ball, 0, "Poké Ball",
                 pokemon.ball().localize(language) + " (#" +
                     numericValue(static_cast<unsigned int>(pokemon.ball())) + ")");
+            fields.back().display.hasBallSprite = true;
+            const unsigned int ballIndex = static_cast<unsigned int>(pokemon.ball());
+            fields.back().display.ballSpriteIndex = ballIndex <= 25 ? ballIndex : 0;
             add(FieldKind::Form, 0, "Forma",
                 i18n::form(language, pokemon.version(), pokemon.species(),
                     static_cast<u8>(pokemon.alternativeForm())) +
@@ -258,7 +261,7 @@ namespace pksm::switchui
 
         template <typename T, typename Label>
         bool selectValue(SwitchUi& ui, const std::string& title, const std::vector<T>& values,
-            T current, Label label, T& next)
+            T current, Label label, T& next, const std::vector<size_t>& spriteIndices = {})
         {
             if (values.empty())
             {
@@ -275,7 +278,7 @@ namespace pksm::switchui
                 ? 0
                 : static_cast<size_t>(currentIt - values.begin());
             size_t selected = currentIndex;
-            if (!ui.selectOption(title, options, currentIndex, selected))
+            if (!ui.selectOption(title, options, currentIndex, selected, spriteIndices))
             {
                 return false;
             }
@@ -600,13 +603,20 @@ namespace pksm::switchui
                     pksm::Ball next = pokemon.ball();
                     if (direction == 0)
                     {
+                        std::vector<size_t> ballSpriteIndices;
+                        ballSpriteIndices.reserve(balls.size());
+                        for (const pksm::Ball ball : balls)
+                        {
+                            const unsigned int ballIndex = static_cast<unsigned int>(ball);
+                            ballSpriteIndices.push_back(ballIndex <= 25 ? ballIndex : 0);
+                        }
                         if (!selectValue(ui, "Poké Ball", balls, pokemon.ball(),
                                 [&pokemon](pksm::Ball value)
                                 {
                                     return value.localize(pokemon.language()) + " (#" +
                                            numericValue(static_cast<unsigned int>(value)) + ")";
                                 },
-                                next))
+                                next, ballSpriteIndices))
                         {
                             return false;
                         }
