@@ -28,6 +28,8 @@
 
 #include "domain/FieldValues.hpp"
 #include "domain/GameProfile.hpp"
+#include "domain/SaveCache.hpp"
+#include "ui/Text.hpp"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -55,7 +57,7 @@ namespace
         check(sword != nullptr, "Sword is supported");
         if (sword)
         {
-            check(std::string(sword->name) == "Pokemon Espada", "Sword name");
+            check(std::string(tr(sword->name)) == "Pokemon Espada", "Sword name");
             check(sword->mascotSpecies == 888, "Sword mascot is Zacian");
             check(sword->hasBattlePoints, "Sword has BP");
             check(sword->maxMoney == 9999999, "Sword money cap");
@@ -144,6 +146,63 @@ namespace
         check(!parseNumber("-1", 100, value, error), "rejects negative numbers");
         check(!parseNumber("99999999999", 4294967295u, value, error), "rejects overflow");
     }
+
+    void testTexts()
+    {
+        bool allPresent = true;
+        for (size_t key = 0; key < static_cast<size_t>(Text::Count); ++key)
+        {
+            allPresent = allPresent && tr(static_cast<Text>(key))[0] != '\0';
+        }
+        check(allPresent, "every text has a value");
+        check(std::string(tr(Text::Yes)) == "Sí", "plain text");
+        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "one value");
+        check(tr(Text::BoxSection, {"3", "32", "Caja 3"}) == "Caja 3/32  /  Caja 3",
+            "values go in order");
+        check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
+        check(tr(Text::Yes, {"ignored"}) == "Sí", "extra values are ignored");
+    }
+
+    void testSaveCache()
+    {
+        const SaveCache::Stamp stamp{1572864, 1700000000};
+        const SaveCache::Stamp resized{1572865, 1700000000};
+        const SaveCache::Stamp touched{1572864, 1700000001};
+
+        SaveCache cache;
+        check(!cache.lookup("a/main", stamp), "empty cache knows nothing");
+        cache.store("a/main", stamp, 44);
+        cache.store("b\twith tab/main", stamp, SaveCache::UNRECOGNIZED);
+        cache.store("bad\nname", stamp, 44);
+        check(cache.changed(), "storing marks the cache changed");
+
+        const SaveCache loaded = SaveCache::parse(cache.serialize());
+        check(!loaded.changed(), "a parsed cache starts unchanged");
+        check(loaded.lookup("a/main", stamp) == 44, "round trip keeps the version");
+        check(loaded.lookup("b\twith tab/main", stamp) == SaveCache::UNRECOGNIZED,
+            "round trip keeps unrecognized files and tabs in paths");
+        check(!loaded.lookup("bad\nname", stamp), "paths with line breaks are not stored");
+        check(!loaded.lookup("a/main", resized), "a resized file is rescanned");
+        check(!loaded.lookup("a/main", touched), "a modified file is rescanned");
+
+        SaveCache same = SaveCache::parse(cache.serialize());
+        same.store("a/main", stamp, 44);
+        check(!same.changed(), "storing the same entry changes nothing");
+        same.keepOnly({"a/main", "b\twith tab/main"});
+        check(!same.changed(), "keeping every file changes nothing");
+        same.keepOnly({"a/main"});
+        check(same.changed(), "forgetting a file marks the cache changed");
+        check(!same.lookup("b\twith tab/main", stamp), "forgotten files are gone");
+
+        check(!SaveCache::parse("pksm-switch-saves 0\n1\t2\t44\ta/main\n").lookup(
+                  "a/main", SaveCache::Stamp{1, 2}),
+            "another format version is ignored");
+        const SaveCache damaged = SaveCache::parse(
+            "pksm-switch-saves 1\nnot a line\n1\tx\t44\tb/main\n1\t2\t44\t\n1\t2\t45\tc/main");
+        check(!damaged.lookup("b/main", SaveCache::Stamp{1, 0}), "damaged lines are dropped");
+        check(damaged.lookup("c/main", SaveCache::Stamp{1, 2}) == 45,
+            "good lines survive, even without a final line break");
+    }
 }
 
 int main()
@@ -153,6 +212,8 @@ int main()
     testWrappedSteps();
     testChoices();
     testParseNumber();
+    testSaveCache();
+    testTexts();
 
     if (failures != 0)
     {

@@ -1,5 +1,6 @@
 #include "domain/FieldValues.hpp"
 
+#include "ui/Text.hpp"
 #include <algorithm>
 #include <charconv>
 #include <system_error>
@@ -44,14 +45,14 @@ namespace pksm::switchui
     {
         if (text.empty())
         {
-            error = "Introduce un número.";
+            error = tr(Text::EnterNumber);
             return false;
         }
         unsigned int parsed = 0;
         const auto result   = std::from_chars(text.data(), text.data() + text.size(), parsed);
         if (result.ec != std::errc{} || result.ptr != text.data() + text.size() || parsed > maximum)
         {
-            error = "El número está fuera del rango permitido.";
+            error = tr(Text::NumberOutOfRange);
             return false;
         }
         value = parsed;

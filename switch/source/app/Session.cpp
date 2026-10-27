@@ -3,6 +3,7 @@
 #include "domain/GameProfile.hpp"
 #include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
+#include "ui/Text.hpp"
 #include <exception>
 
 namespace pksm::switchui
@@ -30,18 +31,40 @@ namespace pksm::switchui
         }
         catch (const std::exception& exception)
         {
-            error = std::string("No se pudo interpretar el guardado: ") + exception.what();
+            error = tr(Text::SaveParseFailed, {exception.what()});
             return nullptr;
         }
         const GameProfile* profile = save ? findGameProfile(save->version()) : nullptr;
         if (!profile)
         {
-            error = "El archivo no es un guardado compatible de Sword/Shield o Rojo Fuego/Verde Hoja.";
+            error = tr(Text::SaveUnsupported);
             return nullptr;
         }
 
         save->beginEditing();
         return std::unique_ptr<Session>(new Session(std::move(save), *profile, path));
+    }
+
+    std::optional<pksm::GameVersion> Session::identify(const std::string& path)
+    {
+        std::shared_ptr<u8[]> data;
+        size_t size = 0;
+        std::string error;
+        if (!storage::readSaveFile(path, data, size, error))
+        {
+            return std::nullopt;
+        }
+        try
+        {
+            if (const auto save = pksm::Sav::getSave(data, size))
+            {
+                return save->version();
+            }
+        }
+        catch (const std::exception&)
+        {
+        }
+        return std::nullopt;
     }
 
     bool Session::exportChanges(std::string& outputPath, std::string& error)
@@ -71,7 +94,7 @@ namespace pksm::switchui
         {
             return false;
         }
-        message = "Exportado a " + outputPath;
+        message = tr(Text::ExportedTo, {outputPath});
         return true;
     }
 }

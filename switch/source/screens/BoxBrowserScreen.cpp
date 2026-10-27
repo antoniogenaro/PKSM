@@ -5,6 +5,7 @@
 #include "sav/Sav.hpp"
 #include "screens/PokemonEditorScreen.hpp"
 #include "screens/PokemonFields.hpp"
+#include "ui/Text.hpp"
 #include <algorithm>
 
 namespace pksm::switchui
@@ -40,7 +41,7 @@ namespace pksm::switchui
                     app.quit();
                     return;
                 }
-                message_ = "Exporta con Y o descarta con X antes de salir.";
+                message_ = tr(Text::UnsavedBeforeQuit);
                 break;
             case Action::Up:
             case Action::Down:
@@ -138,7 +139,7 @@ namespace pksm::switchui
         auto pokemon    = party_ ? save.pkm(slot) : save.pkm(static_cast<u8>(box_), slot);
         if (!pokemon)
         {
-            message_ = "No se pudo leer el Pokémon seleccionado.";
+            message_ = tr(Text::PokemonReadFailed);
             return;
         }
         app.push(std::make_unique<PokemonEditorScreen>(session_, game_, path_, std::move(pokemon),
@@ -149,9 +150,9 @@ namespace pksm::switchui
     {
         pksm::Sav& save = session_.save();
         const std::string section =
-            party_ ? "Equipo (" + numericValue(save.partyCount()) + "/6)"
-                   : "Caja " + numericValue(box_ + 1) + "/" + numericValue(maxBoxes_) + "  /  " +
-                         save.boxName(static_cast<u8>(box_));
+            party_ ? tr(Text::PartySection, {numericValue(save.partyCount())})
+                   : tr(Text::BoxSection, {numericValue(box_ + 1), numericValue(maxBoxes_),
+                                              save.boxName(static_cast<u8>(box_))});
         ui.drawPokemonSlots(game_, path_, section, slots_, selected_, session_.dirty(), message_);
     }
 }

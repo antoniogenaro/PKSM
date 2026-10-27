@@ -7,6 +7,9 @@
 
 namespace pksm::switchui
 {
+    class SaveCache;
+    struct GameProfile;
+
     // The supported saves found on the SD card.
     class SaveListScreen : public Screen
     {
@@ -17,6 +20,9 @@ namespace pksm::switchui
         void draw(SwitchUi& ui) override;
 
     private:
+        // The profile of a supported save, using the cache when the file did not change.
+        static const GameProfile* identify(SaveCache& cache, const std::string& file);
+
         std::vector<std::string> files_;
         std::vector<std::string> gameNames_;
         std::vector<size_t> gameMascots_;

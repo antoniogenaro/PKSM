@@ -1,6 +1,8 @@
 #pragma once
 
+#include "enums/GameVersion.hpp"
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace pksm
@@ -20,6 +22,10 @@ namespace pksm::switchui
         // Reads and parses the file. Returns nullptr, with a message in `error`, when it
         // cannot be read or is not a supported game.
         static std::unique_ptr<Session> open(const std::string& path, std::string& error);
+
+        // The game a file is a save of, without preparing it for editing. Nothing when it
+        // cannot be read or is not a save PKSM recognizes, supported here or not.
+        static std::optional<pksm::GameVersion> identify(const std::string& path);
 
         ~Session();
         Session(const Session&)            = delete;

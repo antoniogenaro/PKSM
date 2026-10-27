@@ -1,4 +1,5 @@
 #include "SwitchUi.hpp"
+#include "ui/Text.hpp"
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -182,7 +183,7 @@ namespace pksm::switchui
         padInitializeDefault(&pad_);
         if (SDL_Init(SDL_INIT_VIDEO) != 0)
         {
-            error = std::string("No se pudo iniciar SDL: ") + SDL_GetError();
+            error = tr(Text::SdlInitFailed, {SDL_GetError()});
             return false;
         }
 
@@ -190,7 +191,7 @@ namespace pksm::switchui
             "PKSM Switch", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_FULLSCREEN);
         if (!window_)
         {
-            error = std::string("No se pudo crear la ventana: ") + SDL_GetError();
+            error = tr(Text::WindowFailed, {SDL_GetError()});
             return false;
         }
         renderer_ = SDL_CreateRenderer(
@@ -201,19 +202,19 @@ namespace pksm::switchui
         }
         if (!renderer_)
         {
-            error = std::string("No se pudo crear el renderizador: ") + SDL_GetError();
+            error = tr(Text::RendererFailed, {SDL_GetError()});
             return false;
         }
-        if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, "Pokémon", pokemonSpritesheet_,
+        if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, tr(Text::PokemonSheet), pokemonSpritesheet_,
                 pokemonSprites_, error) ||
-            !loadSpriteSheet(BALL_SPRITESHEET_PATH, "Poké Ball", ballSpritesheet_, ballSprites_,
+            !loadSpriteSheet(BALL_SPRITESHEET_PATH, tr(Text::BallSheet), ballSpritesheet_, ballSprites_,
                 error))
         {
             return false;
         }
         if (ballSprites_.size() <= BALL_SPRITE_BASE + MAX_BALL_SPRITE)
         {
-            error = "El spritesheet de Poké Ball no contiene todos los iconos.";
+            error = tr(Text::BallSheetIncomplete);
             return false;
         }
 
@@ -222,13 +223,13 @@ namespace pksm::switchui
         ImGui::StyleColorsDark();
         if (!ImGui_ImplSDL2_InitForSDLRenderer(window_, renderer_))
         {
-            error = "No se pudo iniciar el backend SDL2 de Dear ImGui.";
+            error = tr(Text::ImGuiPlatformFailed);
             ImGui::DestroyContext();
             return false;
         }
         if (!ImGui_ImplSDLRenderer2_Init(renderer_))
         {
-            error = "No se pudo iniciar el backend de renderizado de Dear ImGui.";
+            error = tr(Text::ImGuiRendererFailed);
             ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();
             return false;
@@ -244,21 +245,21 @@ namespace pksm::switchui
         std::ifstream file(path, std::ios::binary);
         if (!file)
         {
-            error = "No se pudo abrir el spritesheet de " + name + ".";
+            error = tr(Text::SheetOpenFailed, {name});
             return false;
         }
         const std::vector<u8> data(
             (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         if (file.bad() || data.size() < 5)
         {
-            error = "El spritesheet de " + name + " está incompleto.";
+            error = tr(Text::SheetIncomplete, {name});
             return false;
         }
 
         u16 spriteCount = 0;
         if (!readU16(data, 0, spriteCount) || spriteCount == 0 || spriteCount > 2048)
         {
-            error = "El spritesheet de " + name + " no tiene un encabezado válido.";
+            error = tr(Text::SheetBadHeader, {name});
             return false;
         }
         const u8 dimensions = data[2];
@@ -266,14 +267,14 @@ namespace pksm::switchui
         const size_t height = size_t{1} << (((dimensions >> 3) & 0x07) + 3);
         if ((dimensions & 0x40) != 0 || data[3] != 0 || data[4] != 0)
         {
-            error = "El formato del spritesheet de " + name + " no es compatible.";
+            error = tr(Text::SheetUnsupported, {name});
             return false;
         }
 
         constexpr size_t tableOffset = 5;
         if (spriteCount > (data.size() - tableOffset) / 12)
         {
-            error = "La tabla de sprites de " + name + " está incompleta.";
+            error = tr(Text::SheetTableIncomplete, {name});
             return false;
         }
         const size_t textureOffset = tableOffset + static_cast<size_t>(spriteCount) * 12;
@@ -281,7 +282,7 @@ namespace pksm::switchui
         std::vector<u8> textureData;
         if (!decodeLz11(data, textureOffset, textureSize, textureData))
         {
-            error = "No se pudo descomprimir el spritesheet de " + name + ".";
+            error = tr(Text::SheetDecompressFailed, {name});
             return false;
         }
 
@@ -301,7 +302,7 @@ namespace pksm::switchui
                 !readU16(data, offset + 4, left) || !readU16(data, offset + 6, top) ||
                 !readU16(data, offset + 8, right) || !readU16(data, offset + 10, bottom))
             {
-                error = "La tabla de sprites de " + name + " está incompleta.";
+                error = tr(Text::SheetTableIncomplete, {name});
                 return false;
             }
 
@@ -325,7 +326,7 @@ namespace pksm::switchui
                 static_cast<size_t>(sourceX + sourceWidth) > width ||
                 static_cast<size_t>(sourceY + sourceHeight) > height)
             {
-                error = "La tabla de sprites de " + name + " contiene coordenadas inválidas.";
+                error = tr(Text::SheetBadCoordinates, {name});
                 return false;
             }
             sprites.push_back(
@@ -359,13 +360,13 @@ namespace pksm::switchui
             SDL_TEXTUREACCESS_STATIC, static_cast<int>(width), static_cast<int>(height));
         if (!texture)
         {
-            error = "No se pudo crear la textura de " + name + ": " + SDL_GetError();
+            error = tr(Text::TextureCreateFailed, {name, SDL_GetError()});
             return false;
         }
         if (SDL_UpdateTexture(texture, nullptr, pixels.data(), static_cast<int>(width * 4)) != 0 ||
             SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND) != 0)
         {
-            error = "No se pudo cargar la textura de " + name + ": " + SDL_GetError();
+            error = tr(Text::TextureLoadFailed, {name, SDL_GetError()});
             SDL_DestroyTexture(texture);
             return false;
         }
@@ -464,7 +465,7 @@ namespace pksm::switchui
     {
         if (dirty)
         {
-            ImGui::TextColored(ACCENT_COLOR, "Cambios pendientes de exportar");
+            ImGui::TextColored(ACCENT_COLOR, "%s", tr(Text::PendingChanges));
         }
         if (!error.empty())
         {
@@ -545,9 +546,9 @@ namespace pksm::switchui
         (void)gameMascots;
         beginFrame();
 
-        ImGui::TextUnformatted("Administrador de respaldos Pokémon");
+        ImGui::TextUnformatted(tr(Text::SaveListTitle));
         ImGui::Separator();
-        ImGui::TextDisabled("A: abrir   |   +: salir");
+        ImGui::TextDisabled("%s", tr(Text::SaveListControls));
         ImGui::Spacing();
 
         if (!error.empty())
@@ -556,12 +557,12 @@ namespace pksm::switchui
         }
         else if (files.empty())
         {
-            ImGui::TextWrapped("No se encontraron respaldos compatibles.");
-            ImGui::TextWrapped("Copia tus archivos a /switch/pksm/ en la tarjeta SD.");
+            ImGui::TextWrapped("%s", tr(Text::NoSavesFound));
+            ImGui::TextWrapped("%s", tr(Text::NoSavesHint));
         }
         else
         {
-            ImGui::Text("%zu respaldos encontrados", files.size());
+            ImGui::TextUnformatted(tr(Text::SavesFound, {std::to_string(files.size())}).c_str());
             ImGui::BeginChild("save-files", ImVec2(0.0f, -32.0f), ImGuiChildFlags_Borders);
             for (size_t i = 0; i < files.size(); ++i)
             {
@@ -582,7 +583,7 @@ namespace pksm::switchui
             ImGui::EndChild();
         }
         ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 28.0f);
-        ImGui::TextDisabled("Los guardados originales no se modifican hasta guardar los cambios.");
+        ImGui::TextDisabled("%s", tr(Text::OriginalsUntouched));
         endFrame();
     }
 
@@ -591,17 +592,17 @@ namespace pksm::switchui
     {
         struct MenuOption
         {
-            const char* label;
-            const char* description;
+            Text label;
+            Text description;
             bool available;
         };
         static constexpr MenuOption options[] = {
-            {"Almacenamiento", "Gestiona tus cajas y Pokémon", false},
-            {"Editor Pokémon", "Edita los datos de tus Pokémon", true},
-            {"Eventos", "Gestiona regalos misteriosos", false},
-            {"Scripts", "Ejecuta scripts para el guardado", false},
-            {"Bolsa", "Edita los objetos de la bolsa", false},
-            {"Editor entrenador", "Edita los datos del entrenador", true},
+            {Text::MenuStorage, Text::MenuStorageHint, false},
+            {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, true},
+            {Text::MenuEvents, Text::MenuEventsHint, false},
+            {Text::MenuScripts, Text::MenuScriptsHint, false},
+            {Text::MenuBag, Text::MenuBagHint, false},
+            {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, true},
         };
 
         beginFrame();
@@ -635,17 +636,17 @@ namespace pksm::switchui
                 ImGuiChildFlags_Borders);
             if (options[i].available)
             {
-                ImGui::TextUnformatted(options[i].label);
+                ImGui::TextUnformatted(tr(options[i].label));
                 ImGui::Spacing();
-                ImGui::TextWrapped("%s", options[i].description);
+                ImGui::TextWrapped("%s", tr(options[i].description));
             }
             else
             {
-                ImGui::TextDisabled("%s", options[i].label);
+                ImGui::TextDisabled("%s", tr(options[i].label));
                 ImGui::Spacing();
-                ImGui::TextDisabled("%s", options[i].description);
+                ImGui::TextDisabled("%s", tr(options[i].description));
                 ImGui::SetCursorPosY(cardHeight - 30.0f);
-                ImGui::TextDisabled("Próximamente");
+                ImGui::TextDisabled("%s", tr(Text::ComingSoon));
             }
             ImGui::EndChild();
             if (i == selected)
@@ -664,7 +665,7 @@ namespace pksm::switchui
         {
             ImGui::Dummy(ImVec2(0.0f, ImGui::GetTextLineHeight()));
         }
-        ImGui::TextDisabled("A: abrir    B: volver    Y: exportar    X: descartar    +: salir");
+        ImGui::TextDisabled("%s", tr(Text::GameMenuControls));
         endFrame();
     }
 
@@ -673,8 +674,7 @@ namespace pksm::switchui
         const std::string& error)
     {
         beginFrame();
-        ImGui::Text("Editor de Pokémon  /  %s  /  %s  /  %s", game.c_str(), path.c_str(),
-            section.c_str());
+        ImGui::TextUnformatted(tr(Text::PokemonEditorHeader, {game, path, section}).c_str());
         ImGui::Separator();
 
         constexpr float summaryWidth = 290.0f;
@@ -716,7 +716,7 @@ namespace pksm::switchui
         ImGui::EndChild();
         ImGui::SameLine(0.0f, gap);
         ImGui::BeginChild("slot-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
-        ImGui::TextColored(ACCENT_COLOR, "Pokémon seleccionado");
+        ImGui::TextColored(ACCENT_COLOR, "%s", tr(Text::SelectedPokemon));
         ImGui::Separator();
         if (selected < fields.size())
         {
@@ -730,10 +730,10 @@ namespace pksm::switchui
             ImGui::TextWrapped("%s", fields[selected].value.c_str());
         }
         ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 120.0f);
-        ImGui::TextDisabled("A: abrir editor");
+        ImGui::TextDisabled("%s", tr(Text::OpenEditorHint));
         ImGui::EndChild();
         drawStatusLine(dirty, error);
-        ImGui::TextDisabled("D-pad: mover    L/R: cajas/equipo    A: editar    Y: exportar    B: volver");
+        ImGui::TextDisabled("%s", tr(Text::SlotsControls));
         endFrame();
     }
 
@@ -742,8 +742,7 @@ namespace pksm::switchui
         size_t selected, bool dirty, const std::string& error)
     {
         beginFrame();
-        ImGui::Text("Editor de Pokémon  /  %s  /  %s  /  %s", game.c_str(), path.c_str(),
-            pokemon.c_str());
+        ImGui::TextUnformatted(tr(Text::PokemonEditorHeader, {game, path, pokemon}).c_str());
         ImGui::Separator();
 
         constexpr float summaryWidth = 315.0f;
@@ -774,31 +773,33 @@ namespace pksm::switchui
         ImGui::EndChild();
         ImGui::SameLine(0.0f, gap);
         ImGui::BeginChild("pokemon-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
-        const auto valueFor = [&fields](const char* label) -> std::string
+        const auto valueFor = [&fields](Text key) -> std::string
         {
+            const std::string_view label = tr(key);
             const auto field = std::find_if(fields.begin(), fields.end(),
                 [label](const Field& candidate) { return candidate.label == label; });
             return field == fields.end() ? std::string{} : field->value;
         };
-        ImGui::TextColored(ACCENT_COLOR, "Resumen del Pokémon");
+        ImGui::TextColored(ACCENT_COLOR, "%s", tr(Text::PokemonSummaryTitle));
         ImGui::Separator();
         const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
         drawPokemonSprite(speciesIndex,
             {static_cast<int>(spritePosition.x + 70.0f),
                 static_cast<int>(spritePosition.y), 150, 112});
         ImGui::Dummy(ImVec2(0.0f, 114.0f));
-        ImGui::TextWrapped("%s", valueFor("Especie").c_str());
-        ImGui::TextDisabled("%s", valueFor("Apodo").c_str());
+        ImGui::TextWrapped("%s", valueFor(Text::FieldSpecies).c_str());
+        ImGui::TextDisabled("%s", valueFor(Text::FieldNickname).c_str());
         ImGui::Spacing();
-        for (const char* label : {"Nivel", "Naturaleza", "Género", "Variocolor"})
+        for (const Text label :
+            {Text::FieldLevel, Text::FieldNature, Text::FieldGender, Text::FieldShiny})
         {
-            ImGui::TextDisabled("%s", label);
+            ImGui::TextDisabled("%s", tr(label));
             ImGui::SameLine(120.0f);
             ImGui::TextWrapped("%s", valueFor(label).c_str());
         }
         ImGui::EndChild();
         drawStatusLine(dirty, error);
-        ImGui::TextDisabled("D-pad: mover/cambiar    A: editar    Y: exportar    B: volver    X: descartar");
+        ImGui::TextDisabled("%s", tr(Text::PokemonEditorControls));
         endFrame();
     }
 
@@ -806,7 +807,7 @@ namespace pksm::switchui
         const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error)
     {
         beginFrame();
-        ImGui::Text("Ficha del entrenador  /  %s  /  %s", game.c_str(), path.c_str());
+        ImGui::TextUnformatted(tr(Text::TrainerHeader, {game, path}).c_str());
         ImGui::Separator();
         ImGui::BeginChild("trainer-fields", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
         for (size_t i = 0; i < fields.size(); ++i)
@@ -829,7 +830,7 @@ namespace pksm::switchui
         }
         ImGui::EndChild();
         drawStatusLine(dirty, error);
-        ImGui::TextDisabled("D-pad: mover/cambiar    A: nombre    Y: exportar    B: menú    X: descartar");
+        ImGui::TextDisabled("%s", tr(Text::TrainerControls));
         endFrame();
     }
 
@@ -863,7 +864,7 @@ namespace pksm::switchui
         beginFrame();
         ImGui::TextUnformatted(title.c_str());
         ImGui::Separator();
-        ImGui::TextDisabled("Selecciona una opción");
+        ImGui::TextDisabled("%s", tr(Text::ChooseOption));
         ImGui::BeginChild("options", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
         const size_t last = std::min(options.size(), first + visibleRows);
         for (size_t i = first; i < last; ++i)
@@ -896,7 +897,7 @@ namespace pksm::switchui
         ImGui::EndChild();
         ImGui::TextDisabled("%zu / %zu", index + 1, options.size());
         ImGui::SameLine();
-        ImGui::TextDisabled("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+        ImGui::TextDisabled("%s", tr(Text::OptionPickerControls));
         endFrame();
     }
 
@@ -904,30 +905,30 @@ namespace pksm::switchui
         const std::vector<std::string>& natures, size_t& row, size_t& column)
     {
         // Rows raise a stat and columns lower one; the diagonal is neutral.
-        static constexpr const char* columnLabels[] = {
-            "Neutra", "-Ataque", "-Defensa", "-Velocidad", "-At. Esp.", "-Def. Esp."};
-        static constexpr const char* rowLabels[] = {
-            "+Ataque", "+Defensa", "+Velocidad", "+At. Esp.", "+Def. Esp."};
+        static constexpr Text columnLabels[] = {Text::NatureNeutral, Text::LowerAttack,
+            Text::LowerDefense, Text::LowerSpeed, Text::LowerSpAttack, Text::LowerSpDefense};
+        static constexpr Text rowLabels[] = {Text::RaiseAttack, Text::RaiseDefense,
+            Text::RaiseSpeed, Text::RaiseSpAttack, Text::RaiseSpDefense};
 
         beginFrame();
-        ImGui::TextUnformatted("Naturaleza");
+        ImGui::TextUnformatted(tr(Text::FieldNature));
         ImGui::Separator();
-        ImGui::TextDisabled("Selecciona una naturaleza según sus estadísticas");
+        ImGui::TextDisabled("%s", tr(Text::NaturePickerHint));
         ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
         constexpr float rowLabelWidth = 140.0f;
         constexpr float cellGap       = 4.0f;
         const float cellWidth =
             (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
-        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", columnLabels[0]);
+        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", tr(columnLabels[0]));
         for (size_t x = 0; x < 5; ++x)
         {
             ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-            ImGui::TextWrapped("%s", columnLabels[x + 1]);
+            ImGui::TextWrapped("%s", tr(columnLabels[x + 1]));
         }
         ImGui::Separator();
         for (size_t y = 0; y < 5; ++y)
         {
-            ImGui::TextUnformatted(rowLabels[y]);
+            ImGui::TextUnformatted(tr(rowLabels[y]));
             for (size_t x = 0; x < 5; ++x)
             {
                 const size_t natureIndex = y * 5 + x;
@@ -952,7 +953,7 @@ namespace pksm::switchui
             }
         }
         ImGui::EndChild();
-        ImGui::TextDisabled("Flechas: mover    A: seleccionar    B: volver");
+        ImGui::TextDisabled("%s", tr(Text::NaturePickerControls));
         endFrame();
     }
 }

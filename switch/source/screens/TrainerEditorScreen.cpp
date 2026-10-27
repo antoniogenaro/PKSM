@@ -5,6 +5,7 @@
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
 #include "sav/Sav.hpp"
+#include "ui/Text.hpp"
 #include <cstdint>
 
 namespace pksm::switchui
@@ -12,9 +13,10 @@ namespace pksm::switchui
     namespace
     {
         // Stepped with L/R only; A does nothing on these rows.
-        EditableField counter(const char* label, unsigned int max, unsigned int step,
+        EditableField counter(Text key, unsigned int max, unsigned int step,
             std::function<unsigned int()> get, std::function<void(unsigned int)> set)
         {
+            const char* label       = tr(key);
             const std::string value = std::to_string(get());
             EditableField field =
                 numberField(Field{label, value}, label, 0, max, std::move(get), std::move(set));
@@ -35,29 +37,29 @@ namespace pksm::switchui
         const GameProfile& profile = session_.profile();
 
         std::vector<EditableField> fields;
-        fields.push_back(textField(Field{"Nombre", save.otName()}, "Nombre del entrenador",
+        fields.push_back(textField(Field{tr(Text::TrainerName), save.otName()}, tr(Text::TrainerNameTitle),
             profile.trainerNameLengthFor(save.language()), [&save] { return save.otName(); },
             [&save](const std::string& name) { save.otName(name); }));
-        fields.push_back(counter("TID", UINT16_MAX, 1, [&save] { return save.TID(); },
+        fields.push_back(counter(Text::TrainerTid, UINT16_MAX, 1, [&save] { return save.TID(); },
             [&save](unsigned int value) { save.TID(static_cast<u16>(value)); }));
-        fields.push_back(counter("SID", UINT16_MAX, 1, [&save] { return save.SID(); },
+        fields.push_back(counter(Text::TrainerSid, UINT16_MAX, 1, [&save] { return save.SID(); },
             [&save](unsigned int value) { save.SID(static_cast<u16>(value)); }));
-        fields.push_back(counter("Dinero", profile.maxMoney, 1000, [&save] { return save.money(); },
+        fields.push_back(counter(Text::TrainerMoney, profile.maxMoney, 1000, [&save] { return save.money(); },
             [&save](unsigned int value) { save.money(value); }));
         if (profile.hasBattlePoints)
         {
-            fields.push_back(counter("BP", 9999, 100, [&save] { return save.BP(); },
+            fields.push_back(counter(Text::TrainerBattlePoints, 9999, 100, [&save] { return save.BP(); },
                 [&save](unsigned int value) { save.BP(value); }));
         }
-        fields.push_back(counter("Horas jugadas", UINT16_MAX, 1,
+        fields.push_back(counter(Text::TrainerHours, UINT16_MAX, 1,
             [&save] { return save.playedHours(); },
             [&save](unsigned int value) { save.playedHours(static_cast<u16>(value)); }));
-        EditableField minutes = counter("Minutos jugados", 59, 1,
+        EditableField minutes = counter(Text::TrainerMinutes, 59, 1,
             [&save] { return save.playedMinutes(); },
             [&save](unsigned int value) { save.playedMinutes(static_cast<u8>(value)); });
         minutes.wrap = true;
         fields.push_back(std::move(minutes));
-        EditableField seconds = counter("Segundos jugados", 59, 1,
+        EditableField seconds = counter(Text::TrainerSeconds, 59, 1,
             [&save] { return save.playedSeconds(); },
             [&save](unsigned int value) { save.playedSeconds(static_cast<u8>(value)); });
         seconds.wrap = true;
@@ -78,7 +80,7 @@ namespace pksm::switchui
             case Action::Quit:
                 if (session_.dirty())
                 {
-                    message_ = "Exporta con Y o descarta con X antes de salir.";
+                    message_ = tr(Text::UnsavedBeforeQuit);
                 }
                 else
                 {
@@ -94,7 +96,7 @@ namespace pksm::switchui
             case Action::Back:
                 if (session_.dirty())
                 {
-                    message_ = "Exporta con Y o descarta con X antes de volver.";
+                    message_ = tr(Text::UnsavedBeforeBack);
                 }
                 else
                 {
