@@ -58,6 +58,11 @@ namespace pksm::switchui::widgets
         bool enabled         = true;
     };
 
+    // A card of `size` for one editable value, as on the canvas trainer screen: `label` and a
+    // pencil when `editable` at the top, the value large at the bottom. Returns true when touched.
+    bool drawFieldCard(const char* id, const char* label, const char* value, const ImVec2& size,
+        bool selected, bool editable);
+
     // Draws `row` across the available width. Returns true when touched.
     bool drawListRow(const char* id, const ListRow& row, bool selected);
 

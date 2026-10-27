@@ -1,0 +1,43 @@
+#include "screens/SaveSummary.hpp"
+
+#include "app/Session.hpp"
+#include "domain/FieldValues.hpp"
+#include "domain/GameProfile.hpp"
+#include "platform/SaveStorage.hpp"
+#include "sav/Sav.hpp"
+#include "ui/Text.hpp"
+
+namespace pksm::switchui
+{
+    SaveSummary summarizeSave(Session& session, const std::string& path)
+    {
+        pksm::Sav& save            = session.save();
+        const GameProfile& profile = session.profile();
+        const size_t slash         = path.find_last_of('/');
+
+        SaveSummary summary;
+        summary.game    = GameCard{tr(profile.name), profile.mascotSpecies, 0, profile.artColor};
+        summary.group   = tr(profile.group);
+        summary.file    = slash == std::string::npos ? path : path.substr(slash + 1);
+        // From generation VII on the game pads the IDs with zeros: 006800 and 3144.
+        const pksm::Generation generation = save.generation();
+        const bool padded = generation == pksm::Generation::SEVEN ||
+                            generation == pksm::Generation::LGPE ||
+                            generation == pksm::Generation::EIGHT ||
+                            generation == pksm::Generation::NINE;
+        summary.details   = tr(Text::TrainerSummary,
+              {save.otName(), padDigits(save.displayTID(), padded ? 6 : 0),
+                  padDigits(save.displaySID(), padded ? 4 : 0)});
+        summary.path    = std::string(storage::SAVE_DIRECTORY) + "/" + path;
+        return summary;
+    }
+
+    std::string sessionMessage(const Session& session, const std::string& message)
+    {
+        if (!message.empty())
+        {
+            return message;
+        }
+        return session.dirty() ? std::string(tr(Text::PendingChanges)) : std::string{};
+    }
+}

@@ -19,6 +19,7 @@ namespace pksm::switchui::icons
         Trainer, // A person.
         More,    // Three dots: other tools.
         Backup,  // Two overlapping squares: a backup copy.
+        Edit,    // A pencil: the value can be changed.
         Count
     };
 
@@ -32,4 +33,7 @@ namespace pksm::switchui::icons
     // Draws `icon` in `color`, centred in the icon box at `min` that is `boxSize` wide. As on the
     // canvas, an icon fills 26 pixels of a 48 pixel box.
     void draw(ImDrawList* drawList, Icon icon, const ImVec2& min, float boxSize, ImU32 color);
+
+    // Draws `icon` `pixels` wide with its top left corner at `min`, in `color`.
+    void drawSized(ImDrawList* drawList, Icon icon, const ImVec2& min, int pixels, ImU32 color);
 }

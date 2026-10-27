@@ -280,6 +280,51 @@ namespace pksm::switchui::widgets
             ImDrawFlags_None, thickness);
     }
 
+    bool drawFieldCard(const char* id, const char* label, const char* value, const ImVec2& size,
+        bool selected, bool editable)
+    {
+        // The canvas card: 16 pixels above and below, 20 at the sides, a 15 pixel label with a
+        // 22 pixel pencil, and the value at 26 pixels.
+        constexpr float paddingX  = 20.0f;
+        constexpr float paddingY  = 16.0f;
+        constexpr int pencilSize  = 22;
+        constexpr float pencilGap = 12.0f;
+        constexpr float labelSize = 15.0f;
+        constexpr float valueSize = 26.0f;
+
+        const ImVec2 min   = ImGui::GetCursorScreenPos();
+        const bool touched = ImGui::InvisibleButton(id, size);
+        const ImVec2 max(min.x + size.x, min.y + size.y);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(min, max,
+            theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), theme::ROW_RADIUS);
+        if (selected)
+        {
+            drawSelectionOutline(drawList, min, max, theme::ROW_RADIUS);
+        }
+
+        const ImU32 muted     = theme::rgb(theme::TEXT_MUTED);
+        const float left      = min.x + paddingX;
+        const float right     = max.x - paddingX;
+        const float labelTop  = min.y + paddingY;
+        const float labelHigh = textSize(label, labelSize, true).y;
+        const float labelEnd  = editable ? right - pencilSize - pencilGap : right;
+        drawTextEllipsis(drawList, theme::boldFont(), labelSize, ImVec2(left, labelTop), muted,
+            label, labelEnd - left);
+        if (editable)
+        {
+            icons::drawSized(drawList, icons::Icon::Edit,
+                ImVec2(right - pencilSize, labelTop + (labelHigh - pencilSize) * 0.5f), pencilSize,
+                muted);
+        }
+
+        const float valueHigh = textSize(value, valueSize, true).y;
+        drawTextEllipsis(drawList, theme::boldFont(), valueSize,
+            ImVec2(left, max.y - paddingY - valueHigh), theme::rgb(theme::TEXT), value,
+            right - left);
+        return touched;
+    }
+
     bool drawListRow(const char* id, const ListRow& row, bool selected)
     {
         constexpr float iconLeft   = 12.0f;

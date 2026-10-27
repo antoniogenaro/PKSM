@@ -37,6 +37,8 @@ namespace pksm::switchui
         bool checked = false;
         bool hasBallSprite = false;
         size_t ballSpriteIndex = 0;
+        // False when the save cannot change it; editors then show no pencil.
+        bool editable = true;
     };
 
     // A game as the game and save lists show it.
@@ -46,6 +48,17 @@ namespace pksm::switchui
         size_t mascotSpecies = 0;
         size_t saveCount = 0;
         unsigned artColor = 0; // 0xRRGGBB, from the game's profile.
+    };
+
+    // The open save, as the side panel of the game menu and the editors shows it.
+    struct SaveSummary
+    {
+        GameCard game;
+        std::string group;
+        // The file name, the trainer with their IDs, and the full path.
+        std::string file;
+        std::string details;
+        std::string path;
     };
 
     class SwitchUi
@@ -65,19 +78,19 @@ namespace pksm::switchui
         // The saves of one game, as paths relative to the save folder.
         void drawSaveList(const GameCard& game, const std::string& group,
             const std::vector<std::string>& files, size_t& selected, const std::string& error);
-        // The actions for an open save: `file` is its name, `details` the trainer and IDs and
-        // `path` its full path. `message` is shown under the game card.
-        void drawGameMenu(const GameCard& game, const std::string& group, const std::string& file,
-            const std::string& details, const std::string& path, size_t selected,
-            const std::string& message);
+        // The actions for an open save. `message` is shown under the game card.
+        void drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message);
         void drawPokemonSlots(const std::string& game, const std::string& path,
             const std::string& section, const std::vector<Field>& fields, size_t selected,
             bool dirty, const std::string& error);
         void drawPokemonEditor(const std::string& game, const std::string& path,
             const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
             size_t selected, bool dirty, const std::string& error);
-        void drawTrainer(const std::string& game, const std::string& path,
-            const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
+        // The trainer's fields as a grid of TRAINER_COLUMNS cards, filled row by row. `message`
+        // is shown under the game card.
+        static constexpr size_t TRAINER_COLUMNS = 2;
+        void drawTrainer(const SaveSummary& save, const std::vector<Field>& fields,
+            size_t selected, const std::string& message);
         // Pickers. A touch on an entry moves the selection, so it is passed by reference.
         void drawOptionPicker(const std::string& title, const std::vector<std::string>& options,
             const std::vector<size_t>& spriteIndices, size_t first, size_t visibleRows,
@@ -124,6 +137,8 @@ namespace pksm::switchui
         void drawGamePanel(const GameCard& game, const std::string& group,
             std::initializer_list<CardLine> lines, const std::string& message = {},
             unsigned messageColor = 0);
+        // drawGamePanel() for an open save: its file, trainer and path under the name.
+        void drawSavePanel(const SaveSummary& save, const std::string& message);
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
