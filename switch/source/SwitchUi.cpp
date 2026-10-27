@@ -35,6 +35,53 @@ namespace pksm::switchui
         constexpr size_t BALL_SPRITE_BASE = 144;
         constexpr size_t MAX_BALL_SPRITE = 25;
 
+        // The space under the content panels: the button legend and the gap above it.
+        constexpr float SCREEN_BOTTOM_SPACE = theme::LEGEND_HEIGHT + theme::SECTION_GAP;
+
+        // Leaves theme::SECTION_GAP between the last item and the next one.
+        void sectionGap()
+        {
+            ImGui::Dummy(
+                ImVec2(0.0f, theme::SECTION_GAP - ImGui::GetStyle().ItemSpacing.y * 2.0f));
+        }
+
+        bool digitsAt(const std::string& text, size_t first, size_t count)
+        {
+            for (size_t i = first; i < first + count; ++i)
+            {
+                if (text[i] < '0' || text[i] > '9')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // The folder of a backup as the save list shows it. Exported backups are named
+        // "<trainer> - YYYY-MM-DD_HH-MM-SS", which becomes "<trainer> · YYYY-MM-DD HH:MM";
+        // other folder names are shown as they are.
+        std::string backupLabel(const std::string& folderPath)
+        {
+            const size_t slash = folderPath.find_last_of('/');
+            const std::string folder =
+                slash == std::string::npos ? folderPath : folderPath.substr(slash + 1);
+            const size_t dash = folder.rfind(" - ");
+            if (dash == std::string::npos)
+            {
+                return folder;
+            }
+            const std::string stamp = folder.substr(dash + 3);
+            if (stamp.size() != 19 || stamp[4] != '-' || stamp[7] != '-' || stamp[10] != '_' ||
+                stamp[13] != '-' || stamp[16] != '-' || !digitsAt(stamp, 0, 4) ||
+                !digitsAt(stamp, 5, 2) || !digitsAt(stamp, 8, 2) || !digitsAt(stamp, 11, 2) ||
+                !digitsAt(stamp, 14, 2) || !digitsAt(stamp, 17, 2))
+            {
+                return folder;
+            }
+            return folder.substr(0, dash) + " · " + stamp.substr(0, 10) + " " +
+                   stamp.substr(11, 2) + ":" + stamp.substr(14, 2);
+        }
+
         std::string saveCountText(size_t count)
         {
             if (count == 0)
@@ -571,12 +618,87 @@ namespace pksm::switchui
         return Action::None;
     }
 
+    void SwitchUi::drawGameArt(const GameCard& game, const ImVec2& min, float size)
+    {
+        // The game's colour with its mascot on top.
+        const ImVec2 max(min.x + size, min.y + size);
+        ImGui::GetWindowDrawList()->AddRectFilled(min, max, theme::rgb(game.artColor),
+            theme::CARD_RADIUS, ImDrawFlags_RoundCornersTop);
+        const float inset = size * 0.1f;
+        drawPokemonSprite(game.mascotSpecies,
+            {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
+                static_cast<int>(size - inset * 2.0f), static_cast<int>(size - inset * 2.0f)});
+    }
+
+    void SwitchUi::drawGamePanel(const GameCard& game, const std::string& group,
+        std::initializer_list<CardLine> lines, const std::string& message, unsigned messageColor)
+    {
+        constexpr float infoPadding = 14.0f;
+        constexpr float lineGap     = 5.0f;
+        constexpr float dotSize     = 8.0f;
+        constexpr float dotGap      = 7.0f;
+
+        widgets::beginPanel("game-panel", ImVec2(theme::SIDE_PANEL_WIDTH, -SCREEN_BOTTOM_SPACE),
+            group.c_str(), ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        const float width = ImGui::GetContentRegionAvail().x;
+        const ImVec2 min  = ImGui::GetCursorScreenPos();
+
+        // Measure the lines first, so the card ends right after them.
+        const auto textSize = [](const std::string& text, float size, bool medium)
+        {
+            ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
+            const ImVec2 result = ImGui::CalcTextSize(text.c_str());
+            ImGui::PopFont();
+            return result;
+        };
+        const float nameHeight = textSize(game.name, theme::FONT_HEADING, true).y;
+        float infoHeight       = nameHeight;
+        for (const CardLine& line : lines)
+        {
+            infoHeight += lineGap + textSize(line.text, line.size, line.medium).y;
+        }
+        const ImVec2 max(min.x + width, min.y + width + infoPadding * 2.0f + infoHeight);
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(min, max, theme::rgb(theme::CARD_SELECTED), theme::CARD_RADIUS);
+        drawGameArt(game, min, width);
+
+        const float left  = min.x + infoPadding;
+        const float right = max.x - infoPadding;
+        float y           = min.y + width + infoPadding;
+        widgets::drawTextEllipsis(drawList, theme::mediumFont(), theme::FONT_HEADING,
+            ImVec2(left, y), theme::rgb(theme::TEXT), game.name.c_str(), right - left);
+        y += nameHeight + lineGap;
+        for (const CardLine& line : lines)
+        {
+            const ImVec2 size = textSize(line.text, line.size, line.medium);
+            float x           = left;
+            if (line.dotColor != 0)
+            {
+                drawList->AddCircleFilled(ImVec2(x + dotSize * 0.5f, y + size.y * 0.5f),
+                    dotSize * 0.5f, theme::rgb(line.dotColor), 12);
+                x += dotSize + dotGap;
+            }
+            widgets::drawTextEllipsis(drawList,
+                line.medium ? theme::mediumFont() : ImGui::GetFont(), line.size, ImVec2(x, y),
+                theme::rgb(line.color), line.text.c_str(), right - x);
+            y += size.y + lineGap;
+        }
+        ImGui::Dummy(ImVec2(width, max.y - min.y));
+
+        if (!message.empty())
+        {
+            ImGui::Dummy(ImVec2(0.0f, 4.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(messageColor));
+            ImGui::TextWrapped("%s", message.c_str());
+            ImGui::PopStyleColor();
+        }
+        widgets::endPanel();
+    }
+
     bool SwitchUi::drawGameTile(const GameCard& game, float width, float height, bool selected)
     {
-        // Sizes of the canvas tile, which is about 125 pixels wide; the art scales with it.
-        constexpr float canvasWidth = 125.0f;
         constexpr float infoPadding = 10.0f;
-        const float scale           = width / canvasWidth;
 
         const ImVec2 min   = ImGui::GetCursorScreenPos();
         const bool touched = ImGui::InvisibleButton("game-tile", ImVec2(width, height));
@@ -584,29 +706,14 @@ namespace pksm::switchui
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         drawList->AddRectFilled(min, max,
             theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), theme::CARD_RADIUS);
-
-        // The square art: the game's colour, a faint ring in the corner and the mascot.
-        const ImVec2 artMax(max.x, min.y + width);
-        drawList->AddRectFilled(min, artMax, theme::rgb(game.artColor), theme::CARD_RADIUS,
-            ImDrawFlags_RoundCornersTop);
-        drawList->PushClipRect(min, artMax, true);
-        // The canvas ring is 108 pixels across with an 8 pixel line, 20 pixels past the right
-        // edge and 28 past the bottom, so its centre is 34 in from the right and 26 up.
-        drawList->AddCircle(ImVec2(artMax.x - 34.0f * scale, artMax.y - 26.0f * scale),
-            50.0f * scale, IM_COL32(255, 255, 255, 89), 48, 8.0f * scale);
-        drawList->PopClipRect();
-        const float inset = width * 0.1f;
-        drawPokemonSprite(game.mascotSpecies,
-            {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
-                static_cast<int>(width - inset * 2.0f), static_cast<int>(width - inset * 2.0f)});
+        drawGameArt(game, min, width);
 
         // The name under the art, wrapping onto a second line when it must.
-        const ImVec4 clip(min.x, artMax.y, max.x, max.y);
-        const ImVec2 namePosition(min.x + infoPadding, artMax.y + infoPadding);
-        const float wrapWidth = width - infoPadding * 2.0f;
-        const ImU32 nameColor = theme::rgb(theme::TEXT);
-        drawList->AddText(theme::mediumFont(), theme::FONT_BODY, namePosition, nameColor,
-            game.name.c_str(), nullptr, wrapWidth, &clip);
+        const float artBottom = min.y + width;
+        const ImVec4 clip(min.x, artBottom, max.x, max.y);
+        drawList->AddText(theme::mediumFont(), theme::FONT_BODY,
+            ImVec2(min.x + infoPadding, artBottom + infoPadding), theme::rgb(theme::TEXT),
+            game.name.c_str(), nullptr, width - infoPadding * 2.0f, &clip);
 
         widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f),
             saveCountText(game.saveCount).c_str(),
@@ -639,7 +746,7 @@ namespace pksm::switchui
             (ImGui::GetContentRegionAvail().x - cardGap * (columns - 1.0f)) / columns;
         const float tileWidth = (cardWidth - theme::PANEL_PADDING * 2.0f - tileGap) / 2.0f;
         const auto& cards     = grid.cards();
-        ImGui::Dummy(ImVec2(0.0f, theme::SECTION_GAP - ImGui::GetStyle().ItemSpacing.y * 2.0f));
+        sectionGap();
         for (size_t c = 0; c < cards.size(); ++c)
         {
             if (c % GameGrid::COLUMNS != 0)
@@ -684,159 +791,124 @@ namespace pksm::switchui
         const std::vector<std::string>& files, size_t& selected, const std::string& error)
     {
         beginFrame();
+        widgets::drawHeader(tr(Text::SaveListTitle));
+        sectionGap();
 
-        ImGui::TextUnformatted(game.name.c_str());
-        ImGui::SameLine();
-        ImGui::TextDisabled("/ %s", tr(Text::SaveListTitle));
-        ImGui::Separator();
-        ImGui::TextDisabled("%s", tr(Text::SaveListControls));
-        ImGui::Spacing();
+        drawGamePanel(game, group,
+            {{saveCountText(game.saveCount), theme::FONT_CAPTION, theme::TEXT_MUTED, false,
+                game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL}});
 
-        // The game on the left, its saves on the right.
-        constexpr float gamePanelWidth = 260.0f;
-        constexpr float panelGap       = 16.0f;
-        constexpr float panelHeight    = -32.0f;
-        const ImVec2 padding           = ImGui::GetStyle().WindowPadding;
-        ImGui::BeginChild("save-game", ImVec2(gamePanelWidth, panelHeight),
-            ImGuiChildFlags_Borders,
-            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-        ImGui::TextDisabled("%s", group.c_str());
-        const float tileWidth = gamePanelWidth - padding.x * 2.0f;
-        drawGameTile(game, tileWidth,
-            tileWidth + ImGui::GetTextLineHeightWithSpacing() * 3.0f + padding.y * 2.0f, true);
-        ImGui::EndChild();
-
-        ImGui::SameLine(0.0f, panelGap);
-        ImGui::BeginChild("save-files", ImVec2(0.0f, panelHeight), ImGuiChildFlags_Borders);
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("save-files", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE));
         if (!error.empty())
         {
-            ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
+            ImGui::PushStyleColor(ImGuiCol_Text, ERROR_COLOR);
+            ImGui::TextWrapped("%s", error.c_str());
+            ImGui::PopStyleColor();
         }
         if (files.empty())
         {
-            ImGui::TextWrapped("%s", tr(Text::NoSavesFound));
+            widgets::text(tr(Text::NoSavesFound), theme::FONT_ROW_TITLE, theme::TEXT, true);
+            ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(theme::TEXT_MUTED));
             ImGui::TextWrapped("%s", tr(Text::NoSavesHint));
+            ImGui::PopStyleColor();
         }
-        const float rowHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f + 12.0f;
         for (size_t i = 0; i < files.size(); ++i)
         {
-            ImGui::PushID(static_cast<int>(i));
-            const bool isSelected = i == selected;
-            if (isSelected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
-            }
-            const ImVec2 rowStart = ImGui::GetCursorScreenPos();
-            if (ImGui::Selectable("##save", isSelected, ImGuiSelectableFlags_None,
-                    ImVec2(0.0f, rowHeight)))
-            {
-                selected = i;
-            }
-            if (isSelected)
-            {
-                ImGui::PopStyleColor(2);
-                ImGui::SetScrollHereY();
-            }
-            // The file name, with its full path below, drawn over the row. Moving the cursor
-            // back instead would leave it past the list, which Dear ImGui stops on.
+            // The file name; the folder it is in, which names the trainer and the date of the
+            // backup; and the full path.
             const size_t slash     = files[i].find_last_of('/');
             const std::string name =
                 slash == std::string::npos ? files[i] : files[i].substr(slash + 1);
+            const std::string folder =
+                slash == std::string::npos ? std::string{} : backupLabel(files[i].substr(0, slash));
             const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + files[i];
-            ImDrawList* drawList   = ImGui::GetWindowDrawList();
-            const ImVec2 namePosition(rowStart.x + 12.0f, rowStart.y + 6.0f);
-            drawList->AddText(namePosition, ImGui::GetColorU32(ImGuiCol_Text), name.c_str());
-            drawList->AddText(
-                ImVec2(namePosition.x, namePosition.y + ImGui::GetTextLineHeightWithSpacing()),
-                ImGui::GetColorU32(ImGuiCol_TextDisabled), path.c_str());
+            ImGui::PushID(static_cast<int>(i));
+            if (widgets::drawListRow("save",
+                    {name.c_str(), folder.c_str(), path.c_str(), widgets::icons::backup},
+                    i == selected))
+            {
+                selected = i;
+            }
+            if (i == selected)
+            {
+                ImGui::SetScrollHereY();
+            }
             ImGui::PopID();
         }
-        ImGui::EndChild();
+        widgets::endPanel();
 
-        ImGui::TextDisabled("%s", tr(Text::OriginalsUntouched));
+        // Without saves there is nothing to open.
+        if (files.empty())
+        {
+            widgets::drawButtonLegend({{"B", tr(Text::HintBack)}, {"+", tr(Text::HintQuit)}});
+        }
+        else
+        {
+            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)},
+                {"+", tr(Text::HintQuit)}});
+        }
         endFrame();
     }
 
-    void SwitchUi::drawGameMenu(const std::string& game, const std::string& path,
-        const std::string& details, size_t selected, const std::string& message)
+    void SwitchUi::drawGameMenu(const GameCard& game, const std::string& group,
+        const std::string& file, const std::string& details, const std::string& path,
+        size_t selected, const std::string& message)
     {
         struct MenuOption
         {
             Text label;
             Text description;
+            widgets::IconPainter icon;
             bool available;
         };
+        // The order matches GameMenuScreen. A divider follows the third option.
         static constexpr MenuOption options[] = {
-            {Text::MenuStorage, Text::MenuStorageHint, false},
-            {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, true},
-            {Text::MenuEvents, Text::MenuEventsHint, false},
-            {Text::MenuScripts, Text::MenuScriptsHint, false},
-            {Text::MenuBag, Text::MenuBagHint, false},
-            {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, true},
+            {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, widgets::icons::boxes, true},
+            {Text::MenuStorage, Text::MenuStorageHint, widgets::icons::bank, false},
+            {Text::MenuBag, Text::MenuBagHint, widgets::icons::bag, false},
+            {Text::MenuEvents, Text::MenuEventsHint, widgets::icons::gift, false},
+            {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, widgets::icons::trainer, true},
+            {Text::MenuScripts, Text::MenuScriptsHint, widgets::icons::more, false},
         };
+        constexpr size_t dividerAfter = 2;
 
         beginFrame();
+        widgets::drawHeader(tr(Text::ChooseAction));
+        sectionGap();
 
-        ImGui::TextUnformatted(game.c_str());
-        ImGui::SameLine();
-        ImGui::TextDisabled("/ %s", path.c_str());
-        ImGui::Separator();
-        ImGui::TextWrapped("%s", details.c_str());
-        ImGui::Spacing();
+        drawGamePanel(game, group,
+            {{file, 15.0f, theme::BUTTON_FACE, true, 0},
+                {details, theme::FONT_SMALL, theme::TEXT_MUTED, false, 0},
+                {path, theme::FONT_PATH, theme::TEXT_PATH, false, 0}},
+            message, theme::ACCENT);
 
-        constexpr float cardHeight = 118.0f;
-        constexpr float cardGap    = 12.0f;
-        const float cardWidth = (ImGui::GetContentRegionAvail().x - cardGap) / 2.0f;
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("menu-options", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE));
         for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i)
         {
-            if (i % 2 != 0)
-            {
-                ImGui::SameLine(0.0f, cardGap);
-            }
-
+            const MenuOption& option = options[i];
             ImGui::PushID(static_cast<int>(i));
-            if (i == selected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_ChildBg, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_Border,
-                    options[i].available ? ACCENT_COLOR :
-                                           ImVec4(0.35f, 0.40f, 0.46f, 1.0f));
-            }
-            ImGui::BeginChild("menu-option", ImVec2(cardWidth, cardHeight),
-                ImGuiChildFlags_Borders);
-            if (options[i].available)
-            {
-                ImGui::TextUnformatted(tr(options[i].label));
-                ImGui::Spacing();
-                ImGui::TextWrapped("%s", tr(options[i].description));
-            }
-            else
-            {
-                ImGui::TextDisabled("%s", tr(options[i].label));
-                ImGui::Spacing();
-                ImGui::TextDisabled("%s", tr(options[i].description));
-                ImGui::SetCursorPosY(cardHeight - 30.0f);
-                ImGui::TextDisabled("%s", tr(Text::ComingSoon));
-            }
-            ImGui::EndChild();
-            if (i == selected)
-            {
-                ImGui::PopStyleColor(2);
-            }
+            widgets::drawListRow("option",
+                {tr(option.label), tr(option.description),
+                    option.available ? nullptr : tr(Text::ComingSoon), option.icon,
+                    option.available},
+                i == selected);
             ImGui::PopID();
+            if (i == dividerAfter)
+            {
+                // A line between the save's contents and the other tools, as on the canvas.
+                const ImVec2 start = ImGui::GetCursorScreenPos();
+                ImGui::GetWindowDrawList()->AddLine(ImVec2(start.x, start.y + 2.0f),
+                    ImVec2(start.x + ImGui::GetContentRegionAvail().x, start.y + 2.0f),
+                    theme::rgb(theme::BORDER));
+                ImGui::Dummy(ImVec2(0.0f, 4.0f));
+            }
         }
+        widgets::endPanel();
 
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 52.0f);
-        if (!message.empty())
-        {
-            ImGui::TextColored(ACCENT_COLOR, "%s", message.c_str());
-        }
-        else
-        {
-            ImGui::Dummy(ImVec2(0.0f, ImGui::GetTextLineHeight()));
-        }
-        ImGui::TextDisabled("%s", tr(Text::GameMenuControls));
+        widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)},
+            {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"+", tr(Text::HintQuit)}});
         endFrame();
     }
 
