@@ -85,9 +85,9 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export CPPFLAGS	:=	$(INCLUDE)
 export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 
-CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
-SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
-CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
+export CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
+export SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
+export CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
 export PKM_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_SHA256	:=	c54b464de9e56f5b04c7d679bdf0b9b6c84dbea5555bb7ae62862b1862081032
