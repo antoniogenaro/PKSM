@@ -21,7 +21,9 @@ SOURCES		:=	source \
 				../core/source/pkx \
 				../core/source/sav \
 				../core/source/utils \
-				../core/source/wcx
+				../core/source/wcx \
+				../external/imgui \
+				../external/imgui/backends
 INCLUDES	:=	include \
 				../core/include \
 				../core/include/enums \
@@ -31,7 +33,9 @@ INCLUDES	:=	include \
 				../core/include/utils \
 				../core/include/wcx \
 				../core/memecrypto \
-				../core/pcg-cpp/include
+				../core/pcg-cpp/include \
+				../external/imgui \
+				../external/imgui/backends
 
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS		:=	-g -Wall -Wextra -Werror -Wno-unused-parameter \
