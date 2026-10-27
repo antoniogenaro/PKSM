@@ -34,6 +34,35 @@ namespace pksm::switchui::widgets
             return result;
         }
 
+        // The box the visible strokes of `text` cover at `size`, as (left, top, right, bottom)
+        // from where AddText starts it. Empty for text with nothing to draw.
+        ImVec4 inkBounds(ImFont* font, float size, const char* text)
+        {
+            ImFontBaked* baked = font->GetFontBaked(size);
+            ImVec4 bounds(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
+            float x = 0.0f;
+            for (const char* cursor = text; *cursor != '\0';)
+            {
+                unsigned int character = 0;
+                cursor += ImTextCharFromUtf8(&character, cursor, nullptr);
+                const ImFontGlyph* glyph =
+                    baked ? baked->FindGlyph(static_cast<ImWchar>(character)) : nullptr;
+                if (!glyph)
+                {
+                    continue;
+                }
+                if (glyph->Visible)
+                {
+                    bounds.x = std::min(bounds.x, x + glyph->X0);
+                    bounds.y = std::min(bounds.y, glyph->Y0);
+                    bounds.z = std::max(bounds.z, x + glyph->X1);
+                    bounds.w = std::max(bounds.w, glyph->Y1);
+                }
+                x += glyph->AdvanceX;
+            }
+            return bounds.x <= bounds.z ? bounds : ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        }
+
         // A straight dashed line from `from` to `to`.
         void drawDashedLine(ImDrawList* drawList, const ImVec2& from, const ImVec2& to, ImU32 color,
             float thickness)
@@ -190,22 +219,28 @@ namespace pksm::switchui::widgets
                      textSize(hint.label, theme::FONT_BODY, true).x;
         }
 
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        float x              = windowPos.x + windowSize.x - padding.x - total;
+        // Text is centred on its strokes, not on its line: the line leaves room below for
+        // descenders, which button names never have, so they would sit off centre. Labels are
+        // centred on the capitals, so they share the button names' baseline.
+        ImFont* font            = theme::mediumFont();
+        const float centerY     = top + faceSize * 0.5f;
+        const ImVec4 capitals   = inkBounds(font, theme::FONT_BODY, "H");
+        const float labelY      = std::round(centerY - (capitals.y + capitals.w) * 0.5f);
+        ImDrawList* drawList    = ImGui::GetWindowDrawList();
+        float x                 = windowPos.x + windowSize.x - padding.x - total;
         for (const ButtonHint& hint : hints)
         {
-            const float width       = faceWidth(hint);
-            const ImVec2 buttonSize = textSize(hint.button, theme::FONT_BODY, true);
-            const ImVec2 labelSize  = textSize(hint.label, theme::FONT_BODY, true);
+            const float width     = faceWidth(hint);
+            const ImVec4 ink      = inkBounds(font, theme::FONT_BODY, hint.button);
+            const ImVec2 labelSize = textSize(hint.label, theme::FONT_BODY, true);
             drawList->AddRectFilled(ImVec2(x, top), ImVec2(x + width, top + faceSize),
                 theme::rgb(theme::BUTTON_FACE), faceSize * 0.5f);
-            const ImVec2 buttonPosition(
-                x + (width - buttonSize.x) * 0.5f, top + (faceSize - buttonSize.y) * 0.5f);
-            const ImU32 buttonColor = theme::rgb(theme::BACKGROUND);
-            drawText(drawList, buttonPosition, theme::FONT_BODY, buttonColor, hint.button, nullptr,
-                true);
+            const ImVec2 buttonPosition(std::round(x + width * 0.5f - (ink.x + ink.z) * 0.5f),
+                std::round(centerY - (ink.y + ink.w) * 0.5f));
+            drawText(drawList, buttonPosition, theme::FONT_BODY, theme::rgb(theme::BACKGROUND),
+                hint.button, nullptr, true);
             x += width + faceGap;
-            drawText(drawList, ImVec2(x, top + (faceSize - labelSize.y) * 0.5f), theme::FONT_BODY,
+            drawText(drawList, ImVec2(std::round(x), labelY), theme::FONT_BODY,
                 theme::rgb(theme::TEXT_SOFT), hint.label, nullptr, true);
             x += labelSize.x + hintGap;
         }
