@@ -45,6 +45,7 @@
     X(TextureCreateFailed)                                                                         \
     X(TextureLoadFailed)                                                                           \
     X(FontLoadFailed)                                                                              \
+    X(IconLoadFailed)                                                                              \
     /* SD card and files */                                                                        \
     X(SdAccessFailed)                                                                              \
     X(SaveDirectoryFailed)                                                                         \

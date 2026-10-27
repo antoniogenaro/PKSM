@@ -87,6 +87,7 @@ export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 
 export CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
 export SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
+export SWITCH_ICON_FILES	:=	$(wildcard $(TOPDIR)/icons/*.svg)
 export CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
 export UI_FONT_FILES	:=	$(TOPDIR)/../assets/gfx/ui/Roboto.ttf $(TOPDIR)/../assets/gfx/ui/OFL-Roboto.txt \
 				$(TOPDIR)/../external/imgui/misc/fonts/Roboto-Medium.ttf
@@ -118,7 +119,7 @@ all: $(OUTPUT).nro
 
 $(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg \
 		$(DEPSDIR)/i18n.stamp $(DEPSDIR)/strings.stamp $(DEPSDIR)/personal.stamp \
-		$(DEPSDIR)/fonts.stamp \
+		$(DEPSDIR)/fonts.stamp $(DEPSDIR)/icons.stamp \
 		$(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
 
 $(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) | $(DEPSDIR)
@@ -130,6 +131,12 @@ $(DEPSDIR)/strings.stamp: $(SWITCH_STRING_FILES) | $(DEPSDIR)
 	@rm -rf $(ROMFS_PATH)/strings
 	@mkdir -p $(ROMFS_PATH)/strings
 	@cp $(TOPDIR)/strings/*.json $(ROMFS_PATH)/strings/
+	@touch $@
+
+$(DEPSDIR)/icons.stamp: $(SWITCH_ICON_FILES) | $(DEPSDIR)
+	@rm -rf $(ROMFS_PATH)/icons
+	@mkdir -p $(ROMFS_PATH)/icons
+	@cp $(TOPDIR)/icons/*.svg $(ROMFS_PATH)/icons/
 	@touch $@
 
 # Also after Makefile changes, so a font added to the list is copied even when it is older.
