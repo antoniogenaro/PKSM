@@ -35,6 +35,9 @@ namespace pksm::switchui::icons
             "romfs:/icons/more.svg",
             "romfs:/icons/backup.svg",
             "romfs:/icons/edit.svg",
+            "romfs:/icons/male.svg",
+            "romfs:/icons/female.svg",
+            "romfs:/icons/shiny.svg",
         }};
 
         // On the canvas, icons are 26 pixels wide in a 48 pixel box.

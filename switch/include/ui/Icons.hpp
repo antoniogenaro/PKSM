@@ -20,6 +20,9 @@ namespace pksm::switchui::icons
         More,    // Three dots: other tools.
         Backup,  // Two overlapping squares: a backup copy.
         Edit,    // A pencil: the value can be changed.
+        Male,    // ♂
+        Female,  // ♀
+        Shiny,   // A four-pointed star.
         Count
     };
 

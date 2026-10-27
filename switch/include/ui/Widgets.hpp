@@ -4,6 +4,7 @@
 #include "ui/Icons.hpp"
 
 #include <initializer_list>
+#include <string>
 
 // The building blocks every screen of the design canvas shares: the PKSM header, panels, list
 // rows, dashed "import" buttons and the button legend. They draw into the current ImGui window
@@ -33,8 +34,12 @@ namespace pksm::switchui::widgets
     };
 
     // The button legend along the bottom right of the current window. It does not move the cursor,
-    // so content above should leave theme::LEGEND_HEIGHT free.
-    void drawButtonLegend(std::initializer_list<ButtonHint> hints);
+    // so content above should leave theme::LEGEND_HEIGHT free. Returns how wide it is.
+    float drawButtonLegend(std::initializer_list<ButtonHint> hints);
+
+    // `text` in `color` (0xRRGGBB) along the bottom left of the current window, on the legend's
+    // line, cut short with "…" past `maxWidth`.
+    void drawFooterMessage(const std::string& text, unsigned color, float maxWidth);
 
     // A rounded panel of `size` (0 or negative fills, as for BeginChild) with an optional
     // `caption` such as "GEN IX · ESCARLATA". Always call endPanel() afterwards.
