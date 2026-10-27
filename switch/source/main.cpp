@@ -53,7 +53,11 @@ int main(int argc, char* argv[])
         return 1;
     }
     RomfsCleanup romfsCleanup;
-    pksm::switchui::setTextLanguage(pksm::switchui::systemTextLanguage());
+    if (!pksm::switchui::loadTexts(pksm::switchui::systemTextLanguage()))
+    {
+        SDL_Log("Some language files in %s could not be read.",
+            std::string(pksm::switchui::TEXT_FOLDER).c_str());
+    }
     pksm::switchui::SwitchUi ui;
     std::string uiError;
     if (!ui.initialize(uiError))

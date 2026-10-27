@@ -40,6 +40,7 @@ INCLUDES	:=	include \
 				../core/include/wcx \
 				../core/memecrypto \
 				../core/pcg-cpp/include \
+				../external \
 				../external/imgui \
 				../external/imgui/backends
 
@@ -85,6 +86,7 @@ export CPPFLAGS	:=	$(INCLUDE)
 export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 
 CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
+SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
 CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
 export PKM_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/pkm_spritesheet.t3x
@@ -111,12 +113,18 @@ else
 all: $(OUTPUT).nro
 
 $(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg \
-		$(DEPSDIR)/i18n.stamp $(DEPSDIR)/personal.stamp \
+		$(DEPSDIR)/i18n.stamp $(DEPSDIR)/strings.stamp $(DEPSDIR)/personal.stamp \
 		$(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
 
 $(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) | $(DEPSDIR)
 	@mkdir -p $(ROMFS_PATH)/i18n
 	@cp -R $(TOPDIR)/../core/strings/* $(ROMFS_PATH)/i18n/
+	@touch $@
+
+$(DEPSDIR)/strings.stamp: $(SWITCH_STRING_FILES) | $(DEPSDIR)
+	@rm -rf $(ROMFS_PATH)/strings
+	@mkdir -p $(ROMFS_PATH)/strings
+	@cp $(TOPDIR)/strings/*.json $(ROMFS_PATH)/strings/
 	@touch $@
 
 $(DEPSDIR)/personal.stamp: $(CORE_PERSONAL_FILES) | $(DEPSDIR)

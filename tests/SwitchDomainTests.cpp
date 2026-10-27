@@ -29,8 +29,12 @@
 #include "domain/FieldValues.hpp"
 #include "domain/GameProfile.hpp"
 #include "domain/SaveCache.hpp"
+#include "nlohmann/json.hpp"
 #include "ui/Text.hpp"
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -151,33 +155,66 @@ namespace
     size_t placeholders(std::string_view text)
     {
         size_t count = 0;
-        for (size_t at = text.find("{}"); at != std::string_view::npos; at = text.find("{}", at + 2))
+        for (size_t at = text.find("{}"); at != std::string_view::npos;
+             at        = text.find("{}", at + 2))
         {
             ++count;
         }
         return count;
     }
 
+    nlohmann::json readJson(const std::filesystem::path& path)
+    {
+        std::ifstream file(path, std::ios::binary);
+        const std::string content{std::istreambuf_iterator<char>(file), {}};
+        return nlohmann::json::parse(content, nullptr, false);
+    }
+
+    void writeFile(const std::filesystem::path& path, std::string_view content)
+    {
+        std::ofstream(path, std::ios::binary) << content;
+    }
+
+    // Every language file has exactly the app's keys, each a text with English's values.
+    void testLanguageFiles()
+    {
+        const nlohmann::json english = readJson(std::filesystem::path(SWITCH_STRINGS) / "en.json");
+        check(english.is_object(), "en.json is a JSON object");
+        for (const auto language : {TextLanguage::English, TextLanguage::Spanish})
+        {
+            const nlohmann::json json =
+                readJson(std::filesystem::path(SWITCH_STRINGS) /
+                         (std::string(textLanguageCode(language)) + ".json"));
+            bool valid            = json.is_object() && english.is_object();
+            bool allPresent       = valid;
+            bool samePlaceholders = valid;
+            for (size_t index = 0; valid && index < static_cast<size_t>(Text::Count); ++index)
+            {
+                const char* key    = textKey(static_cast<Text>(index));
+                const auto found   = json.find(key);
+                const auto base    = english.find(key);
+                const bool present = found != json.end() && found->is_string() &&
+                                     !found->get<std::string>().empty() && base != english.end() &&
+                                     base->is_string();
+                allPresent       = allPresent && present;
+                samePlaceholders = samePlaceholders && present &&
+                                   placeholders(found->get<std::string>()) ==
+                                       placeholders(base->get<std::string>());
+            }
+            check(valid, "every language file is a JSON object");
+            check(allPresent, "every language file has every text");
+            check(samePlaceholders, "every language inserts the same values");
+            check(!valid || json.size() == static_cast<size_t>(Text::Count),
+                "no language file has unknown keys");
+        }
+    }
+
     void testTexts()
     {
         check(textLanguage() == TextLanguage::English, "English is the default language");
+        check(std::string(tr(Text::Yes)) == "Yes", "before loading, a text is its key");
 
-        bool allPresent       = true;
-        bool samePlaceholders = true;
-        for (size_t index = 0; index < static_cast<size_t>(Text::Count); ++index)
-        {
-            const Text key = static_cast<Text>(index);
-            setTextLanguage(TextLanguage::English);
-            const std::string english = tr(key);
-            setTextLanguage(TextLanguage::Spanish);
-            const std::string spanish = tr(key);
-            allPresent       = allPresent && !english.empty() && !spanish.empty();
-            samePlaceholders = samePlaceholders && placeholders(english) == placeholders(spanish);
-        }
-        check(allPresent, "every text has a value in every language");
-        check(samePlaceholders, "every language inserts the same values");
-
-        setTextLanguage(TextLanguage::English);
+        check(loadTexts(TextLanguage::English, SWITCH_STRINGS), "English loads");
         check(std::string(tr(Text::Yes)) == "Yes", "English text");
         check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exported to sdmc:/a", "one value");
         check(tr(Text::BoxSection, {"3", "32", "Box 3"}) == "Box 3/32  /  Box 3",
@@ -185,12 +222,37 @@ namespace
         check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
         check(tr(Text::Yes, {"ignored"}) == "Yes", "extra values are ignored");
 
-        setTextLanguage(TextLanguage::Spanish);
+        check(loadTexts(TextLanguage::Spanish, SWITCH_STRINGS), "Spanish loads");
         check(textLanguage() == TextLanguage::Spanish, "the language can change");
         check(std::string(tr(Text::Yes)) == "Sí", "Spanish text");
         check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "Spanish value");
         check(std::string(tr(Text::GameSword)) == "Pokemon Espada", "Spanish game name");
-        setTextLanguage(TextLanguage::English);
+
+        // A translation that lacks a text, or inserts other values, falls back to English.
+        const std::filesystem::path folder =
+            std::filesystem::temp_directory_path() / "pksm-switch-text-tests";
+        std::filesystem::remove_all(folder);
+        std::filesystem::create_directories(folder);
+        writeFile(
+            folder / "en.json", R"({"Yes": "Yes", "No": "No", "ExportedTo": "Exported to {}"})");
+        writeFile(folder / "es.json", R"({"Yes": "Sí", "ExportedTo": "Exportado"})");
+        check(loadTexts(TextLanguage::Spanish, folder.string()), "partial files still load");
+        check(std::string(tr(Text::Yes)) == "Sí", "translated text is used");
+        check(std::string(tr(Text::No)) == "No", "a missing text comes from English");
+        check(std::string(tr(Text::ExportedTo)) == "Exported to {}",
+            "a text with other values comes from English");
+        check(std::string(tr(Text::Empty)) == "Empty", "a text missing everywhere is its key");
+
+        writeFile(folder / "es.json", "{ not json");
+        check(!loadTexts(TextLanguage::Spanish, folder.string()), "broken JSON is reported");
+        check(std::string(tr(Text::Yes)) == "Yes", "broken JSON falls back to English");
+
+        check(!loadTexts(TextLanguage::English, (folder / "missing").string()),
+            "a missing file is reported");
+        check(std::string(tr(Text::Yes)) == "Yes", "without files, a text is its key");
+        std::filesystem::remove_all(folder);
+
+        check(loadTexts(TextLanguage::English, SWITCH_STRINGS), "English loads again");
     }
 
     void testSaveCache()
@@ -224,8 +286,8 @@ namespace
         check(same.changed(), "forgetting a file marks the cache changed");
         check(!same.lookup("b\twith tab/main", stamp), "forgotten files are gone");
 
-        check(!SaveCache::parse("pksm-switch-saves 0\n1\t2\t44\ta/main\n").lookup(
-                  "a/main", SaveCache::Stamp{1, 2}),
+        check(!SaveCache::parse("pksm-switch-saves 0\n1\t2\t44\ta/main\n")
+                   .lookup("a/main", SaveCache::Stamp{1, 2}),
             "another format version is ignored");
         const SaveCache damaged = SaveCache::parse(
             "pksm-switch-saves 1\nnot a line\n1\tx\t44\tb/main\n1\t2\t44\t\n1\t2\t45\tc/main");
@@ -239,6 +301,7 @@ int main()
 {
     // Before anything changes the language, so it checks the default.
     testTexts();
+    testLanguageFiles();
     testGameProfiles();
     testClampedSteps();
     testWrappedSteps();
