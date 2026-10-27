@@ -180,16 +180,6 @@
     X(NaturePickerHint)                                                                            \
     X(NaturePickerControls)                                                                        \
     X(NatureNeutral)                                                                               \
-    X(LowerAttack)                                                                                 \
-    X(LowerDefense)                                                                                \
-    X(LowerSpeed)                                                                                  \
-    X(LowerSpAttack)                                                                               \
-    X(LowerSpDefense)                                                                              \
-    X(RaiseAttack)                                                                                 \
-    X(RaiseDefense)                                                                                \
-    X(RaiseSpeed)                                                                                  \
-    X(RaiseSpAttack)                                                                               \
-    X(RaiseSpDefense)                                                                              \
     X(EnterNumber)                                                                                 \
     X(NumberOutOfRange)
 

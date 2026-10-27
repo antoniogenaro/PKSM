@@ -160,16 +160,6 @@
     "NaturePickerHint": "Selecciona una naturaleza según sus estadísticas",
     "NaturePickerControls": "Flechas: mover    A: seleccionar    B: volver",
     "NatureNeutral": "Neutra",
-    "LowerAttack": "-Ataque",
-    "LowerDefense": "-Defensa",
-    "LowerSpeed": "-Velocidad",
-    "LowerSpAttack": "-At. Esp.",
-    "LowerSpDefense": "-Def. Esp.",
-    "RaiseAttack": "+Ataque",
-    "RaiseDefense": "+Defensa",
-    "RaiseSpeed": "+Velocidad",
-    "RaiseSpAttack": "+At. Esp.",
-    "RaiseSpDefense": "+Def. Esp.",
     "EnterNumber": "Introduce un número.",
     "NumberOutOfRange": "El número está fuera del rango permitido."
 }
