@@ -3,6 +3,7 @@
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
 #include "app/Session.hpp"
+#include "domain/FormSprites.hpp"
 #include "pkx/PKX.hpp"
 #include "sav/Sav.hpp"
 #include "screens/PokemonFields.hpp"
@@ -89,6 +90,6 @@ namespace pksm::switchui
                    : tr(Text::PokemonInBox, {pokemonSummary(*pokemon_), numericValue(box_ + 1),
                                                 numericValue(slot_ + 1)});
         ui.drawPokemonEditor(game_, path_, title, static_cast<size_t>(pokemon_->species()),
-            fields, selected_, session_.dirty(), message_);
+            formSpriteIndex(*pokemon_), fields, selected_, session_.dirty(), message_);
     }
 }

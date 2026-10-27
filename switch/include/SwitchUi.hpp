@@ -67,6 +67,8 @@ namespace pksm::switchui
     {
         bool empty     = true;
         size_t species = 0;
+        // The types sheet's sprite for the form, or 0 for the species' own sprite.
+        size_t formSprite = 0;
     };
 
     // What the box screen shows of the selected Pokémon.
@@ -87,6 +89,8 @@ namespace pksm::switchui
 
         bool empty     = true;
         size_t species = 0;
+        // The types sheet's sprite for the form, or 0 for the species' own sprite.
+        size_t formSprite = 0;
         std::string number;   // "N.º 025"
         std::string name;     // The species.
         std::string level;    // "Nv. 50"
@@ -150,7 +154,8 @@ namespace pksm::switchui
         // The boxes and party with the selected Pokémon's detail. Touching a slot selects it.
         void drawBoxes(BoxView& view);
         void drawPokemonEditor(const std::string& game, const std::string& path,
-            const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
+            const std::string& pokemon, size_t speciesIndex, size_t formSprite,
+            const std::vector<Field>& fields,
             size_t selected, bool dirty, const std::string& error);
         // The trainer's fields as a grid of TRAINER_COLUMNS cards, filled row by row. `message`
         // is shown under the game card.
@@ -214,7 +219,9 @@ namespace pksm::switchui
             std::vector<PokemonSprite>& sprites, std::string& error);
         void drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,
             size_t index, size_t baseIndex, const SDL_Rect& destination);
-        void drawPokemonSprite(size_t index, const SDL_Rect& destination);
+        // The species' sprite, or `formSprite` from the types sheet when it is not 0.
+        void drawPokemonSprite(
+            size_t index, const SDL_Rect& destination, size_t formSprite = 0);
         void drawBallSprite(size_t index, const SDL_Rect& destination);
 
         bool imguiInitialized_ = false;

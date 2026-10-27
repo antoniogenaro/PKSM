@@ -2,6 +2,7 @@
 
 #include "SwitchUi.hpp"
 #include "domain/FieldValues.hpp"
+#include "domain/FormSprites.hpp"
 #include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
@@ -474,7 +475,7 @@ namespace pksm::switchui
         {
             return {};
         }
-        return {false, static_cast<size_t>(pokemon->species())};
+        return {false, static_cast<size_t>(pokemon->species()), formSpriteIndex(*pokemon)};
     }
 
     PokemonDetail describePokemon(const pksm::PKX& pokemon)
@@ -489,6 +490,7 @@ namespace pksm::switchui
 
         detail.empty   = false;
         detail.species = species;
+        detail.formSprite = formSpriteIndex(pokemon);
         detail.number  = tr(Text::DexNumber, {padDigits(species, 3)});
         detail.name    = pokemon.egg() ? std::string(tr(Text::FieldEgg))
                                        : pokemon.species().localize(language);
