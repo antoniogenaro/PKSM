@@ -88,8 +88,8 @@
     X(MenuPokemonEditorHint)                                                                       \
     X(MenuEvents)                                                                                  \
     X(MenuEventsHint)                                                                              \
-    X(MenuScripts)                                                                                 \
-    X(MenuScriptsHint)                                                                             \
+    X(MenuOther)                                                                                   \
+    X(MenuOtherHint)                                                                               \
     X(MenuBag)                                                                                     \
     X(MenuBagHint)                                                                                 \
     X(MenuTrainerEditor)                                                                           \

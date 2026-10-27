@@ -878,7 +878,7 @@ namespace pksm::switchui
             {Text::MenuBag, Text::MenuBagHint, icons::Icon::Bag, false},
             {Text::MenuEvents, Text::MenuEventsHint, icons::Icon::Gift, false},
             {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, icons::Icon::Trainer, true},
-            {Text::MenuScripts, Text::MenuScriptsHint, icons::Icon::More, false},
+            {Text::MenuOther, Text::MenuOtherHint, icons::Icon::More, false},
         };
         constexpr size_t dividerAfter = 2;
 
