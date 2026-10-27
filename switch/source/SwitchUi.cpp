@@ -860,9 +860,16 @@ namespace pksm::switchui
         endFrame();
     }
 
-    void SwitchUi::drawGameMenu(const GameCard& game, const std::string& group,
-        const std::string& file, const std::string& details, const std::string& path,
-        size_t selected, const std::string& message)
+    void SwitchUi::drawSavePanel(const SaveSummary& save, const std::string& message)
+    {
+        drawGamePanel(save.game, save.group,
+            {{save.file, 15.0f, theme::BUTTON_FACE, true, 0},
+                {save.details, theme::FONT_SMALL, theme::TEXT_MUTED, false, 0},
+                {save.path, theme::FONT_PATH, theme::TEXT_PATH, false, 0}},
+            message, theme::ACCENT);
+    }
+
+    void SwitchUi::drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message)
     {
         struct MenuOption
         {
@@ -886,11 +893,7 @@ namespace pksm::switchui
         widgets::drawHeader(tr(Text::ChooseAction));
         sectionGap();
 
-        drawGamePanel(game, group,
-            {{file, 15.0f, theme::BUTTON_FACE, true, 0},
-                {details, theme::FONT_SMALL, theme::TEXT_MUTED, false, 0},
-                {path, theme::FONT_PATH, theme::TEXT_PATH, false, 0}},
-            message, theme::ACCENT);
+        drawSavePanel(save, message);
 
         ImGui::SameLine(0.0f, theme::PANEL_GAP);
         widgets::beginPanel("menu-options", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE));
@@ -1055,34 +1058,44 @@ namespace pksm::switchui
         endFrame();
     }
 
-    void SwitchUi::drawTrainer(const std::string& game, const std::string& path,
-        const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error)
+    void SwitchUi::drawTrainer(const SaveSummary& save, const std::vector<Field>& fields,
+        size_t selected, const std::string& message)
     {
+        // Three rows hold the trainer's fields; more fields add rows.
+        constexpr size_t minimumRows = 3;
+        constexpr float cardGap      = 12.0f;
+
         beginFrame();
-        ImGui::TextUnformatted(tr(Text::TrainerHeader, {game, path}).c_str());
-        ImGui::Separator();
-        ImGui::BeginChild("trainer-fields", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
+        widgets::drawHeader(tr(Text::MenuTrainerEditor));
+        sectionGap();
+
+        drawSavePanel(save, message);
+
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("trainer-fields", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr,
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        const size_t rows =
+            std::max(minimumRows, (fields.size() + TRAINER_COLUMNS - 1) / TRAINER_COLUMNS);
+        const ImVec2 origin    = ImGui::GetCursorScreenPos();
+        const ImVec2 available = ImGui::GetContentRegionAvail();
+        const float columns    = static_cast<float>(TRAINER_COLUMNS);
+        const ImVec2 cardSize((available.x - cardGap * (columns - 1.0f)) / columns,
+            (available.y - cardGap * static_cast<float>(rows - 1)) / static_cast<float>(rows));
         for (size_t i = 0; i < fields.size(); ++i)
         {
+            const float column = static_cast<float>(i % TRAINER_COLUMNS);
+            const float row    = static_cast<float>(i / TRAINER_COLUMNS);
+            ImGui::SetCursorScreenPos(ImVec2(origin.x + column * (cardSize.x + cardGap),
+                origin.y + row * (cardSize.y + cardGap)));
             ImGui::PushID(static_cast<int>(i));
-            if (i == selected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
-            }
-            ImGui::Selectable(fields[i].label.c_str(), i == selected,
-                ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 42.0f));
-            ImGui::SameLine(420.0f);
-            ImGui::TextWrapped("%s", fields[i].value.c_str());
-            if (i == selected)
-            {
-                ImGui::PopStyleColor(2);
-            }
+            widgets::drawFieldCard("field", fields[i].label.c_str(), fields[i].value.c_str(),
+                cardSize, i == selected, fields[i].editable);
             ImGui::PopID();
         }
-        ImGui::EndChild();
-        drawStatusLine(dirty, error);
-        ImGui::TextDisabled("%s", tr(Text::TrainerControls));
+        widgets::endPanel();
+
+        widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"L / R", tr(Text::HintChange)},
+            {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
         endFrame();
     }
 

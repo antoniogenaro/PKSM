@@ -73,6 +73,8 @@
     X(HintBack)                                                                                    \
     X(HintExport)                                                                                  \
     X(HintDiscard)                                                                                 \
+    X(HintEdit)                                                                                    \
+    X(HintChange)                                                                                  \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
@@ -174,17 +176,31 @@
     X(November)                                                                                    \
     X(December)                                                                                    \
     /* Trainer editor */                                                                           \
-    X(TrainerHeader)                                                                               \
-    X(TrainerControls)                                                                             \
     X(TrainerName)                                                                                 \
     X(TrainerNameTitle)                                                                            \
     X(TrainerTid)                                                                                  \
     X(TrainerSid)                                                                                  \
     X(TrainerMoney)                                                                                \
     X(TrainerBattlePoints)                                                                         \
-    X(TrainerHours)                                                                                \
-    X(TrainerMinutes)                                                                              \
-    X(TrainerSeconds)                                                                              \
+    X(TrainerPlayTime)                                                                             \
+    X(TrainerPlayTimeTitle)                                                                        \
+    X(MoneyValue)                                                                                  \
+    X(ThousandsSeparator)                                                                          \
+    X(InvalidPlayTime)                                                                             \
+    X(TrainerGender)                                                                               \
+    X(TrainerMale)                                                                                 \
+    X(TrainerFemale)                                                                               \
+    X(TrainerLanguage)                                                                             \
+    X(LanguageJapanese)                                                                            \
+    X(LanguageEnglish)                                                                             \
+    X(LanguageFrench)                                                                              \
+    X(LanguageItalian)                                                                             \
+    X(LanguageGerman)                                                                              \
+    X(LanguageSpanish)                                                                             \
+    X(LanguageKorean)                                                                              \
+    X(LanguageChineseSimplified)                                                                   \
+    X(LanguageChineseTraditional)                                                                  \
+    X(LanguageUnknown)                                                                             \
     /* Pickers and keyboard */                                                                     \
     X(ChooseOption)                                                                                \
     X(OptionPickerControls)                                                                        \

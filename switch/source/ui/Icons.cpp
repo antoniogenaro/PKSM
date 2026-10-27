@@ -34,6 +34,7 @@ namespace pksm::switchui::icons
             "romfs:/icons/trainer.svg",
             "romfs:/icons/more.svg",
             "romfs:/icons/backup.svg",
+            "romfs:/icons/edit.svg",
         }};
 
         // On the canvas, icons are 26 pixels wide in a 48 pixel box.
@@ -133,14 +134,15 @@ namespace pksm::switchui::icons
 
     void draw(ImDrawList* drawList, Icon icon, const ImVec2& min, float boxSize, ImU32 color)
     {
+        const int pixels   = static_cast<int>(std::lround(boxSize * GLYPH_SHARE));
+        const float offset = std::floor((boxSize - static_cast<float>(pixels)) * 0.5f);
+        drawSized(drawList, icon, ImVec2(min.x + offset, min.y + offset), pixels, color);
+    }
+
+    void drawSized(ImDrawList* drawList, Icon icon, const ImVec2& min, int pixels, ImU32 color)
+    {
         const size_t index = static_cast<size_t>(icon);
-        if (icon == Icon::None || index >= ICON_COUNT)
-        {
-            return;
-        }
-        // Whole pixels, placed on whole pixels, so the texture is drawn 1:1.
-        const int pixels = static_cast<int>(std::lround(boxSize * GLYPH_SHARE));
-        if (pixels <= 0)
+        if (icon == Icon::None || index >= ICON_COUNT || pixels <= 0)
         {
             return;
         }
@@ -149,8 +151,8 @@ namespace pksm::switchui::icons
         {
             return;
         }
-        const float offset = std::floor((boxSize - static_cast<float>(pixels)) * 0.5f);
-        const ImVec2 topLeft(std::floor(min.x + offset), std::floor(min.y + offset));
+        // Whole pixels, placed on whole pixels, so the texture is drawn 1:1.
+        const ImVec2 topLeft(std::floor(min.x), std::floor(min.y));
         drawList->AddImage(ImTextureRef(static_cast<void*>(texture)), topLeft,
             ImVec2(topLeft.x + static_cast<float>(pixels), topLeft.y + static_cast<float>(pixels)),
             ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), color);

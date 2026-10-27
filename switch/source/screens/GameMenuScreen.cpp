@@ -4,9 +4,9 @@
 #include "app/App.hpp"
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
-#include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
 #include "screens/BoxBrowserScreen.hpp"
+#include "screens/SaveSummary.hpp"
 #include "screens/TrainerEditorScreen.hpp"
 #include "utils/i18n.hpp"
 #include "ui/Text.hpp"
@@ -102,16 +102,8 @@ namespace pksm::switchui
 
     void GameMenuScreen::draw(SwitchUi& ui)
     {
-        pksm::Sav& save            = session_->save();
-        const GameProfile& profile = session_->profile();
-        const std::string details  = tr(Text::TrainerSummary, {save.otName(),
-             std::to_string(save.displayTID()), std::to_string(save.displaySID())});
-        const size_t slash         = path_.find_last_of('/');
-        const std::string file =
-            slash == std::string::npos ? path_ : path_.substr(slash + 1);
-        ui.drawGameMenu(GameCard{tr(profile.name), profile.mascotSpecies, 0, profile.artColor},
-            tr(profile.group), file, details, std::string(storage::SAVE_DIRECTORY) + "/" + path_,
-            selected_, message_);
+        ui.drawGameMenu(
+            summarizeSave(*session_, path_), selected_, sessionMessage(*session_, message_));
     }
 
     void GameMenuScreen::onResume()

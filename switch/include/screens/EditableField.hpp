@@ -32,7 +32,9 @@ namespace pksm::switchui
             None,
             Keyboard,
             // A picker listing every value from min to max, named by `label` when set.
-            List
+            List,
+            // The keyboard, for a play time in minutes typed as "hh:mm".
+            PlayTime
         };
 
         enum class ChoicePicker

@@ -194,6 +194,24 @@ namespace pksm::switchui
                         }
                         return;
                     }
+                    case EditableField::NumberInput::PlayTime:
+                    {
+                        const unsigned int current = field.get();
+                        std::string input;
+                        unsigned int value = 0;
+                        if (!app.ui().editText(field.title, formatPlayTime(current), input, 12) ||
+                            !parsePlayTime(input, field.inputMax, value, message))
+                        {
+                            return;
+                        }
+                        value = std::clamp(value, field.min, field.max);
+                        if (value != current)
+                        {
+                            field.set(value);
+                            onChanged();
+                        }
+                        return;
+                    }
                     case EditableField::NumberInput::List:
                     {
                         std::vector<unsigned int> values;
@@ -239,6 +257,7 @@ namespace pksm::switchui
         for (const auto& field : fields)
         {
             display.push_back(field.display);
+            display.back().editable = field.kind != EditableField::Kind::ReadOnly;
         }
         return display;
     }
