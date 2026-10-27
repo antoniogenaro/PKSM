@@ -69,13 +69,14 @@
     X(HintOpen)                                                                                    \
     X(GameListPrompt)                                                                              \
     X(HintQuit)                                                                                    \
+    X(HintBack)                                                                                    \
+    X(HintExport)                                                                                  \
+    X(HintDiscard)                                                                                 \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
-    X(OriginalsUntouched)                                                                          \
     /* Save list */                                                                                \
     X(SaveListTitle)                                                                               \
-    X(SaveListControls)                                                                            \
     X(NoSavesFound)                                                                                \
     X(NoSavesHint)                                                                                 \
     /* Game menu */                                                                                \
@@ -93,7 +94,7 @@
     X(MenuTrainerEditor)                                                                           \
     X(MenuTrainerEditorHint)                                                                       \
     X(ComingSoon)                                                                                  \
-    X(GameMenuControls)                                                                            \
+    X(ChooseAction)                                                                                \
     X(NoBoxes)                                                                                     \
     X(OptionUnavailable)                                                                           \
     /* Boxes and party */                                                                          \

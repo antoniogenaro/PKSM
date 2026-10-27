@@ -2,7 +2,9 @@
 
 #include <SDL.h>
 #include <switch.h>
+#include "imgui.h"
 #include <cstddef>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -63,8 +65,11 @@ namespace pksm::switchui
         // The saves of one game, as paths relative to the save folder.
         void drawSaveList(const GameCard& game, const std::string& group,
             const std::vector<std::string>& files, size_t& selected, const std::string& error);
-        void drawGameMenu(const std::string& game, const std::string& path,
-            const std::string& details, size_t selected, const std::string& message);
+        // The actions for an open save: `file` is its name, `details` the trainer and IDs and
+        // `path` its full path. `message` is shown under the game card.
+        void drawGameMenu(const GameCard& game, const std::string& group, const std::string& file,
+            const std::string& details, const std::string& path, size_t selected,
+            const std::string& message);
         void drawPokemonSlots(const std::string& game, const std::string& path,
             const std::string& section, const std::vector<Field>& fields, size_t selected,
             bool dirty, const std::string& error);
@@ -101,6 +106,24 @@ namespace pksm::switchui
         void drawStatusLine(bool dirty, const std::string& error);
         // A game's mascot over its name and how many saves it has. Returns true when touched.
         bool drawGameTile(const GameCard& game, float width, float height, bool selected);
+        // The square art of a game, `size` wide, at `min`: its colour and its mascot.
+        void drawGameArt(const GameCard& game, const ImVec2& min, float size);
+
+        // One line under the game's name on the side panel. A non-zero `dotColor` (0xRRGGBB)
+        // puts a status dot before it.
+        struct CardLine
+        {
+            std::string text;
+            float size;
+            unsigned color;
+            bool medium;
+            unsigned dotColor;
+        };
+        // The panel on the left of the save list and the game menu: `group` as its caption, the
+        // game's card with `lines` under its name, and `message` under the card.
+        void drawGamePanel(const GameCard& game, const std::string& group,
+            std::initializer_list<CardLine> lines, const std::string& message = {},
+            unsigned messageColor = 0);
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);

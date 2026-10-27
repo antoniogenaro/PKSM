@@ -13,6 +13,11 @@ namespace pksm::switchui::widgets
     // when `medium`, then moves the cursor below it.
     void text(const char* text, float size, unsigned color, bool medium = false);
 
+    // Draws `text` at `position`; when it is wider than `maxWidth`, cuts it short and ends it
+    // with "…" so it fits.
+    void drawTextEllipsis(ImDrawList* drawList, ImFont* font, float size, const ImVec2& position,
+        ImU32 color, const char* text, float maxWidth);
+
     // A Poké Ball of `radius` centred on `center`.
     void drawPokeBall(ImDrawList* drawList, const ImVec2& center, float radius);
 
@@ -54,6 +59,20 @@ namespace pksm::switchui::widgets
         IconPainter icon     = nullptr;
         bool enabled         = true;
     };
+
+    // The icons of the canvas list rows, for ListRow::icon. Each draws the canvas SVG, scaled so
+    // it fills the icon box as on the 48 pixel canvas box.
+    namespace icons
+    {
+        void boxes(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        void bank(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        void bag(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        void gift(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        void trainer(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        void more(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+        // Two overlapping squares: a backup copy.
+        void backup(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
+    }
 
     // Draws `row` across the available width. Returns true when touched.
     bool drawListRow(const char* id, const ListRow& row, bool selected);
