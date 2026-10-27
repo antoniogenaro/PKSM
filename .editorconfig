@@ -1,0 +1,13 @@
+root = true
+
+[*]
+end_of_line = lf
+
+[switch/include/SwitchSaveFiles.hpp]
+end_of_line = crlf
+
+[tests/Makefile]
+end_of_line = unset
+
+[tests/SwitchSaveFilesTests.cpp]
+end_of_line = crlf
