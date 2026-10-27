@@ -76,6 +76,9 @@
     X(HintEdit)                                                                                    \
     X(HintChange)                                                                                  \
     X(HintChangeBox)                                                                               \
+    X(HintMove)                                                                                    \
+    X(HintDrop)                                                                                    \
+    X(HintCancel)                                                                                  \
     /* Boxes */                                                                                    \
     X(PartyTitle)                                                                                  \
     X(SlotCount)                                                                                   \
@@ -119,6 +122,8 @@
     /* Boxes and party */                                                                          \
     X(PokemonEditorHeader)                                                                         \
     X(PokemonReadFailed)                                                                           \
+    X(PokemonCarrying)                                                                             \
+    X(PartyNeedsPokemon)                                                                           \
     /* Pokémon editor */                                                                          \
     X(PokemonSummary)                                                                              \
     X(PokemonInBox)                                                                                \

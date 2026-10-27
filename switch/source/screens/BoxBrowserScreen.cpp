@@ -97,7 +97,7 @@ namespace pksm::switchui
             case Action::Left:
             case Action::Right:
                 moveSelection(action);
-                message_.clear();
+                clearMessage();
                 break;
             case Action::PreviousPage:
                 changeBox(-1);
@@ -106,6 +106,13 @@ namespace pksm::switchui
                 changeBox(1);
                 break;
             case Action::Back:
+                if (carried_.active)
+                {
+                    // Nothing was written yet, so cancelling only puts it down.
+                    carried_ = {};
+                    message_.clear();
+                    break;
+                }
                 // The game menu below keeps the save open and warns about unexported changes.
                 app.pop();
                 break;
@@ -113,13 +120,14 @@ namespace pksm::switchui
                 app.closeSession();
                 break;
             case Action::Save:
-                if (session_.dirty())
-                {
-                    session_.exportWithMessage(message_);
-                }
+                // Y moves Pokémon here; the game menu exports.
+                pickUpOrDrop();
                 break;
             case Action::Confirm:
-                openSelected(app);
+                if (!carried_.active)
+                {
+                    openSelected(app);
+                }
                 break;
             default:
                 break;
@@ -129,7 +137,7 @@ namespace pksm::switchui
     void BoxBrowserScreen::changeBox(int direction)
     {
         box_ = direction < 0 ? (box_ == 0 ? maxBoxes_ - 1 : box_ - 1) : (box_ + 1) % maxBoxes_;
-        message_.clear();
+        clearMessage();
         refreshSlots();
     }
 
@@ -186,6 +194,109 @@ namespace pksm::switchui
         refreshDetail();
     }
 
+    void BoxBrowserScreen::clearMessage()
+    {
+        message_ = carried_.active ? tr(Text::PokemonCarrying, {carried_.name}) : std::string{};
+    }
+
+    bool BoxBrowserScreen::carriedSlotShown() const
+    {
+        return carried_.active && (carried_.party || carried_.box == box_);
+    }
+
+    void BoxBrowserScreen::pickUpOrDrop()
+    {
+        if (!carried_.active)
+        {
+            const PokemonSlot& slot = party_ ? partySlots_[selected_] : boxSlots_[selected_];
+            if (slot.empty || detail_.empty)
+            {
+                return;
+            }
+            carried_ = {true, party_, box_, selected_, slot, detail_.name};
+            clearMessage();
+            return;
+        }
+        if (carried_.party == party_ && (party_ || carried_.box == box_) &&
+            carried_.slot == selected_)
+        {
+            // Dropped where it was taken from.
+            carried_ = {};
+            message_.clear();
+            return;
+        }
+        dropCarried();
+    }
+
+    void BoxBrowserScreen::dropCarried()
+    {
+        pksm::Sav& save = session_.save();
+        const auto read = [&save, this](bool party, unsigned int box, size_t slot)
+        {
+            std::unique_ptr<pksm::PKX> pokemon;
+            if (party)
+            {
+                pokemon = slot < partyCount_ ? save.pkm(static_cast<u8>(slot)) : nullptr;
+            }
+            else
+            {
+                pokemon = save.pkm(static_cast<u8>(box), static_cast<u8>(slot));
+            }
+            return pokemon ? std::move(pokemon) : save.emptyPkm();
+        };
+        auto moving = read(carried_.party, carried_.box, carried_.slot);
+        auto target = read(party_, box_, selected_);
+        if (!moving || !target || moving->species() == pksm::Species::None)
+        {
+            carried_ = {};
+            message_ = tr(Text::PokemonReadFailed);
+            return;
+        }
+
+        // A party Pokémon dropped on an empty box slot leaves the party one short.
+        if (carried_.party && !party_ && target->species() == pksm::Species::None &&
+            partyCount_ <= 1)
+        {
+            message_ = tr(Text::PartyNeedsPokemon);
+            return;
+        }
+
+        const auto write = [&save](pksm::PKX& pokemon, bool party, unsigned int box, size_t slot)
+        {
+            if (party)
+            {
+                pokemon.updatePartyData();
+            }
+            pokemon.refreshChecksum();
+            if (party)
+            {
+                save.pkm(pokemon, static_cast<u8>(slot));
+            }
+            else
+            {
+                save.pkm(pokemon, static_cast<u8>(box), static_cast<u8>(slot), false);
+            }
+        };
+        write(*moving, party_, box_, selected_);
+        write(*target, carried_.party, carried_.box, carried_.slot);
+        // Packed once both are written, so neither write lands on a shifted slot.
+        if (party_ || carried_.party)
+        {
+            save.fixParty();
+        }
+
+        carried_ = {};
+        message_.clear();
+        session_.markDirty();
+        refreshSlots();
+        if (party_)
+        {
+            // The party may have closed up behind a Pokémon that left it.
+            selected_ = std::min(selected_, selectablePartySlots() - 1);
+            refreshDetail();
+        }
+    }
+
     void BoxBrowserScreen::openSelected(App& app)
     {
         pksm::Sav& save = session_.save();
@@ -212,6 +323,11 @@ namespace pksm::switchui
         view.selected   = selected_;
         view.detail     = detail_;
         view.message    = sessionMessage(session_, message_);
+        view.carrying       = carried_.active;
+        view.carriedShown   = carriedSlotShown();
+        view.carriedInParty = carried_.party;
+        view.carriedSlot    = carried_.slot;
+        view.carried        = carried_.sprite;
         ui.drawBoxes(view);
 
         // A touch on a slot or an arrow.

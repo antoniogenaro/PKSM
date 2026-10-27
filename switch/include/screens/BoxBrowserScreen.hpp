@@ -11,7 +11,8 @@ namespace pksm::switchui
     class Session;
 
     // The party, the boxes of an open save and the selected Pokémon's detail, left to right. The
-    // D-pad moves through the box and across to the party; L/R change the box.
+    // D-pad moves through the box and across to the party; L/R change the box. Y picks the
+    // selected Pokémon up and, on another slot, drops it there, swapping the two.
     class BoxBrowserScreen : public Screen
     {
     public:
@@ -31,6 +32,24 @@ namespace pksm::switchui
         void openSelected(App& app);
         // The party slots that can be chosen: the filled ones and the one after them.
         size_t selectablePartySlots() const;
+        // Y: picks the selected Pokémon up, or drops the carried one on the selected slot.
+        void pickUpOrDrop();
+        // Swaps the carried Pokémon with the selected slot and writes both to the save.
+        void dropCarried();
+        bool carriedSlotShown() const;
+        // Clears the footer message, or shows what is being carried.
+        void clearMessage();
+
+        // A Pokémon picked up with Y, by where it was taken from.
+        struct Carried
+        {
+            bool active      = false;
+            bool party       = false;
+            unsigned int box = 0;
+            size_t slot      = 0;
+            PokemonSlot sprite;
+            std::string name;
+        };
 
         Session& session_;
         std::string game_;
@@ -45,5 +64,6 @@ namespace pksm::switchui
         size_t partyCount_ = 0;
         PokemonDetail detail_;
         std::string message_;
+        Carried carried_;
     };
 }

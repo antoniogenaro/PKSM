@@ -117,6 +117,13 @@ namespace pksm::switchui
         size_t selected   = 0;
         PokemonDetail detail;
         std::string message;
+        // A Pokémon picked up to move: it is drawn lifted over the selected slot, and the slot it
+        // came from (`carriedInParty`, `carriedSlot`) is dimmed when `carriedShown`.
+        bool carrying       = false;
+        bool carriedShown   = false;
+        bool carriedInParty = false;
+        size_t carriedSlot  = 0;
+        PokemonSlot carried;
         // Set by drawBoxes() when an arrow is touched: -1 for the box before, 1 for the next.
         int pageRequest = 0;
     };
