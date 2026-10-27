@@ -54,28 +54,55 @@ namespace pksm::switchui::theme
         colors[ImGuiCol_NavCursor]         = vec(ACCENT);
     }
 
-    bool loadFont(const char* path)
+    namespace
     {
-        // Read the file here so a missing font is an error message, not a failed assertion.
-        std::ifstream file(path, std::ios::binary);
-        if (!file)
-        {
-            return false;
-        }
-        const std::vector<char> data(
-            (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        if (file.bad() || data.size() < 12)
-        {
-            return false;
-        }
+        ImFont* medium = nullptr;
 
-        // The atlas keeps and frees the copy, and reads it again whenever it needs a new size.
-        void* fontData = IM_ALLOC(data.size());
-        std::copy(data.begin(), data.end(), static_cast<char*>(fontData));
-        ImFontConfig config;
-        config.FontDataOwnedByAtlas = true;
-        ImFont* font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
-            fontData, static_cast<int>(data.size()), FONT_BODY, &config);
-        return font != nullptr;
+        ImFont* loadFontFile(const char* path)
+        {
+            // Read the file here so a missing font is an error message, not a failed assertion.
+            std::ifstream file(path, std::ios::binary);
+            if (!file)
+            {
+                return nullptr;
+            }
+            const std::vector<char> data(
+                (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            if (file.bad() || data.size() < 12)
+            {
+                return nullptr;
+            }
+
+            // The atlas keeps and frees the copy, and reads it again whenever it needs a new
+            // size.
+            void* fontData = IM_ALLOC(data.size());
+            std::copy(data.begin(), data.end(), static_cast<char*>(fontData));
+            ImFontConfig config;
+            config.FontDataOwnedByAtlas = true;
+            return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
+                fontData, static_cast<int>(data.size()), FONT_BODY, &config);
+        }
+    }
+
+    bool loadFonts(const char*& failedPath)
+    {
+        // The first font added is ImGui's default, so the regular one goes first.
+        if (!loadFontFile(FONT_REGULAR_PATH))
+        {
+            failedPath = FONT_REGULAR_PATH;
+            return false;
+        }
+        medium = loadFontFile(FONT_MEDIUM_PATH);
+        if (!medium)
+        {
+            failedPath = FONT_MEDIUM_PATH;
+            return false;
+        }
+        return true;
+    }
+
+    ImFont* mediumFont()
+    {
+        return medium ? medium : ImGui::GetFont();
     }
 }

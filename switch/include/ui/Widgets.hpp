@@ -9,9 +9,9 @@
 // with the colours and sizes of ui/Theme.hpp.
 namespace pksm::switchui::widgets
 {
-    // Draws `text` at the cursor at `size` pixels in `color` (0xRRGGBB), then moves the cursor
-    // below it.
-    void text(const char* text, float size, unsigned color);
+    // Draws `text` at the cursor at `size` pixels in `color` (0xRRGGBB), in the medium font
+    // when `medium`, then moves the cursor below it.
+    void text(const char* text, float size, unsigned color, bool medium = false);
 
     // A Poké Ball of `radius` centred on `center`.
     void drawPokeBall(ImDrawList* drawList, const ImVec2& center, float radius);

@@ -88,7 +88,10 @@ export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 export CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
 export SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
 export CORE_PERSONAL_FILES	:=	$(wildcard $(TOPDIR)/../core/personals/*)
-export UI_FONT_FILES	:=	$(TOPDIR)/../assets/gfx/ui/Roboto.ttf $(TOPDIR)/../assets/gfx/ui/OFL-Roboto.txt
+export UI_FONT_FILES	:=	$(TOPDIR)/../assets/gfx/ui/Roboto.ttf $(TOPDIR)/../assets/gfx/ui/OFL-Roboto.txt \
+				$(TOPDIR)/../external/imgui/misc/fonts/Roboto-Medium.ttf
+# Roboto Medium is under the Apache License 2.0; pcg-cpp ships its full text.
+export UI_FONT_APACHE_LICENSE	:=	$(TOPDIR)/../core/pcg-cpp/LICENSE-APACHE.txt
 export PKM_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_SHA256	:=	c54b464de9e56f5b04c7d679bdf0b9b6c84dbea5555bb7ae62862b1862081032
@@ -129,10 +132,12 @@ $(DEPSDIR)/strings.stamp: $(SWITCH_STRING_FILES) | $(DEPSDIR)
 	@cp $(TOPDIR)/strings/*.json $(ROMFS_PATH)/strings/
 	@touch $@
 
-$(DEPSDIR)/fonts.stamp: $(UI_FONT_FILES) | $(DEPSDIR)
+# Also after Makefile changes, so a font added to the list is copied even when it is older.
+$(DEPSDIR)/fonts.stamp: $(UI_FONT_FILES) $(UI_FONT_APACHE_LICENSE) $(TOPDIR)/Makefile | $(DEPSDIR)
 	@rm -rf $(ROMFS_PATH)/fonts
 	@mkdir -p $(ROMFS_PATH)/fonts
 	@cp $(UI_FONT_FILES) $(ROMFS_PATH)/fonts/
+	@cp $(UI_FONT_APACHE_LICENSE) $(ROMFS_PATH)/fonts/Apache-Roboto-Medium.txt
 	@touch $@
 
 $(DEPSDIR)/personal.stamp: $(CORE_PERSONAL_FILES) | $(DEPSDIR)
