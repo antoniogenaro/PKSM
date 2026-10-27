@@ -93,6 +93,7 @@ namespace pksm::switchui
             std::vector<PokemonSprite>& sprites, std::string& error);
         std::string fitText(const std::string& text, int fontSize, int maxWidth);
 
+        bool imguiInitialized_ = false;
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
         PadState pad_{};
