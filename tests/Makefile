@@ -68,8 +68,9 @@ $(BUILD)/SubsystemsTests: SubsystemsTests.cpp ../common/source/Subsystems.cpp | 
 
 $(BUILD)/SwitchDomainTests: SwitchDomainTests.cpp ../switch/source/domain/GameProfile.cpp \
 		../switch/source/domain/FieldValues.cpp ../switch/source/domain/SaveCache.cpp \
-		../switch/source/ui/Text.cpp | $(BUILD)
-	@$(CXX) $(CXXFLAGS) -I../switch/include -I../core/include -o $@ $^
+		../switch/source/ui/Text.cpp $(wildcard ../switch/strings/*.json) | $(BUILD)
+	@$(CXX) $(CXXFLAGS) -I../switch/include -I../core/include -I../external \
+		-DSWITCH_STRINGS='"../switch/strings"' -o $@ $(filter %.cpp,$^)
 
 $(BUILD)/SwitchSaveFilesTests: SwitchSaveFilesTests.cpp \
 		../switch/include/SwitchSaveFiles.hpp | $(BUILD)
