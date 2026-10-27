@@ -75,6 +75,22 @@
     X(HintDiscard)                                                                                 \
     X(HintEdit)                                                                                    \
     X(HintChange)                                                                                  \
+    X(HintChangeBox)                                                                               \
+    /* Boxes */                                                                                    \
+    X(PartyTitle)                                                                                  \
+    X(SlotCount)                                                                                   \
+    X(DexNumber)                                                                                   \
+    X(LevelShort)                                                                                  \
+    X(NicknameLabel)                                                                               \
+    X(DetailTrainer)                                                                               \
+    X(DetailNone)                                                                                  \
+    X(DetailOriginGame)                                                                            \
+    X(StatShortHp)                                                                                 \
+    X(StatShortAttack)                                                                             \
+    X(StatShortDefense)                                                                            \
+    X(StatShortSpAttack)                                                                           \
+    X(StatShortSpDefense)                                                                          \
+    X(StatShortSpeed)                                                                              \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
@@ -102,15 +118,7 @@
     X(OptionUnavailable)                                                                           \
     /* Boxes and party */                                                                          \
     X(PokemonEditorHeader)                                                                         \
-    X(BoxSection)                                                                                  \
-    X(PartySection)                                                                                \
-    X(BoxSlot)                                                                                     \
-    X(PartySlot)                                                                                   \
-    X(SlotReadFailed)                                                                              \
     X(PokemonReadFailed)                                                                           \
-    X(SelectedPokemon)                                                                             \
-    X(OpenEditorHint)                                                                              \
-    X(SlotsControls)                                                                               \
     /* Pokémon editor */                                                                          \
     X(PokemonSummary)                                                                              \
     X(PokemonInBox)                                                                                \

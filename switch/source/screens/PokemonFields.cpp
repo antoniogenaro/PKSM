@@ -1,6 +1,7 @@
 #include "screens/PokemonFields.hpp"
 
 #include "SwitchUi.hpp"
+#include "domain/FieldValues.hpp"
 #include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
@@ -467,32 +468,98 @@ namespace pksm::switchui
             {pokemon.species().localize(pokemon.language()), numericValue(pokemon.level())});
     }
 
-    std::vector<Field> boxFields(pksm::Sav& save, u8 box)
+    PokemonSlot pokemonSlot(const pksm::PKX* pokemon)
     {
-        std::vector<Field> fields;
-        fields.reserve(30);
-        for (u8 slot = 0; slot < 30; ++slot)
+        if (!pokemon || pokemon->species() == pksm::Species::None)
         {
-            const auto pokemon = save.pkm(box, slot);
-            fields.push_back({tr(Text::BoxSlot, {numericValue(slot + 1)}),
-                pokemon ? pokemonSummary(*pokemon) : tr(Text::SlotReadFailed),
-                pokemon ? static_cast<size_t>(pokemon->species()) : 0});
+            return {};
         }
-        return fields;
+        return {false, static_cast<size_t>(pokemon->species())};
     }
 
-    std::vector<Field> partyFields(pksm::Sav& save)
+    PokemonDetail describePokemon(const pksm::PKX& pokemon)
     {
-        const u8 count = std::min<u8>(6, static_cast<u8>(save.partyCount() + 1));
-        std::vector<Field> fields;
-        fields.reserve(count);
-        for (u8 slot = 0; slot < count; ++slot)
+        PokemonDetail detail;
+        if (pokemon.species() == pksm::Species::None)
         {
-            const auto pokemon = save.pkm(slot);
-            fields.push_back({tr(Text::PartySlot, {numericValue(slot + 1)}),
-                pokemon ? pokemonSummary(*pokemon) : tr(Text::SlotReadFailed),
-                pokemon ? static_cast<size_t>(pokemon->species()) : 0});
+            return detail;
         }
-        return fields;
+        const pksm::Language language = pokemon.language();
+        const unsigned int species    = static_cast<unsigned int>(pokemon.species());
+
+        detail.empty   = false;
+        detail.species = species;
+        detail.number  = tr(Text::DexNumber, {padDigits(species, 3)});
+        detail.name    = pokemon.egg() ? std::string(tr(Text::FieldEgg))
+                                       : pokemon.species().localize(language);
+        detail.level   = tr(Text::LevelShort, {numericValue(pokemon.level())});
+        if (pokemon.nicknamed())
+        {
+            detail.nickname = tr(Text::NicknameLabel, {pokemon.nickname()});
+        }
+        detail.male   = pokemon.gender() == pksm::Gender::Male;
+        detail.female = pokemon.gender() == pksm::Gender::Female;
+        detail.shiny  = pokemon.shiny();
+        detail.ball   = static_cast<size_t>(pokemon.ball());
+
+        const pksm::Type type1 = pokemon.type1();
+        const pksm::Type type2 = pokemon.type2();
+        detail.types.push_back({type1.localize(language), static_cast<size_t>(u8(type1))});
+        if (type2 != type1)
+        {
+            detail.types.push_back({type2.localize(language), static_cast<size_t>(u8(type2))});
+        }
+
+        // From generation VII on, the ID is shown as the game shows it.
+        const pksm::Generation generation = pokemon.generation();
+        const bool splitIds = generation == pksm::Generation::SEVEN ||
+                              generation == pksm::Generation::LGPE ||
+                              generation == pksm::Generation::EIGHT ||
+                              generation == pksm::Generation::NINE;
+        const std::string tid = splitIds
+                                    ? padDigits(showTrainerIds(pokemon.TID(), pokemon.SID()).tid, 6)
+                                    : numericValue(pokemon.TID());
+        const u16 item        = pokemon.heldItem();
+        detail.info           = {
+            {tr(Text::DetailTrainer), pokemon.otName()},
+            {tr(Text::TrainerTid), tid},
+            {tr(Text::FieldItem), item == 0 ? std::string(tr(Text::DetailNone))
+                                            : i18n::item(language, item)},
+            {tr(Text::FieldAbility), pokemon.ability().localize(language)},
+            {tr(Text::FieldNature), pokemon.nature().localize(language)},
+            {tr(Text::DetailOriginGame), i18n::game(language, pokemon.version())},
+        };
+
+        // A nature raises the stat of its row and lowers the one of its column, in the order
+        // Attack, Defense, Speed, Sp. Atk, Sp. Def; the diagonal changes nothing.
+        constexpr std::array<int, 6> natureColumn = {-1, 0, 1, 3, 4, 2};
+        constexpr std::array<Text, 6> shortNames  = {Text::StatShortHp, Text::StatShortAttack,
+             Text::StatShortDefense, Text::StatShortSpAttack, Text::StatShortSpDefense,
+             Text::StatShortSpeed};
+        const int nature  = static_cast<int>(u8(pokemon.nature()));
+        const int raised  = nature / 5;
+        const int lowered = nature % 5;
+        for (size_t i = 0; i < stats.size(); ++i)
+        {
+            int effect = 0;
+            if (raised != lowered && natureColumn[i] == raised)
+            {
+                effect = 1;
+            }
+            else if (raised != lowered && natureColumn[i] == lowered)
+            {
+                effect = -1;
+            }
+            detail.ivs.push_back({tr(Text::FieldIv, {tr(shortNames[i])}),
+                numericValue(pokemon.iv(stats[i])), effect});
+        }
+
+        for (u8 i = 0; i < 4; ++i)
+        {
+            const pksm::Move move = pokemon.move(i);
+            detail.moves.push_back(move == pksm::Move::None ? std::string("—")
+                                                            : move.localize(language));
+        }
+        return detail;
     }
 }

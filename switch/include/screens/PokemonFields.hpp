@@ -26,6 +26,9 @@ namespace pksm::switchui
     void savePokemon(pksm::Sav& save, pksm::PKX& pokemon, bool party, u8 box, u8 slot);
 
     std::string pokemonSummary(const pksm::PKX& pokemon);
-    std::vector<Field> boxFields(pksm::Sav& save, u8 box);
-    std::vector<Field> partyFields(pksm::Sav& save);
+
+    // A slot as the box grid shows it; a missing Pokémon is an empty slot.
+    PokemonSlot pokemonSlot(const pksm::PKX* pokemon);
+    // What the box screen's detail panel shows of `pokemon`.
+    PokemonDetail describePokemon(const pksm::PKX& pokemon);
 }

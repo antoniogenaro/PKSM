@@ -12,7 +12,9 @@
 
 #include <switch.h>
 #include <algorithm>
+#include <cfloat>
 #include <cstdio>
+#include <iterator>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -35,6 +37,35 @@ namespace pksm::switchui
         constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
         constexpr size_t BALL_SPRITE_BASE = 144;
         constexpr size_t MAX_BALL_SPRITE = 25;
+
+        // Box screen colours from the canvas, as 0xRRGGBB.
+        constexpr unsigned EMPTY_SLOT = 0x1A1E2B;
+        constexpr unsigned DETAIL_ART = 0x3A4160;
+        constexpr unsigned PILL       = 0x2A3047;
+        constexpr unsigned MALE       = 0x8FB8FF;
+        constexpr unsigned FEMALE     = 0xFF8FB8;
+        constexpr unsigned SHINY      = 0xFFD84D;
+        constexpr unsigned RAISED     = 0xFF7A6B;
+        constexpr unsigned LOWERED    = 0x7DB2FF;
+
+        // The usual colour of each type, in the order of pksm::Type.
+        constexpr unsigned TYPE_COLORS[] = {0xA8A77A, 0xC22E28, 0xA98FF3, 0xA33EA1, 0xE2BF65,
+            0xB6A136, 0xA6B91A, 0x735797, 0xB7B7CE, 0xEE8130, 0x6390F0, 0x7AC74C, 0xF7D02C,
+            0xF95587, 0x96D9D6, 0x6F35FC, 0x705746, 0xD685AD};
+
+        unsigned typeColor(size_t type)
+        {
+            return type < std::size(TYPE_COLORS) ? TYPE_COLORS[type] : theme::NEUTRAL;
+        }
+
+        // The lighter ring around a type's dot: its colour halfway to white.
+        ImU32 typeRing(size_t type)
+        {
+            const unsigned color = typeColor(type);
+            const auto lighten   = [](unsigned channel) { return (channel + 255u) / 2u; };
+            return IM_COL32(lighten((color >> 16) & 0xFF), lighten((color >> 8) & 0xFF),
+                lighten(color & 0xFF), 255);
+        }
 
         // The space under the content panels: the button legend and the gap above it.
         constexpr float SCREEN_BOTTOM_SPACE = theme::LEGEND_HEIGHT + theme::SECTION_GAP;
@@ -924,71 +955,339 @@ namespace pksm::switchui
         endFrame();
     }
 
-    void SwitchUi::drawPokemonSlots(const std::string& game, const std::string& path,
-        const std::string& section, const std::vector<Field>& fields, size_t selected, bool dirty,
-        const std::string& error)
+    void SwitchUi::drawSlotTile(const PokemonSlot& slot, const ImVec2& min, float size,
+        bool selected)
     {
-        beginFrame();
-        ImGui::TextUnformatted(tr(Text::PokemonEditorHeader, {game, path, section}).c_str());
-        ImGui::Separator();
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const ImVec2 max(min.x + size, min.y + size);
+        if (slot.empty)
+        {
+            drawList->AddRectFilled(min, max, theme::rgb(EMPTY_SLOT), theme::CARD_RADIUS);
+            drawList->AddRect(min, max, theme::rgb(theme::BORDER), theme::CARD_RADIUS);
+        }
+        else
+        {
+            drawList->AddRectFilled(min, max, theme::rgb(theme::CARD_SELECTED), theme::CARD_RADIUS);
+            const float inset = size * 0.06f;
+            drawPokemonSprite(slot.species,
+                {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
+                    static_cast<int>(size - inset * 2.0f), static_cast<int>(size - inset * 2.0f)});
+        }
+        if (selected)
+        {
+            widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
+        }
+    }
 
-        constexpr float summaryWidth = 290.0f;
-        constexpr float gap = 12.0f;
-        const float gridWidth = ImGui::GetContentRegionAvail().x - summaryWidth - gap;
-        ImGui::BeginChild("slot-grid", ImVec2(gridWidth, -58.0f), ImGuiChildFlags_Borders);
-        const size_t columns = fields.size() <= 6 ? 3 : 6;
-        const float tileGap = 6.0f;
-        const float tileWidth =
-            (ImGui::GetContentRegionAvail().x - tileGap * static_cast<float>(columns - 1)) /
-            static_cast<float>(columns);
-        for (size_t i = 0; i < fields.size(); ++i)
+    void SwitchUi::drawPokemonDetail(const PokemonDetail& detail)
+    {
+        constexpr float sectionGap = 12.0f;
+        constexpr float artSize    = 170.0f;
+        constexpr float artGap     = 16.0f;
+        constexpr float lineGap    = 6.0f;
+        constexpr float iconSize   = 24.0f;
+
+        ImDrawList* drawList   = ImGui::GetWindowDrawList();
+        ImFont* bold           = theme::boldFont();
+        ImFont* regular        = ImGui::GetFont();
+        const ImVec2 origin    = ImGui::GetCursorScreenPos();
+        const ImVec2 available = ImGui::GetContentRegionAvail();
+        const float right      = origin.x + available.x;
+        const auto height      = [](ImFont* font, float size, const std::string& text)
+        { return font->CalcTextSizeA(size, FLT_MAX, 0.0f, text.c_str()).y; };
+        const auto width = [](ImFont* font, float size, const std::string& text)
+        { return font->CalcTextSizeA(size, FLT_MAX, 0.0f, text.c_str()).x; };
+
+        if (detail.empty)
         {
-            if (i % columns != 0)
-            {
-                ImGui::SameLine(0.0f, tileGap);
-            }
-            ImGui::PushID(static_cast<int>(i));
-            if (i == selected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_ChildBg, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
-            }
-            ImGui::BeginChild("slot", ImVec2(tileWidth, 68.0f), ImGuiChildFlags_Borders);
-            const ImVec2 tilePosition = ImGui::GetCursorScreenPos();
-            drawPokemonSprite(fields[i].spriteIndex,
-                {static_cast<int>(tilePosition.x + 4.0f),
-                    static_cast<int>(tilePosition.y + 6.0f), 48, 48});
-            ImGui::SetCursorPosX(60.0f);
-            ImGui::TextDisabled("%zu", i + 1);
-            ImGui::TextWrapped("%s", fields[i].value.c_str());
-            ImGui::EndChild();
-            if (i == selected)
-            {
-                ImGui::PopStyleColor(2);
-            }
-            ImGui::PopID();
+            const std::string empty = tr(Text::Empty);
+            drawList->AddText(bold, theme::FONT_ROW_TITLE,
+                ImVec2(origin.x + (available.x - width(bold, theme::FONT_ROW_TITLE, empty)) * 0.5f,
+                    origin.y + (available.y - height(bold, theme::FONT_ROW_TITLE, empty)) * 0.5f),
+                theme::rgb(theme::TEXT_MUTED), empty.c_str());
+            return;
         }
-        ImGui::EndChild();
-        ImGui::SameLine(0.0f, gap);
-        ImGui::BeginChild("slot-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
-        ImGui::TextColored(ACCENT_COLOR, "%s", tr(Text::SelectedPokemon));
-        ImGui::Separator();
-        if (selected < fields.size())
+
+        // The art, and beside it the number, species, level, nickname and types, centred
+        // together against it.
+        drawList->AddRectFilled(origin, ImVec2(origin.x + artSize, origin.y + artSize),
+            theme::rgb(DETAIL_ART), theme::ROW_RADIUS);
+        drawPokemonSprite(detail.species, {static_cast<int>(origin.x + 12.0f),
+                                              static_cast<int>(origin.y + 12.0f),
+                                              static_cast<int>(artSize - 24.0f),
+                                              static_cast<int>(artSize - 24.0f)});
+
+        constexpr float numberSize = 14.0f;
+        constexpr float nameSize   = 30.0f;
+        constexpr float pillHeight = 32.0f;
+        const float textLeft       = origin.x + artSize + artGap;
+        const float textWidth      = right - textLeft;
+        float columnHeight         = height(bold, numberSize, detail.number) + lineGap +
+                             height(bold, nameSize, detail.name) + lineGap + 26.0f + lineGap +
+                             pillHeight;
+        if (!detail.nickname.empty())
         {
-            const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
-            drawPokemonSprite(fields[selected].spriteIndex,
-                {static_cast<int>(spritePosition.x + 35.0f),
-                    static_cast<int>(spritePosition.y), 180, 130});
-            ImGui::Dummy(ImVec2(0.0f, 132.0f));
-            ImGui::TextDisabled("%s", fields[selected].label.c_str());
-            ImGui::Spacing();
-            ImGui::TextWrapped("%s", fields[selected].value.c_str());
+            columnHeight += height(regular, theme::FONT_SMALL, detail.nickname) + lineGap;
         }
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 120.0f);
-        ImGui::TextDisabled("%s", tr(Text::OpenEditorHint));
-        ImGui::EndChild();
-        drawStatusLine(dirty, error);
-        ImGui::TextDisabled("%s", tr(Text::SlotsControls));
+        float y = origin.y + std::max(0.0f, (artSize - columnHeight) * 0.5f);
+
+        widgets::drawTextEllipsis(drawList, bold, numberSize, ImVec2(textLeft, y),
+            theme::rgb(theme::TEXT_MUTED), detail.number.c_str(), textWidth);
+        y += height(bold, numberSize, detail.number) + lineGap;
+
+        // The name, then the gender and shiny marks right after it.
+        const float nameHeight = height(bold, nameSize, detail.name);
+        const float marks      = (detail.male || detail.female ? iconSize + 10.0f : 0.0f) +
+                            (detail.shiny ? iconSize + 10.0f : 0.0f);
+        const float nameWidth  = std::min(width(bold, nameSize, detail.name), textWidth - marks);
+        widgets::drawTextEllipsis(drawList, bold, nameSize, ImVec2(textLeft, y),
+            theme::rgb(theme::TEXT), detail.name.c_str(), textWidth - marks);
+        float markX        = textLeft + nameWidth + 10.0f;
+        const float markY  = y + (nameHeight - iconSize) * 0.5f;
+        if (detail.male || detail.female)
+        {
+            icons::drawSized(drawList, detail.male ? icons::Icon::Male : icons::Icon::Female,
+                ImVec2(markX, markY), static_cast<int>(iconSize),
+                theme::rgb(detail.male ? MALE : FEMALE));
+            markX += iconSize + 10.0f;
+        }
+        if (detail.shiny)
+        {
+            icons::drawSized(drawList, icons::Icon::Shiny, ImVec2(markX, markY),
+                static_cast<int>(iconSize), theme::rgb(SHINY));
+        }
+        y += nameHeight + lineGap;
+
+        // The level with the ball it was caught in.
+        const float levelHeight = height(regular, theme::FONT_BODY, detail.level);
+        drawList->AddText(regular, theme::FONT_BODY, ImVec2(textLeft, y + (26.0f - levelHeight) * 0.5f),
+            theme::rgb(theme::TEXT_SOFT), detail.level.c_str());
+        const float ballX = textLeft + width(regular, theme::FONT_BODY, detail.level) + 10.0f;
+        drawBallSprite(detail.ball, {static_cast<int>(ballX), static_cast<int>(y), 26, 26});
+        y += 26.0f + lineGap;
+
+        if (!detail.nickname.empty())
+        {
+            widgets::drawTextEllipsis(drawList, regular, theme::FONT_SMALL, ImVec2(textLeft, y),
+                theme::rgb(theme::TEXT_MUTED), detail.nickname.c_str(), textWidth);
+            y += height(regular, theme::FONT_SMALL, detail.nickname) + lineGap;
+        }
+
+        // Type pills: a dot in the type's colour and its name.
+        float pillX = textLeft;
+        for (const auto& [name, type] : detail.types)
+        {
+            const float pillWidth = 4.0f + 24.0f + 8.0f + width(bold, theme::FONT_SMALL, name) + 14.0f;
+            drawList->AddRectFilled(ImVec2(pillX, y), ImVec2(pillX + pillWidth, y + pillHeight),
+                theme::rgb(PILL), pillHeight * 0.5f);
+            const ImVec2 dot(pillX + 4.0f + 12.0f, y + pillHeight * 0.5f);
+            drawList->AddCircleFilled(dot, 12.0f, typeRing(type), 24);
+            drawList->AddCircleFilled(dot, 7.0f, theme::rgb(typeColor(type)), 24);
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(pillX + 36.0f,
+                    y + (pillHeight - height(bold, theme::FONT_SMALL, name)) * 0.5f),
+                theme::rgb(theme::BUTTON_FACE), name.c_str());
+            pillX += pillWidth + 8.0f;
+        }
+
+        // Trainer, ID, item, ability, nature and origin game, two to a row.
+        constexpr float infoHeight = 52.0f;
+        constexpr float infoGap    = 8.0f;
+        float top                  = origin.y + artSize + sectionGap;
+        const float infoWidth      = (available.x - infoGap) / 2.0f;
+        for (size_t i = 0; i < detail.info.size(); ++i)
+        {
+            const ImVec2 min(origin.x + static_cast<float>(i % 2) * (infoWidth + infoGap),
+                top + static_cast<float>(i / 2) * (infoHeight + infoGap));
+            drawList->AddRectFilled(min, ImVec2(min.x + infoWidth, min.y + infoHeight),
+                theme::rgb(theme::CARD), theme::CARD_RADIUS);
+            const std::string& label = detail.info[i].label;
+            const std::string& value = detail.info[i].value;
+            const float labelHeight  = height(bold, theme::FONT_PATH, label);
+            const float valueHeight  = height(bold, theme::FONT_BODY, value);
+            const float lineTop      = min.y + (infoHeight - labelHeight - 1.0f - valueHeight) * 0.5f;
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_PATH, ImVec2(min.x + 14.0f, lineTop),
+                theme::rgb(theme::TEXT_MUTED), label.c_str(), infoWidth - 28.0f);
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                ImVec2(min.x + 14.0f, lineTop + labelHeight + 1.0f), theme::rgb(theme::TEXT),
+                value.c_str(), infoWidth - 28.0f);
+        }
+        const size_t infoRows = (detail.info.size() + 1) / 2;
+        top += static_cast<float>(infoRows) * infoHeight +
+               static_cast<float>(infoRows > 0 ? infoRows - 1 : 0) * infoGap + sectionGap;
+
+        // The IVs, with the stats the nature raises in red and lowers in blue.
+        constexpr float ivGap    = 6.0f;
+        constexpr float ivHeight = 58.0f;
+        const float ivCount      = static_cast<float>(std::max<size_t>(detail.ivs.size(), 1));
+        const float ivWidth      = (available.x - ivGap * (ivCount - 1.0f)) / ivCount;
+        for (size_t i = 0; i < detail.ivs.size(); ++i)
+        {
+            const PokemonDetail::Iv& iv = detail.ivs[i];
+            const ImVec2 min(origin.x + static_cast<float>(i) * (ivWidth + ivGap), top);
+            drawList->AddRectFilled(min, ImVec2(min.x + ivWidth, min.y + ivHeight),
+                theme::rgb(theme::CARD), 12.0f);
+            const unsigned color = iv.nature > 0 ? RAISED : iv.nature < 0 ? LOWERED : theme::TEXT_MUTED;
+            const std::string label = iv.label + (iv.nature > 0 ? " +" : iv.nature < 0 ? " -" : "");
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_PATH, ImVec2(min.x + 8.0f, min.y + 8.0f),
+                theme::rgb(color), label.c_str(), ivWidth - 16.0f);
+            drawList->AddText(bold, 20.0f,
+                ImVec2(min.x + 8.0f, min.y + ivHeight - 8.0f - height(bold, 20.0f, iv.value)),
+                theme::rgb(theme::TEXT), iv.value.c_str());
+        }
+        top += ivHeight + sectionGap;
+
+        // The four moves.
+        constexpr float moveGap    = 8.0f;
+        constexpr float moveHeight = 44.0f;
+        const float moveCount      = static_cast<float>(std::max<size_t>(detail.moves.size(), 1));
+        const float moveWidth      = (available.x - moveGap * (moveCount - 1.0f)) / moveCount;
+        for (size_t i = 0; i < detail.moves.size(); ++i)
+        {
+            const ImVec2 min(origin.x + static_cast<float>(i) * (moveWidth + moveGap), top);
+            drawList->AddRectFilled(min, ImVec2(min.x + moveWidth, min.y + moveHeight),
+                theme::rgb(PILL), 12.0f);
+            const std::string& move = detail.moves[i];
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                ImVec2(min.x + 8.0f, min.y + (moveHeight - height(bold, theme::FONT_SMALL, move)) * 0.5f),
+                theme::rgb(theme::BUTTON_FACE), move.c_str(), moveWidth - 16.0f);
+        }
+    }
+
+    void SwitchUi::drawBoxes(BoxView& view)
+    {
+        constexpr float boxPanelWidth   = 498.0f;
+        constexpr float partyPanelWidth = 104.0f;
+        constexpr float headerHeight    = 48.0f;
+        constexpr float boxTile         = 72.0f;
+        constexpr float boxTileGap      = 8.0f;
+        constexpr float partyTile       = 64.0f;
+        constexpr float partyTileGap    = 12.0f;
+        constexpr ImGuiWindowFlags fixed =
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+        beginFrame();
+        widgets::drawHeader(tr(Text::MenuPokemonEditor));
+        sectionGap();
+
+        ImFont* bold         = theme::boldFont();
+        const auto centered = [bold](ImDrawList* drawList, float size, const std::string& text,
+                                  float centerX, float top, unsigned color)
+        {
+            const ImVec2 textSize = bold->CalcTextSizeA(size, FLT_MAX, 0.0f, text.c_str());
+            drawList->AddText(bold, size, ImVec2(std::round(centerX - textSize.x * 0.5f), top),
+                theme::rgb(color), text.c_str());
+            return textSize.y;
+        };
+        // A panel title with its count under it, centred on `centerX`.
+        const auto title = [&centered](ImDrawList* drawList, const std::string& name,
+                               const std::string& count, float centerX, float top)
+        {
+            const float nameHeight =
+                centered(drawList, theme::FONT_HEADING, name, centerX, top, theme::TEXT);
+            ImFont* regular        = ImGui::GetFont();
+            const float countWidth =
+                regular->CalcTextSizeA(theme::FONT_SMALL, FLT_MAX, 0.0f, count.c_str()).x;
+            drawList->AddText(regular, theme::FONT_SMALL,
+                ImVec2(std::round(centerX - countWidth * 0.5f), top + nameHeight + 2.0f),
+                theme::rgb(theme::TEXT_MUTED), count.c_str());
+        };
+        const float contentWidth = ImGui::GetContentRegionAvail().x;
+
+        // The party on the left: its six slots in a column.
+        widgets::beginPanel("party", ImVec2(partyPanelWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            title(drawList, tr(Text::PartyTitle),
+                tr(Text::SlotCount, {std::to_string(view.partyCount), std::to_string(view.party.size())}),
+                origin.x + available.x * 0.5f, origin.y + 1.0f);
+            const float count       = static_cast<float>(view.party.size());
+            const float columnHeight = partyTile * count + partyTileGap * (count - 1.0f);
+            const float top =
+                origin.y + headerHeight + (available.y - headerHeight - columnHeight) * 0.5f;
+            for (size_t i = 0; i < view.party.size(); ++i)
+            {
+                const ImVec2 min(origin.x + (available.x - partyTile) * 0.5f,
+                    top + static_cast<float>(i) * (partyTile + partyTileGap));
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                // Only filled slots and the one after them can be chosen.
+                if (ImGui::InvisibleButton("party-slot", ImVec2(partyTile, partyTile)) &&
+                    i <= view.partyCount)
+                {
+                    view.inParty  = true;
+                    view.selected = i;
+                }
+                ImGui::PopID();
+                drawSlotTile(view.party[i], min, partyTile, view.inParty && view.selected == i);
+            }
+        }
+        widgets::endPanel();
+
+        // The box: arrows around its name and how full it is, then its 30 slots.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("box", ImVec2(boxPanelWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 origin  = ImGui::GetCursorScreenPos();
+            const float width    = ImGui::GetContentRegionAvail().x;
+            for (const int direction : {-1, 1})
+            {
+                const ImVec2 min(direction < 0 ? origin.x : origin.x + width - headerHeight, origin.y);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(direction);
+                if (ImGui::InvisibleButton("page", ImVec2(headerHeight, headerHeight)))
+                {
+                    view.pageRequest = direction;
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, ImVec2(min.x + headerHeight, min.y + headerHeight),
+                    theme::rgb(theme::CARD), 12.0f);
+                // The canvas arrow, 14 x 22, pointing the way it pages.
+                const float cx = min.x + headerHeight * 0.5f;
+                const float cy = min.y + headerHeight * 0.5f;
+                const float d  = static_cast<float>(direction);
+                const ImVec2 points[] = {ImVec2(cx - 4.0f * d, cy - 8.0f), ImVec2(cx + 4.0f * d, cy),
+                    ImVec2(cx - 4.0f * d, cy + 8.0f)};
+                drawList->AddPolyline(points, 3, theme::rgb(theme::TEXT), ImDrawFlags_None, 3.0f);
+            }
+            title(drawList, view.boxName,
+                tr(Text::SlotCount, {std::to_string(view.boxFilled), std::to_string(view.box.size())}),
+                origin.x + width * 0.5f, origin.y + 1.0f);
+
+            const float gridWidth =
+                boxTile * BoxView::COLUMNS + boxTileGap * (BoxView::COLUMNS - 1);
+            const ImVec2 grid(origin.x + (width - gridWidth) * 0.5f, origin.y + headerHeight + 12.0f);
+            for (size_t i = 0; i < view.box.size(); ++i)
+            {
+                const ImVec2 min(grid.x + static_cast<float>(i % BoxView::COLUMNS) * (boxTile + boxTileGap),
+                    grid.y + static_cast<float>(i / BoxView::COLUMNS) * (boxTile + boxTileGap));
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("slot", ImVec2(boxTile, boxTile)))
+                {
+                    view.inParty  = false;
+                    view.selected = i;
+                }
+                ImGui::PopID();
+                drawSlotTile(view.box[i], min, boxTile, !view.inParty && view.selected == i);
+            }
+        }
+        widgets::endPanel();
+
+        // The selected Pokémon.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("detail", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        drawPokemonDetail(view.detail);
+        widgets::endPanel();
+
+        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
+            {"L / R", tr(Text::HintChangeBox)}, {"Y", tr(Text::HintExport)},
+            {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
+        widgets::drawFooterMessage(
+            view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
     }
 

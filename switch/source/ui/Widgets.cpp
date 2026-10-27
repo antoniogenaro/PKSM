@@ -193,7 +193,7 @@ namespace pksm::switchui::widgets
         ImGui::Dummy(ImVec2(width, subtitleY + subtitleH));
     }
 
-    void drawButtonLegend(std::initializer_list<ButtonHint> hints)
+    float drawButtonLegend(std::initializer_list<ButtonHint> hints)
     {
         constexpr float hintGap   = 32.0f;
         constexpr float faceGap   = 8.0f;
@@ -244,6 +244,23 @@ namespace pksm::switchui::widgets
                 theme::rgb(theme::TEXT_SOFT), hint.label, nullptr, true);
             x += labelSize.x + hintGap;
         }
+        return total;
+    }
+
+    void drawFooterMessage(const std::string& text, unsigned color, float maxWidth)
+    {
+        if (text.empty() || maxWidth <= 0.0f)
+        {
+            return;
+        }
+        const ImGuiWindow* window = ImGui::GetCurrentWindowRead();
+        const ImVec2 padding      = window->WindowPadding;
+        const float centerY =
+            window->Pos.y + window->Size.y - padding.y - theme::LEGEND_HEIGHT * 0.5f;
+        const float height = textSize(text.c_str(), theme::FONT_BODY, true).y;
+        drawTextEllipsis(ImGui::GetWindowDrawList(), theme::boldFont(), theme::FONT_BODY,
+            ImVec2(window->Pos.x + padding.x, std::round(centerY - height * 0.5f)),
+            theme::rgb(color), text.c_str(), maxWidth);
     }
 
     bool beginPanel(const char* id, const ImVec2& size, const char* caption, ImGuiWindowFlags flags)

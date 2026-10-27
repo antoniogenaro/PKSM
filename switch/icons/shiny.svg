@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round">
+    <!-- Two four-pointed sparkles with curved sides: a large one low on the left and a small
+         one high on the right. Each side bends towards the centre through a point near it. -->
+    <path d="M9 6Q10.4 13.6 18 15Q10.4 16.4 9 24Q7.6 16.4 0 15Q7.6 13.6 9 6Z"/>
+    <path d="M18.5 0.5Q19.2 4.8 23.5 5.5Q19.2 6.2 18.5 10.5Q17.8 6.2 13.5 5.5Q17.8 4.8 18.5 0.5Z"/>
+  </g>
+</svg>

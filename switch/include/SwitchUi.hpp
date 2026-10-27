@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <initializer_list>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace pksm::switchui
@@ -61,6 +62,65 @@ namespace pksm::switchui
         std::string path;
     };
 
+    // One box or party slot: the species sprite, or nothing when it is empty.
+    struct PokemonSlot
+    {
+        bool empty     = true;
+        size_t species = 0;
+    };
+
+    // What the box screen shows of the selected Pokémon.
+    struct PokemonDetail
+    {
+        struct Info
+        {
+            std::string label;
+            std::string value;
+        };
+        struct Iv
+        {
+            std::string label;
+            std::string value;
+            // +1 when the nature raises the stat, -1 when it lowers it.
+            int nature = 0;
+        };
+
+        bool empty     = true;
+        size_t species = 0;
+        std::string number;   // "N.º 025"
+        std::string name;     // The species.
+        std::string level;    // "Nv. 50"
+        std::string nickname; // "Apodo: …", or empty without one.
+        bool male      = false;
+        bool female    = false;
+        bool shiny     = false;
+        size_t ball    = 0;
+        // Type names with their index in pksm::Type, for the colour.
+        std::vector<std::pair<std::string, size_t>> types;
+        std::vector<Info> info; // Trainer, ID, item, ability, nature, origin game.
+        std::vector<Iv> ivs;    // HP, Attack, Defense, Sp. Atk, Sp. Def, Speed.
+        std::vector<std::string> moves;
+    };
+
+    // Everything the box screen draws.
+    struct BoxView
+    {
+        static constexpr size_t COLUMNS = 6;
+
+        std::string boxName;
+        size_t boxFilled = 0;
+        std::vector<PokemonSlot> box;
+        // Always six; `partyCount` of them are filled.
+        std::vector<PokemonSlot> party;
+        size_t partyCount = 0;
+        bool inParty      = false;
+        size_t selected   = 0;
+        PokemonDetail detail;
+        std::string message;
+        // Set by drawBoxes() when an arrow is touched: -1 for the box before, 1 for the next.
+        int pageRequest = 0;
+    };
+
     class SwitchUi
     {
     public:
@@ -80,9 +140,8 @@ namespace pksm::switchui
             const std::vector<std::string>& files, size_t& selected, const std::string& error);
         // The actions for an open save. `message` is shown under the game card.
         void drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message);
-        void drawPokemonSlots(const std::string& game, const std::string& path,
-            const std::string& section, const std::vector<Field>& fields, size_t selected,
-            bool dirty, const std::string& error);
+        // The boxes and party with the selected Pokémon's detail. Touching a slot selects it.
+        void drawBoxes(BoxView& view);
         void drawPokemonEditor(const std::string& game, const std::string& path,
             const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
             size_t selected, bool dirty, const std::string& error);
@@ -139,6 +198,10 @@ namespace pksm::switchui
             unsigned messageColor = 0);
         // drawGamePanel() for an open save: its file, trainer and path under the name.
         void drawSavePanel(const SaveSummary& save, const std::string& message);
+        // One box or party slot, `size` wide, at `min`.
+        void drawSlotTile(const PokemonSlot& slot, const ImVec2& min, float size, bool selected);
+        // The detail panel of the box screen, filling the rest of the current panel.
+        void drawPokemonDetail(const PokemonDetail& detail);
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
