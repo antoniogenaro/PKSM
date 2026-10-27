@@ -1,5 +1,9 @@
 #include "SwitchUi.hpp"
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_sdlrenderer2.h"
+
 #include <switch.h>
 #include <algorithm>
 #include <cstdint>
@@ -170,6 +174,13 @@ namespace pksm::switchui
 
     SwitchUi::~SwitchUi()
     {
+        if (imguiInitialized_)
+        {
+            ImGui_ImplSDLRenderer2_Shutdown();
+            ImGui_ImplSDL2_Shutdown();
+            ImGui::DestroyContext();
+            imguiInitialized_ = false;
+        }
         if (pokemonSpritesheet_)
         {
             SDL_DestroyTexture(pokemonSpritesheet_);
@@ -230,6 +241,24 @@ namespace pksm::switchui
             error = std::string("No se pudo crear el renderizador: ") + SDL_GetError();
             return false;
         }
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        if (!ImGui_ImplSDL2_InitForSDLRenderer(window_, renderer_))
+        {
+            error = "No se pudo iniciar el backend SDL2 de Dear ImGui.";
+            ImGui::DestroyContext();
+            return false;
+        }
+        if (!ImGui_ImplSDLRenderer2_Init(renderer_))
+        {
+            error = "No se pudo iniciar el backend de renderizado de Dear ImGui.";
+            ImGui_ImplSDL2_Shutdown();
+            ImGui::DestroyContext();
+            return false;
+        }
+        imguiInitialized_ = true;
 
         if (TTF_Init() != 0)
         {
@@ -447,6 +476,10 @@ namespace pksm::switchui
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
+            if (imguiInitialized_)
+            {
+                ImGui_ImplSDL2_ProcessEvent(&event);
+            }
             if (event.type == SDL_QUIT)
             {
                 return Action::Quit;
@@ -643,49 +676,64 @@ namespace pksm::switchui
         const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
         const std::vector<size_t>& gameMascots, size_t selected, const std::string& error)
     {
-        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
-        SDL_RenderClear(renderer_);
-        drawHeader("PKSM / SWITCH", "Respaldos de Sword/Shield y Rojo Fuego/Verde Hoja");
+        (void)gameMascots;
+        if (!imguiInitialized_)
+        {
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            drawHeader("PKSM / SWITCH", "Respaldos de Sword/Shield y Rojo Fuego/Verde Hoja");
+            drawText(error.empty() ? "Dear ImGui no está inicializado." : error, 70, 180, 24, ERROR);
+            SDL_RenderPresent(renderer_);
+            return;
+        }
 
-        const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 465};
-        drawRect(panel, PANEL, PANEL_BORDER);
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+        ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+        ImGui::Begin("PKSM Switch", nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+        ImGui::TextUnformatted("Administrador de respaldos Pokémon");
+        ImGui::Separator();
+        ImGui::TextDisabled("A: abrir   |   +: salir");
+        ImGui::Spacing();
+
         if (!error.empty())
         {
-            drawText(error, 78, 181, 24, ERROR, panel.w - 52);
+            ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.35f, 1.0f), "%s", error.c_str());
         }
         else if (files.empty())
         {
-            drawText("No se encontraron respaldos compatibles.", 78, 181, 24, TEXT);
-            drawText("Copia tus archivos a /switch/pksm/ en la tarjeta SD.", 78, 220, 24, MUTED);
+            ImGui::TextWrapped("No se encontraron respaldos compatibles.");
+            ImGui::TextWrapped("Copia tus archivos a /switch/pksm/ en la tarjeta SD.");
         }
         else
         {
-            const size_t visibleRows = 11;
-            const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
-            const size_t last = std::min(files.size(), first + visibleRows);
-            for (size_t i = first; i < last; ++i)
+            ImGui::Text("%zu respaldos encontrados", files.size());
+            ImGui::BeginChild("save-files", ImVec2(0.0f, -32.0f), ImGuiChildFlags_Borders);
+            for (size_t i = 0; i < files.size(); ++i)
             {
-                const int y = 172 + static_cast<int>(i - first) * 38;
-                if (i == selected)
-                {
-                    const SDL_Rect row{68, y - 4, panel.w - 32, 34};
-                    drawRect(row, SELECTED, SELECTED);
-                }
-                if (i < gameMascots.size())
-                {
-                    drawPokemonSprite(gameMascots[i], {80, y - 2, 34, 34});
-                }
                 const std::string label =
                     i < gameNames.size() ? gameNames[i] + "  /  " + files[i] : files[i];
-                drawText(label, 122, y, 24, i == selected ? TEXT : MUTED, panel.w - 104);
+                ImGui::PushID(static_cast<int>(i));
+                ImGui::Selectable(label.c_str(), i == selected, ImGuiSelectableFlags_SpanAllColumns);
+                ImGui::PopID();
             }
-            const std::string count = std::to_string(selected + 1) + " / " +
-                                      std::to_string(files.size());
-            drawText(count, SCREEN_WIDTH - 140, 582, 24, MUTED);
+            ImGui::EndChild();
         }
-        drawText("Los archivos se buscan en subcarpetas. El guardado original no se modifica.",
-            70, 636, 24, MUTED, SCREEN_WIDTH - 140);
-        drawFooter("A: abrir    +: salir");
+        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 28.0f);
+        ImGui::TextDisabled("Los guardados originales no se modifican hasta guardar los cambios.");
+        ImGui::End();
+
+        ImGui::Render();
+        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+        SDL_RenderClear(renderer_);
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
         SDL_RenderPresent(renderer_);
     }
 
