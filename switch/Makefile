@@ -19,6 +19,7 @@ SOURCES		:=	source \
 				source/domain \
 				source/platform \
 				source/screens \
+				source/ui \
 				../core/memecrypto \
 				../core/source/i18n \
 				../core/source/personal \

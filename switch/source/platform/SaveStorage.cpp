@@ -1,6 +1,7 @@
 #include "platform/SaveStorage.hpp"
 
 #include "SwitchSaveFiles.hpp"
+#include "ui/Text.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
@@ -13,20 +14,23 @@ namespace pksm::switchui::storage
 {
     namespace
     {
+        constexpr char CONFIG_DIRECTORY[]     = "sdmc:/config";
+        constexpr char APP_CONFIG_DIRECTORY[] = "sdmc:/config/pksm-switch";
+        constexpr char SAVE_CACHE_PATH[]      = "sdmc:/config/pksm-switch/saves.cache";
+
         bool appendSaveFiles(const std::string& directoryPath, const std::string& relativeDirectory,
             std::vector<std::string>& files, std::string& error, size_t depth)
         {
             constexpr size_t MAX_DIRECTORY_DEPTH = 32;
             if (depth > MAX_DIRECTORY_DEPTH)
             {
-                error = "La carpeta de respaldos supera la profundidad maxima de 32 niveles.";
+                error = tr(Text::DirectoryTooDeep);
                 return false;
             }
             DIR* directory = opendir(directoryPath.c_str());
             if (!directory)
             {
-                error = std::string("No se pudo leer una carpeta de respaldos: ") +
-                        std::strerror(errno);
+                error = tr(Text::DirectoryReadFailed, {std::strerror(errno)});
                 return false;
             }
 
@@ -39,8 +43,7 @@ namespace pksm::switchui::storage
                 {
                     if (errno != 0)
                     {
-                        error = std::string("Error al enumerar una carpeta de respaldos: ") +
-                                std::strerror(errno);
+                        error = tr(Text::DirectoryListFailed, {std::strerror(errno)});
                         success = false;
                     }
                     break;
@@ -59,8 +62,7 @@ namespace pksm::switchui::storage
                 };
                 if (lstat(path.c_str(), &info) != 0)
                 {
-                    error = std::string("No se pudo inspeccionar un archivo de respaldo: ") +
-                            std::strerror(errno);
+                    error = tr(Text::FileInspectFailed, {std::strerror(errno)});
                     success = false;
                     break;
                 }
@@ -79,8 +81,7 @@ namespace pksm::switchui::storage
             }
             if (closedir(directory) != 0 && success)
             {
-                error = std::string("No se pudo cerrar una carpeta de respaldos: ") +
-                        std::strerror(errno);
+                error = tr(Text::DirectoryCloseFailed, {std::strerror(errno)});
                 success = false;
             }
             return success;
@@ -91,13 +92,12 @@ namespace pksm::switchui::storage
     {
         if (mkdir("sdmc:/switch", 0777) != 0 && errno != EEXIST)
         {
-            error = std::string("No se pudo acceder a la SD: ") + std::strerror(errno);
+            error = tr(Text::SdAccessFailed, {std::strerror(errno)});
             return false;
         }
         if (mkdir(SAVE_DIRECTORY, 0777) != 0 && errno != EEXIST)
         {
-            error = std::string("No se pudo preparar la carpeta de respaldos: ") +
-                    std::strerror(errno);
+            error = tr(Text::SaveDirectoryFailed, {std::strerror(errno)});
             return false;
         }
         return true;
@@ -121,20 +121,81 @@ namespace pksm::switchui::storage
         return std::string(SAVE_DIRECTORY) + "/" + relativePath;
     }
 
+    bool fileStamp(const std::string& path, uint64_t& size, int64_t& modified)
+    {
+        struct stat info
+        {
+        };
+        if (stat(path.c_str(), &info) != 0)
+        {
+            return false;
+        }
+        size     = static_cast<uint64_t>(info.st_size);
+        modified = static_cast<int64_t>(info.st_mtime);
+        return true;
+    }
+
+    std::string readSaveCache()
+    {
+        std::string text;
+        FILE* file = std::fopen(SAVE_CACHE_PATH, "rb");
+        if (!file)
+        {
+            return text;
+        }
+        char buffer[4096];
+        size_t read = 0;
+        while ((read = std::fread(buffer, 1, sizeof(buffer), file)) > 0)
+        {
+            text.append(buffer, read);
+        }
+        const bool failed = std::ferror(file) != 0;
+        std::fclose(file);
+        return failed ? std::string{} : text;
+    }
+
+    void writeSaveCache(const std::string& text)
+    {
+        if ((mkdir(CONFIG_DIRECTORY, 0777) != 0 && errno != EEXIST) ||
+            (mkdir(APP_CONFIG_DIRECTORY, 0777) != 0 && errno != EEXIST))
+        {
+            return;
+        }
+        // Written aside and then moved over the old cache, so a crash never leaves half a file.
+        const std::string temporary = std::string(SAVE_CACHE_PATH) + ".tmp";
+        FILE* file                  = std::fopen(temporary.c_str(), "wb");
+        if (!file)
+        {
+            return;
+        }
+        const bool written = std::fwrite(text.data(), 1, text.size(), file) == text.size();
+        const bool closed  = std::fclose(file) == 0;
+        if (!written || !closed)
+        {
+            std::remove(temporary.c_str());
+            return;
+        }
+        std::remove(SAVE_CACHE_PATH);
+        if (std::rename(temporary.c_str(), SAVE_CACHE_PATH) != 0)
+        {
+            std::remove(temporary.c_str());
+        }
+    }
+
     bool readSaveFile(
         const std::string& path, std::shared_ptr<u8[]>& data, size_t& size, std::string& error)
     {
         FILE* file = std::fopen(path.c_str(), "rb");
         if (!file)
         {
-            error = "No se pudo abrir el archivo.";
+            error = tr(Text::FileOpenFailed);
             return false;
         }
 
         if (std::fseek(file, 0, SEEK_END) != 0)
         {
             std::fclose(file);
-            error = "No se pudo leer el tamano del archivo.";
+            error = tr(Text::FileSizeFailed);
             return false;
         }
         const long fileSize = std::ftell(file);
@@ -142,7 +203,7 @@ namespace pksm::switchui::storage
             std::fseek(file, 0, SEEK_SET) != 0)
         {
             std::fclose(file);
-            error = "Tamano de archivo vacio, invalido o superior a 16 MiB.";
+            error = tr(Text::FileSizeInvalid);
             return false;
         }
 
@@ -152,7 +213,7 @@ namespace pksm::switchui::storage
         std::fclose(file);
         if (readError || bytesRead != static_cast<size_t>(fileSize))
         {
-            error = "Lectura incompleta del archivo.";
+            error = tr(Text::FileReadIncomplete);
             return false;
         }
 
@@ -180,9 +241,8 @@ namespace pksm::switchui::storage
         }
         if (descriptor < 0)
         {
-            error = errno == EEXIST ? "No se encontro un nombre libre para exportar."
-                                    : std::string("No se pudo crear la salida: ") +
-                                          std::strerror(errno);
+            error = errno == EEXIST ? std::string(tr(Text::ExportNoFreeName))
+                                    : tr(Text::ExportCreateFailed, {std::strerror(errno)});
             return false;
         }
 
@@ -192,10 +252,10 @@ namespace pksm::switchui::storage
             const int openError = errno;
             close(descriptor);
             const bool removed = std::remove(path.c_str()) == 0;
-            error = std::string("No se pudo abrir la salida: ") + std::strerror(openError);
+            error = tr(Text::ExportOpenFailed, {std::strerror(openError)});
             if (!removed)
             {
-                error += std::string("; tampoco se pudo eliminar el archivo vacio: ") + path;
+                error += tr(Text::ExportEmptyNotRemoved, {path});
             }
             return false;
         }
@@ -215,12 +275,11 @@ namespace pksm::switchui::storage
         {
             if (std::remove(output.path.c_str()) == 0)
             {
-                error = "Escritura incompleta; se elimino la salida parcial.";
+                error = tr(Text::ExportPartialRemoved);
             }
             else
             {
-                error = std::string("Escritura incompleta y no se pudo eliminar la salida parcial: ") +
-                        output.path;
+                error = tr(Text::ExportPartialKept, {output.path});
             }
             return false;
         }

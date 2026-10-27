@@ -2,6 +2,7 @@
 
 #include "enums/GameVersion.hpp"
 #include "enums/Language.hpp"
+#include "ui/Text.hpp"
 #include <cstddef>
 #include <cstdint>
 
@@ -12,7 +13,7 @@ namespace pksm::switchui
     struct GameProfile
     {
         pksm::GameVersion version;
-        const char* name;
+        Text name;
         // Species shown next to the game's saves.
         size_t mascotSpecies;
         bool hasBattlePoints;

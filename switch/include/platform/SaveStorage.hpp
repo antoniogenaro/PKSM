@@ -2,6 +2,7 @@
 
 #include "utils/coretypes.h"
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -20,6 +21,14 @@ namespace pksm::switchui::storage
     std::vector<std::string> listSaveFiles(std::string& error);
 
     std::string savePath(const std::string& relativePath);
+
+    // Size and modification time, used to tell whether a file changed since it was last seen.
+    bool fileStamp(const std::string& path, uint64_t& size, int64_t& modified);
+
+    // The save identification cache, kept outside SAVE_DIRECTORY so it is never listed as a
+    // save. Both are best effort: a missing or unwritable cache only means a slower start.
+    std::string readSaveCache();
+    void writeSaveCache(const std::string& text);
 
     bool readSaveFile(
         const std::string& path, std::shared_ptr<u8[]>& data, size_t& size, std::string& error);

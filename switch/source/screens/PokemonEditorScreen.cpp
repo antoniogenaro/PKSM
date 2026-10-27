@@ -6,6 +6,7 @@
 #include "pkx/PKX.hpp"
 #include "sav/Sav.hpp"
 #include "screens/PokemonFields.hpp"
+#include "ui/Text.hpp"
 #include "utils/i18n.hpp"
 
 namespace pksm::switchui
@@ -42,7 +43,7 @@ namespace pksm::switchui
                     app.quit();
                     return;
                 }
-                message_ = "Exporta con Y o descarta con X antes de salir.";
+                message_ = tr(Text::UnsavedBeforeQuit);
                 break;
             case Action::Up:
                 selected_ = selected_ == 0 ? fields.size() - 1 : selected_ - 1;
@@ -84,9 +85,9 @@ namespace pksm::switchui
     {
         const std::vector<Field> fields = displayFields(pokemonFields(*pokemon_, session_.save()));
         const std::string title =
-            pokemonSummary(*pokemon_) + "  /  " +
-            std::string(party_ ? "Equipo " : "Caja " + numericValue(box_ + 1)) + "  /  " +
-            numericValue(slot_ + 1);
+            party_ ? tr(Text::PokemonInParty, {pokemonSummary(*pokemon_), numericValue(slot_ + 1)})
+                   : tr(Text::PokemonInBox, {pokemonSummary(*pokemon_), numericValue(box_ + 1),
+                                                numericValue(slot_ + 1)});
         ui.drawPokemonEditor(game_, path_, title, static_cast<size_t>(pokemon_->species()),
             fields, selected_, session_.dirty(), message_);
     }

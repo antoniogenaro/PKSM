@@ -4,6 +4,7 @@
 #include "app/App.hpp"
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
+#include "domain/SaveCache.hpp"
 #include "platform/SaveStorage.hpp"
 #include "screens/GameMenuScreen.hpp"
 
@@ -14,19 +15,48 @@ namespace pksm::switchui
         std::vector<std::string> files = storage::prepareSaveDirectory(storageError_)
                                              ? storage::listSaveFiles(storageError_)
                                              : std::vector<std::string>{};
+        SaveCache cache = SaveCache::parse(storage::readSaveCache());
         files_.reserve(files.size());
         gameNames_.reserve(files.size());
         gameMascots_.reserve(files.size());
-        for (auto& file : files)
+        for (const auto& file : files)
         {
-            std::string identifyError;
-            if (const auto identified = Session::open(storage::savePath(file), identifyError))
+            if (const GameProfile* profile = identify(cache, file))
             {
-                gameNames_.emplace_back(identified->profile().name);
-                gameMascots_.push_back(identified->profile().mascotSpecies);
-                files_.push_back(std::move(file));
+                gameNames_.emplace_back(tr(profile->name));
+                gameMascots_.push_back(profile->mascotSpecies);
+                files_.push_back(file);
             }
         }
+        cache.keepOnly(files);
+        if (cache.changed())
+        {
+            storage::writeSaveCache(cache.serialize());
+        }
+    }
+
+    const GameProfile* SaveListScreen::identify(SaveCache& cache, const std::string& file)
+    {
+        const std::string path = storage::savePath(file);
+        SaveCache::Stamp stamp;
+        const bool stamped = storage::fileStamp(path, stamp.size, stamp.modified);
+
+        std::optional<int> version = stamped ? cache.lookup(file, stamp) : std::nullopt;
+        if (!version)
+        {
+            const auto identified = Session::identify(path);
+            version = identified ? static_cast<int>(static_cast<u8>(*identified))
+                                 : SaveCache::UNRECOGNIZED;
+            if (stamped)
+            {
+                cache.store(file, stamp, *version);
+            }
+        }
+        if (*version < 0 || *version > UINT8_MAX)
+        {
+            return nullptr;
+        }
+        return findGameProfile(pksm::GameVersion{static_cast<u8>(*version)});
     }
 
     void SaveListScreen::update(App& app, Action action)

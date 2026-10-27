@@ -8,6 +8,7 @@
 #include "screens/BoxBrowserScreen.hpp"
 #include "screens/TrainerEditorScreen.hpp"
 #include "utils/i18n.hpp"
+#include "ui/Text.hpp"
 
 namespace pksm::switchui
 {
@@ -35,7 +36,7 @@ namespace pksm::switchui
             case Action::Quit:
                 if (session_->dirty())
                 {
-                    message_ = "Exporta con Y o descarta con X antes de salir.";
+                    message_ = tr(Text::UnsavedBeforeQuit);
                 }
                 else
                 {
@@ -45,7 +46,7 @@ namespace pksm::switchui
             case Action::Back:
                 if (session_->dirty())
                 {
-                    message_ = "Exporta con Y o descarta con X antes de volver.";
+                    message_ = tr(Text::UnsavedBeforeBack);
                 }
                 else
                 {
@@ -94,12 +95,12 @@ namespace pksm::switchui
 
     void GameMenuScreen::open(App& app)
     {
-        const char* game = session_->profile().name;
+        const char* game = tr(session_->profile().name);
         if (selected_ == POKEMON_EDITOR_ITEM)
         {
             if (session_->save().maxBoxes() == 0)
             {
-                message_ = "Este guardado no contiene cajas de Pokémon.";
+                message_ = tr(Text::NoBoxes);
                 return;
             }
             app.push(std::make_unique<BoxBrowserScreen>(*session_, game, path_));
@@ -110,17 +111,16 @@ namespace pksm::switchui
         }
         else
         {
-            message_ = "Esta opción todavía no está disponible.";
+            message_ = tr(Text::OptionUnavailable);
         }
     }
 
     void GameMenuScreen::draw(SwitchUi& ui)
     {
         pksm::Sav& save           = session_->save();
-        const std::string details = "Entrenador: " + save.otName() + "    TID/SID: " +
-                                    std::to_string(save.displayTID()) + "/" +
-                                    std::to_string(save.displaySID());
-        ui.drawGameMenu(session_->profile().name, path_, details, selected_, message_);
+        const std::string details = tr(Text::TrainerSummary, {save.otName(),
+            std::to_string(save.displayTID()), std::to_string(save.displaySID())});
+        ui.drawGameMenu(tr(session_->profile().name), path_, details, selected_, message_);
     }
 
     void GameMenuScreen::onResume()

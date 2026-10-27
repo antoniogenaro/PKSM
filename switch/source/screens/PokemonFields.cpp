@@ -1,6 +1,7 @@
 #include "screens/PokemonFields.hpp"
 
 #include "SwitchUi.hpp"
+#include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
 #include "sav/Sav.hpp"
@@ -18,12 +19,13 @@ namespace pksm::switchui
     {
         constexpr std::array<pksm::Stat, 6> stats = {pksm::Stat::HP, pksm::Stat::ATK,
             pksm::Stat::DEF, pksm::Stat::SPATK, pksm::Stat::SPDEF, pksm::Stat::SPD};
-        constexpr std::array<const char*, 6> statNames = {
-            "PS", "Ataque", "Defensa", "Ataque Esp.", "Defensa Esp.", "Velocidad"};
-        constexpr std::array<const char*, 3> genderNames = {"Macho", "Hembra", "Sin genero"};
-        constexpr std::array<const char*, 12> monthNames = {"Enero", "Febrero", "Marzo",
-            "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre",
-            "Noviembre", "Diciembre"};
+        constexpr std::array<Text, 6> statNames = {Text::StatHp, Text::StatAttack,
+            Text::StatDefense, Text::StatSpAttack, Text::StatSpDefense, Text::StatSpeed};
+        constexpr std::array<Text, 3> genderNames = {
+            Text::GenderMale, Text::GenderFemale, Text::GenderNone};
+        constexpr std::array<Text, 12> monthNames = {Text::January, Text::February, Text::March,
+            Text::April, Text::May, Text::June, Text::July, Text::August, Text::September,
+            Text::October, Text::November, Text::December};
 
         Field display(std::string label, std::string value, bool checkbox = false,
             bool checked = false)
@@ -58,7 +60,7 @@ namespace pksm::switchui
 
         std::string withId(const std::string& name, unsigned int id)
         {
-            return name + " (#" + numericValue(id) + ")";
+            return tr(Text::WithId, {name, numericValue(id)});
         }
 
         bool setSpecies(pksm::PKX& pokemon, pksm::Species species)
@@ -101,26 +103,26 @@ namespace pksm::switchui
         }
 
         // The day, month and year rows of the met or egg date.
-        void addDateFields(std::vector<EditableField>& fields, const std::string& suffix,
-            std::function<Date()> get, std::function<void(const Date&)> set)
+        void addDateFields(std::vector<EditableField>& fields, Text dayLabel, Text monthLabel,
+            Text yearLabel, std::function<Date()> get, std::function<void(const Date&)> set)
         {
-            fields.push_back(dateField("Día " + suffix, 1, 31, [get] { return get().day(); },
+            fields.push_back(dateField(tr(dayLabel), 1, 31, [get] { return get().day(); },
                 [get, set](unsigned int value)
                 {
                     Date date = get();
                     date.day(static_cast<u8>(value));
                     set(date);
                 }));
-            EditableField month = dateField("Mes " + suffix, 1, 12, [get] { return get().month(); },
+            EditableField month = dateField(tr(monthLabel), 1, 12, [get] { return get().month(); },
                 [get, set](unsigned int value)
                 {
                     Date date = get();
                     date.month(static_cast<u8>(value));
                     set(date);
                 });
-            month.label = [](unsigned int value) { return std::string(monthNames[value - 1]); };
+            month.label = [](unsigned int value) { return std::string(tr(monthNames[value - 1])); };
             fields.push_back(std::move(month));
-            fields.push_back(dateField("Año " + suffix, 0, 9999, [get] { return get().year(); },
+            fields.push_back(dateField(tr(yearLabel), 0, 9999, [get] { return get().year(); },
                 [get, set](unsigned int value)
                 {
                     Date date = get();
@@ -142,15 +144,15 @@ namespace pksm::switchui
             const pksm::Language language = pokemon.language();
             const u8 slot                 = static_cast<u8>(slotIndex);
             const std::string label =
-                (relearn ? "Movimiento recuerdo " : "Movimiento ") + numericValue(slot + 1);
+                tr(relearn ? Text::FieldRelearnMove : Text::FieldMove, {numericValue(slot + 1)});
             const pksm::Move move = relearn ? pokemon.relearnMove(slot) : pokemon.move(slot);
             if (relearn && pokemon.generation() < pksm::Generation::SIX)
             {
-                return readOnlyField(display(label, "No disponible en esta generación"));
+                return readOnlyField(display(label, tr(Text::RelearnUnavailable)));
             }
             return choiceField(
                 display(label, withId(move.localize(language), static_cast<unsigned int>(move))),
-                "Movimiento", [&save] { return idsOf(save.availableMoves()); },
+                tr(Text::MoveTitle), [&save] { return idsOf(save.availableMoves()); },
                 [&pokemon](unsigned int id)
                 { return withId(pksm::Move{static_cast<u16>(id)}.localize(pokemon.language()), id); },
                 [&pokemon, slot, relearn]
@@ -188,16 +190,16 @@ namespace pksm::switchui
 
         const unsigned int species = static_cast<unsigned int>(pokemon.species());
         fields.push_back(choiceField(
-            display("Especie", pokemon.species() == pksm::Species::None
-                                   ? "Vacío"
+            display(tr(Text::FieldSpecies), pokemon.species() == pksm::Species::None
+                                   ? tr(Text::Empty)
                                    : withId(pokemon.species().localize(language), species)),
-            "Especie", [&save] { return idsOf(save.availableSpecies()); },
+            tr(Text::FieldSpecies), [&save] { return idsOf(save.availableSpecies()); },
             [&pokemon](unsigned int id)
             { return withId(pksm::Species{static_cast<u16>(id)}.localize(pokemon.language()), id); },
             [&pokemon] { return static_cast<unsigned int>(pokemon.species()); },
             [&pokemon](unsigned int id) { setSpecies(pokemon, pksm::Species{static_cast<u16>(id)}); }));
 
-        fields.push_back(textField(display("Apodo", pokemon.nickname()), "Apodo",
+        fields.push_back(textField(display(tr(Text::FieldNickname), pokemon.nickname()), tr(Text::FieldNickname),
             generation >= pksm::Generation::SIX ? 12 : 10, [&pokemon] { return pokemon.nickname(); },
             [&pokemon](const std::string& nickname)
             {
@@ -210,15 +212,15 @@ namespace pksm::switchui
                 pokemon.nicknamed(nickname != speciesName);
             }));
 
-        fields.push_back(numberField(display("Nivel", numericValue(pokemon.level())), "Nivel",
+        fields.push_back(numberField(display(tr(Text::FieldLevel), numericValue(pokemon.level())), tr(Text::FieldLevel),
             generation > pksm::Generation::THREE ? 1 : 2, 100,
             [&pokemon] { return static_cast<unsigned int>(pokemon.level()); },
             [&pokemon](unsigned int value) { pokemon.level(static_cast<u8>(value)); }));
 
         if (generation >= pksm::Generation::THREE)
         {
-            EditableField nature = choiceField(display("Naturaleza", pokemon.nature().localize(language)),
-                "Naturaleza", [] { return range(0, 24); },
+            EditableField nature = choiceField(display(tr(Text::FieldNature), pokemon.nature().localize(language)),
+                tr(Text::FieldNature), [] { return range(0, 24); },
                 [&pokemon](unsigned int id)
                 { return pksm::Nature{static_cast<u8>(id)}.localize(pokemon.language()); },
                 [&pokemon] { return static_cast<unsigned int>(pokemon.nature()); },
@@ -228,14 +230,15 @@ namespace pksm::switchui
         }
         else
         {
-            fields.push_back(readOnlyField(display("Naturaleza", "No disponible")));
+            fields.push_back(readOnlyField(display(tr(Text::FieldNature), tr(Text::NotAvailable))));
         }
 
         const u8 abilitySlot = pokemon.abilityNumber() >> 1;
         fields.push_back(choiceField(
-            display("Habilidad",
-                pokemon.ability().localize(language) + " [" + numericValue(abilitySlot) + "]"),
-            "Habilidad",
+            display(tr(Text::FieldAbility),
+                tr(Text::AbilityValue,
+                    {pokemon.ability().localize(language), numericValue(abilitySlot)})),
+            tr(Text::FieldAbility),
             [&pokemon]
             {
                 std::vector<unsigned int> slots;
@@ -250,15 +253,16 @@ namespace pksm::switchui
             },
             [&pokemon](unsigned int slot)
             {
-                return pokemon.abilities(static_cast<u8>(slot)).localize(pokemon.language()) +
-                       " [Ranura " + numericValue(slot) + "]";
+                return tr(Text::AbilityChoice,
+                    {pokemon.abilities(static_cast<u8>(slot)).localize(pokemon.language()),
+                        numericValue(slot)});
             },
             [&pokemon] { return static_cast<unsigned int>(pokemon.abilityNumber() >> 1); },
             [&pokemon](unsigned int slot) { pokemon.setAbility(static_cast<u8>(slot)); }));
 
         fields.push_back(choiceField(
-            display("Objeto", withId(i18n::item(language, pokemon.heldItem()), pokemon.heldItem())),
-            "Objeto",
+            display(tr(Text::FieldItem), withId(i18n::item(language, pokemon.heldItem()), pokemon.heldItem())),
+            tr(Text::FieldItem),
             [&save]
             {
                 std::vector<unsigned int> items{0};
@@ -279,35 +283,37 @@ namespace pksm::switchui
             [&pokemon](unsigned int item) { pokemon.heldItem(static_cast<u16>(item)); }));
 
         fields.push_back(toggleField(
-            display("Variocolor", pokemon.shiny() ? "Sí" : "No", true, pokemon.shiny()),
+            display(tr(Text::FieldShiny), pokemon.shiny() ? tr(Text::Yes) : tr(Text::No), true, pokemon.shiny()),
             [&pokemon] { return pokemon.shiny(); }, [&pokemon](bool value) { pokemon.shiny(value); }));
         fields.push_back(toggleField(
-            display("Pokérus", pokemon.pkrsDays() > 0 ? "Sí" : "No", true, pokemon.pkrsDays() > 0),
+            display(tr(Text::FieldPokerus), pokemon.pkrsDays() > 0 ? tr(Text::Yes) : tr(Text::No), true, pokemon.pkrsDays() > 0),
             [&pokemon] { return pokemon.pkrs() != 0; },
             [&pokemon](bool value) { pokemon.pkrs(value ? 0xF4 : 0); }));
 
-        fields.push_back(textField(display("Entrenador original", pokemon.otName()),
-            "Entrenador original",
+        fields.push_back(textField(display(tr(Text::FieldOriginalTrainer), pokemon.otName()),
+            tr(Text::FieldOriginalTrainer),
             generation >= pksm::Generation::SIX ? 12 : language == pksm::Language::JPN ? 5 : 7,
             [&pokemon] { return pokemon.otName(); },
             [&pokemon](const std::string& name) { pokemon.otName(name); }));
 
         const unsigned int gender = static_cast<unsigned int>(pokemon.gender());
         fields.push_back(choiceField(
-            display("Género", gender < genderNames.size() ? genderNames[gender] : "Desconocido"),
-            "Género", [] { return range(0, genderNames.size() - 1); },
+            display(tr(Text::FieldGender),
+                tr(gender < genderNames.size() ? genderNames[gender] : Text::GenderUnknown)),
+            tr(Text::FieldGender), [] { return range(0, genderNames.size() - 1); },
             [](unsigned int id)
-            { return std::string(id < genderNames.size() ? genderNames[id] : "Desconocido"); },
+            { return std::string(tr(id < genderNames.size() ? genderNames[id] : Text::GenderUnknown)); },
             [&pokemon] { return static_cast<unsigned int>(pokemon.gender()); },
             [&pokemon](unsigned int id) { pokemon.gender(pksm::Gender{static_cast<u8>(id)}); }));
 
-        fields.push_back(counterField("Amistad", "Amistad (0-255)", 255,
+        fields.push_back(counterField(tr(Text::FieldFriendship), tr(Text::FriendshipTitle), 255,
             [&pokemon] { return static_cast<unsigned int>(pokemon.currentFriendship()); },
             [&pokemon](unsigned int value) { pokemon.currentFriendship(static_cast<u8>(value)); }));
 
         const unsigned int ball = static_cast<unsigned int>(pokemon.ball());
         EditableField ballField = choiceField(
-            display("Poké Ball", withId(pokemon.ball().localize(language), ball)), "Poké Ball",
+            display(tr(Text::FieldBall), withId(pokemon.ball().localize(language), ball)),
+            tr(Text::FieldBall),
             [&save] { return idsOf(save.availableBalls()); },
             [&pokemon](unsigned int id)
             { return withId(pksm::Ball{static_cast<u8>(id)}.localize(pokemon.language()), id); },
@@ -318,7 +324,7 @@ namespace pksm::switchui
         ballField.display.ballSpriteIndex = ball <= 25 ? ball : 0;
         fields.push_back(std::move(ballField));
 
-        const Field formDisplay = display("Forma",
+        const Field formDisplay = display(tr(Text::FieldForm),
             withId(i18n::form(language, pokemon.version(), pokemon.species(),
                        static_cast<u8>(pokemon.alternativeForm())),
                 pokemon.alternativeForm()));
@@ -330,7 +336,7 @@ namespace pksm::switchui
         }
         else
         {
-            fields.push_back(choiceField(formDisplay, "Forma",
+            fields.push_back(choiceField(formDisplay, tr(Text::FieldForm),
                 [formCount] { return range(0, formCount - 1); },
                 [&pokemon, &save](unsigned int form)
                 {
@@ -342,42 +348,46 @@ namespace pksm::switchui
                 [&pokemon](unsigned int form) { pokemon.alternativeForm(static_cast<u16>(form)); }));
         }
 
-        fields.push_back(toggleField(display("Huevo", pokemon.egg() ? "Sí" : "No", true, pokemon.egg()),
+        fields.push_back(toggleField(display(tr(Text::FieldEgg), pokemon.egg() ? tr(Text::Yes) : tr(Text::No), true, pokemon.egg()),
             [&pokemon] { return pokemon.egg(); }, [&pokemon](bool value) { pokemon.egg(value); }));
-        fields.push_back(toggleField(display("Encuentro fatídico",
-                                         pokemon.fatefulEncounter() ? "Sí" : "No", true,
+        fields.push_back(toggleField(display(tr(Text::FieldFatefulEncounter),
+                                         pokemon.fatefulEncounter() ? tr(Text::Yes) : tr(Text::No), true,
                                          pokemon.fatefulEncounter()),
             [&pokemon] { return pokemon.fatefulEncounter(); },
             [&pokemon](bool value) { pokemon.fatefulEncounter(value); }));
 
-        fields.push_back(counterField("Nivel de encuentro", "Nivel de encuentro", 100,
+        fields.push_back(counterField(tr(Text::FieldMetLevel), tr(Text::FieldMetLevel), 100,
             [&pokemon] { return static_cast<unsigned int>(pokemon.metLevel()); },
             [&pokemon](unsigned int value) { pokemon.metLevel(static_cast<u8>(value)); }));
-        addDateFields(fields, "de encuentro", [&pokemon] { return pokemon.metDate(); },
+        addDateFields(fields, Text::FieldMetDay, Text::FieldMetMonth, Text::FieldMetYear,
+            [&pokemon] { return pokemon.metDate(); },
             [&pokemon](const Date& date) { pokemon.metDate(date); });
         fields.push_back(numberField(
-            display("Lugar de encuentro", "#" + numericValue(pokemon.metLocation())),
-            "Lugar de encuentro", 0, UINT16_MAX,
+            display(tr(Text::FieldMetLocation),
+                tr(Text::LocationValue, {numericValue(pokemon.metLocation())})),
+            tr(Text::FieldMetLocation), 0, UINT16_MAX,
             [&pokemon] { return static_cast<unsigned int>(pokemon.metLocation()); },
             [&pokemon](unsigned int value) { pokemon.metLocation(static_cast<u16>(value)); }));
 
         if (generation >= pksm::Generation::FOUR)
         {
-            addDateFields(fields, "de obtención del huevo", [&pokemon] { return pokemon.eggDate(); },
+            addDateFields(fields, Text::FieldEggDay, Text::FieldEggMonth, Text::FieldEggYear,
+                [&pokemon] { return pokemon.eggDate(); },
                 [&pokemon](const Date& date) { pokemon.eggDate(date); });
             fields.push_back(numberField(
-                display("Lugar de obtención del huevo", "#" + numericValue(pokemon.eggLocation())),
-                "Lugar de obtención del huevo", 0, UINT16_MAX,
+                display(tr(Text::FieldEggLocation),
+                    tr(Text::LocationValue, {numericValue(pokemon.eggLocation())})),
+                tr(Text::FieldEggLocation), 0, UINT16_MAX,
                 [&pokemon] { return static_cast<unsigned int>(pokemon.eggLocation()); },
                 [&pokemon](unsigned int value) { pokemon.eggLocation(static_cast<u16>(value)); }));
         }
         if (generation == pksm::Generation::EIGHT)
         {
             auto& pk8 = static_cast<pksm::PK8&>(pokemon);
-            fields.push_back(counterField("Satisfacción", "Satisfacción", 255,
+            fields.push_back(counterField(tr(Text::FieldEnjoyment), tr(Text::FieldEnjoyment), 255,
                 [&pk8] { return static_cast<unsigned int>(pk8.enjoyment()); },
                 [&pk8](unsigned int value) { pk8.enjoyment(static_cast<u8>(value)); }));
-            fields.push_back(counterField("Saciedad", "Saciedad", 255,
+            fields.push_back(counterField(tr(Text::FieldFullness), tr(Text::FieldFullness), 255,
                 [&pk8] { return static_cast<unsigned int>(pk8.fullness()); },
                 [&pk8](unsigned int value) { pk8.fullness(static_cast<u8>(value)); }));
         }
@@ -385,7 +395,7 @@ namespace pksm::switchui
         for (size_t i = 0; i < stats.size(); ++i)
         {
             const pksm::Stat stat   = stats[i];
-            const std::string label = std::string("IV ") + statNames[i];
+            const std::string label = tr(Text::FieldIv, {tr(statNames[i])});
             EditableField iv        = counterField(label, label, pokemon.maxIV(),
                        [&pokemon, stat] { return static_cast<unsigned int>(pokemon.iv(stat)); },
                        [&pokemon, stat](unsigned int value) { pokemon.iv(stat, static_cast<u8>(value)); });
@@ -408,7 +418,7 @@ namespace pksm::switchui
                 pokemon.maxSecondaryStatCalcTotal() > others
                     ? pokemon.maxSecondaryStatCalcTotal() - others
                     : 0);
-            const std::string label = std::string("EV ") + statNames[i];
+            const std::string label = tr(Text::FieldEv, {tr(statNames[i])});
             EditableField ev        = counterField(label, label, max,
                        [&pokemon, stat] { return static_cast<unsigned int>(pokemon.secondaryStatCalc(stat)); },
                        [&pokemon, stat](unsigned int value)
@@ -451,10 +461,10 @@ namespace pksm::switchui
     {
         if (pokemon.species() == pksm::Species::None)
         {
-            return "Vacío";
+            return tr(Text::Empty);
         }
-        return pokemon.species().localize(pokemon.language()) + "  Nv. " +
-               numericValue(pokemon.level());
+        return tr(Text::PokemonSummary,
+            {pokemon.species().localize(pokemon.language()), numericValue(pokemon.level())});
     }
 
     std::vector<Field> boxFields(pksm::Sav& save, u8 box)
@@ -464,8 +474,8 @@ namespace pksm::switchui
         for (u8 slot = 0; slot < 30; ++slot)
         {
             const auto pokemon = save.pkm(box, slot);
-            fields.push_back({"Espacio " + numericValue(slot + 1),
-                pokemon ? pokemonSummary(*pokemon) : "Error al leer",
+            fields.push_back({tr(Text::BoxSlot, {numericValue(slot + 1)}),
+                pokemon ? pokemonSummary(*pokemon) : tr(Text::SlotReadFailed),
                 pokemon ? static_cast<size_t>(pokemon->species()) : 0});
         }
         return fields;
@@ -479,8 +489,8 @@ namespace pksm::switchui
         for (u8 slot = 0; slot < count; ++slot)
         {
             const auto pokemon = save.pkm(slot);
-            fields.push_back({"Equipo " + numericValue(slot + 1),
-                pokemon ? pokemonSummary(*pokemon) : "Error al leer",
+            fields.push_back({tr(Text::PartySlot, {numericValue(slot + 1)}),
+                pokemon ? pokemonSummary(*pokemon) : tr(Text::SlotReadFailed),
                 pokemon ? static_cast<size_t>(pokemon->species()) : 0});
         }
         return fields;
