@@ -1193,6 +1193,32 @@ namespace pksm::switchui
                 theme::rgb(theme::TEXT_MUTED), count.c_str());
         };
         const float contentWidth = ImGui::GetContentRegionAvail().x;
+        // The slot a carried Pokémon came from: dimmed, with a thin accent outline.
+        const auto drawCarriedSource = [](const ImVec2& min, float size)
+        {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 max(min.x + size, min.y + size);
+            drawList->AddRectFilled(min, max, theme::rgb(theme::BACKGROUND, 170), theme::CARD_RADIUS);
+            drawList->AddRect(min, max, theme::rgb(theme::ACCENT), theme::CARD_RADIUS,
+                ImDrawFlags_None, 2.0f);
+        };
+        // The carried Pokémon, lifted above the selected slot.
+        const auto drawCarried = [this, &view](const ImVec2& min, float size)
+        {
+            if (!view.carrying || view.carried.empty)
+            {
+                return;
+            }
+            const float sprite = size * 0.8f;
+            const float lift   = size * 0.3f;
+            const ImVec2 center(min.x + size * 0.5f, min.y + size * 0.5f - lift);
+            ImGui::GetWindowDrawList()->AddCircleFilled(
+                ImVec2(min.x + size * 0.5f, min.y + size * 0.82f), size * 0.22f,
+                theme::rgb(theme::BACKGROUND, 140), 24);
+            drawPokemonSprite(view.carried.species,
+                {static_cast<int>(center.x - sprite * 0.5f), static_cast<int>(center.y - sprite * 0.5f),
+                    static_cast<int>(sprite), static_cast<int>(sprite)});
+        };
 
         // The party on the left: its six slots in a column.
         widgets::beginPanel("party", ImVec2(partyPanelWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
@@ -1222,6 +1248,16 @@ namespace pksm::switchui
                 }
                 ImGui::PopID();
                 drawSlotTile(view.party[i], min, partyTile, view.inParty && view.selected == i);
+                if (view.carriedShown && view.carriedInParty && view.carriedSlot == i)
+                {
+                    drawCarriedSource(min, partyTile);
+                }
+            }
+            if (view.inParty && view.selected < view.party.size())
+            {
+                drawCarried(ImVec2(origin.x + (available.x - partyTile) * 0.5f,
+                                top + static_cast<float>(view.selected) * (partyTile + partyTileGap)),
+                    partyTile);
             }
         }
         widgets::endPanel();
@@ -1273,6 +1309,18 @@ namespace pksm::switchui
                 }
                 ImGui::PopID();
                 drawSlotTile(view.box[i], min, boxTile, !view.inParty && view.selected == i);
+                if (view.carriedShown && !view.carriedInParty && view.carriedSlot == i)
+                {
+                    drawCarriedSource(min, boxTile);
+                }
+            }
+            if (!view.inParty && view.selected < view.box.size())
+            {
+                drawCarried(ImVec2(grid.x + static_cast<float>(view.selected % BoxView::COLUMNS) *
+                                                (boxTile + boxTileGap),
+                                grid.y + static_cast<float>(view.selected / BoxView::COLUMNS) *
+                                             (boxTile + boxTileGap)),
+                    boxTile);
             }
         }
         widgets::endPanel();
@@ -1283,9 +1331,13 @@ namespace pksm::switchui
         drawPokemonDetail(view.detail);
         widgets::endPanel();
 
-        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
-            {"L / R", tr(Text::HintChangeBox)}, {"Y", tr(Text::HintExport)},
-            {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
+        // Y moves Pokémon here; the game menu exports.
+        const float legend = view.carrying
+            ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
+                  {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
+            : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
+                  {"L / R", tr(Text::HintChangeBox)}, {"X", tr(Text::HintDiscard)},
+                  {"B", tr(Text::HintBack)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
