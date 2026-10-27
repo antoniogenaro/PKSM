@@ -22,7 +22,7 @@ namespace pksm::switchui
 
         void push(std::unique_ptr<Screen> screen);
         void pop();
-        // Closes every screen of the open save, back to the save list.
+        // Closes every screen of the open save, back to the list of that game's saves.
         void closeSession();
         void quit();
 

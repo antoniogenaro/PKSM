@@ -67,8 +67,8 @@ $(BUILD)/SubsystemsTests: SubsystemsTests.cpp ../common/source/Subsystems.cpp | 
 	@$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^
 
 $(BUILD)/SwitchDomainTests: SwitchDomainTests.cpp ../switch/source/domain/GameProfile.cpp \
-		../switch/source/domain/FieldValues.cpp ../switch/source/domain/SaveCache.cpp \
-		../switch/source/ui/Text.cpp $(wildcard ../switch/strings/*.json) | $(BUILD)
+		../switch/source/domain/FieldValues.cpp ../switch/source/domain/GameGrid.cpp \
+		../switch/source/domain/SaveCache.cpp ../switch/source/ui/Text.cpp $(wildcard ../switch/strings/*.json) | $(BUILD)
 	@$(CXX) $(CXXFLAGS) -I../switch/include -I../core/include -I../external \
 		-DSWITCH_STRINGS='"../switch/strings"' -o $@ $(filter %.cpp,$^)
 

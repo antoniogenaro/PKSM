@@ -26,7 +26,7 @@
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
 #include "platform/SystemLanguage.hpp"
-#include "screens/SaveListScreen.hpp"
+#include "screens/GameListScreen.hpp"
 #include "utils/i18n.hpp"
 #include <switch.h>
 #include <memory>
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     }
 
     pksm::switchui::App app(ui);
-    app.push(std::make_unique<pksm::switchui::SaveListScreen>());
+    app.push(std::make_unique<pksm::switchui::GameListScreen>());
     app.run();
     return 0;
 }

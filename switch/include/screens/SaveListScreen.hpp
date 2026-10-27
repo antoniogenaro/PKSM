@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SwitchUi.hpp"
 #include "app/Screen.hpp"
 #include <cstddef>
 #include <string>
@@ -7,25 +8,24 @@
 
 namespace pksm::switchui
 {
-    class SaveCache;
-    struct GameProfile;
-
-    // The supported saves found on the SD card.
+    // The saves of one game, chosen in the game list.
     class SaveListScreen : public Screen
     {
     public:
-        SaveListScreen();
+        // `game` is an index into gameProfiles(); `files` are its saves, relative to the save
+        // folder.
+        SaveListScreen(size_t game, std::vector<std::string> files);
 
         void update(App& app, Action action) override;
         void draw(SwitchUi& ui) override;
+        // Scans again, so a save exported from this game shows up.
+        void onResume() override;
 
     private:
-        // The profile of a supported save, using the cache when the file did not change.
-        static const GameProfile* identify(SaveCache& cache, const std::string& file);
-
+        size_t game_;
+        GameCard card_;
+        std::string group_;
         std::vector<std::string> files_;
-        std::vector<std::string> gameNames_;
-        std::vector<size_t> gameMascots_;
         size_t selected_ = 0;
         std::string storageError_;
         // Set when the chosen save could not be opened; shown until A or B is pressed.

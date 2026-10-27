@@ -1,4 +1,6 @@
 #include "SwitchUi.hpp"
+#include "domain/GameGrid.hpp"
+#include "platform/SaveStorage.hpp"
 #include "ui/Text.hpp"
 
 #include "imgui.h"
@@ -24,10 +26,22 @@ namespace pksm::switchui
         constexpr ImVec4 SELECTED_COLOR{0.16f, 0.26f, 0.38f, 1.0f};
         constexpr ImVec4 ACCENT_COLOR{0.28f, 0.70f, 0.96f, 1.0f};
         constexpr ImVec4 ERROR_COLOR{1.0f, 0.45f, 0.35f, 1.0f};
+        constexpr ImVec4 HAS_SAVES_COLOR{0.29f, 0.87f, 0.50f, 1.0f};
+        constexpr ImVec4 NO_SAVES_COLOR{0.49f, 0.52f, 0.60f, 1.0f};
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
         constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
         constexpr size_t BALL_SPRITE_BASE = 144;
         constexpr size_t MAX_BALL_SPRITE = 25;
+
+        std::string saveCountText(size_t count)
+        {
+            if (count == 0)
+            {
+                return tr(Text::SaveCountNone);
+            }
+            return count == 1 ? std::string(tr(Text::SaveCountOne))
+                              : tr(Text::SaveCountMany, {std::to_string(count)});
+        }
 
         bool readU16(const std::vector<u8>& data, size_t offset, u16& result)
         {
@@ -539,50 +553,177 @@ namespace pksm::switchui
         return Action::None;
     }
 
-    void SwitchUi::drawFiles(
-        const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
-        const std::vector<size_t>& gameMascots, size_t selected, const std::string& error)
+    bool SwitchUi::drawGameTile(const GameCard& game, float width, float height, bool selected)
     {
-        (void)gameMascots;
+        if (selected)
+        {
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, SELECTED_COLOR);
+            ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
+        }
+        ImGui::BeginChild("game-tile", ImVec2(width, height), ImGuiChildFlags_Borders,
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        const ImVec2 origin    = ImGui::GetCursorScreenPos();
+        const float spriteSize = ImGui::GetContentRegionAvail().x;
+        drawPokemonSprite(game.mascotSpecies,
+            {static_cast<int>(origin.x), static_cast<int>(origin.y),
+                static_cast<int>(spriteSize), static_cast<int>(spriteSize)});
+        ImGui::Dummy(ImVec2(spriteSize, spriteSize));
+        ImGui::TextWrapped("%s", game.name.c_str());
+        ImGui::SetCursorPosY(
+            height - ImGui::GetStyle().WindowPadding.y - ImGui::GetTextLineHeight());
+        ImGui::TextColored(game.saveCount > 0 ? HAS_SAVES_COLOR : NO_SAVES_COLOR, "%s",
+            saveCountText(game.saveCount).c_str());
+        ImGui::EndChild();
+        if (selected)
+        {
+            ImGui::PopStyleColor(2);
+        }
+        return ImGui::IsItemClicked();
+    }
+
+    void SwitchUi::drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
+        size_t& selected, const std::string& error)
+    {
         beginFrame();
 
-        ImGui::TextUnformatted(tr(Text::SaveListTitle));
+        ImGui::TextUnformatted(tr(Text::GameListTitle));
+        ImGui::SameLine();
+        ImGui::TextDisabled("/ %s", tr(Text::GameListPrompt));
         ImGui::Separator();
-        ImGui::TextDisabled("%s", tr(Text::SaveListControls));
+        ImGui::TextDisabled("%s", tr(Text::GameListControls));
         ImGui::Spacing();
-
         if (!error.empty())
         {
             ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
         }
-        else if (files.empty())
+
+        // Cards fill rows of GameGrid::COLUMNS; each holds its games side by side.
+        constexpr float cardGap = 12.0f;
+        constexpr float tileGap = 8.0f;
+        const ImVec2 padding    = ImGui::GetStyle().WindowPadding;
+        const float columns     = static_cast<float>(GameGrid::COLUMNS);
+        const float cardWidth =
+            (ImGui::GetContentRegionAvail().x - cardGap * (columns - 1.0f)) / columns;
+        const float tileWidth  = (cardWidth - padding.x * 2.0f - tileGap) / 2.0f;
+        const float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+        const float tileHeight = tileWidth + lineHeight * 3.0f + padding.y * 2.0f;
+        const float cardHeight = tileHeight + lineHeight + padding.y * 2.0f;
+        const auto& cards      = grid.cards();
+        for (size_t c = 0; c < cards.size(); ++c)
+        {
+            if (c % GameGrid::COLUMNS != 0)
+            {
+                ImGui::SameLine(0.0f, cardGap);
+            }
+            else if (c != 0)
+            {
+                ImGui::Dummy(ImVec2(0.0f, cardGap - ImGui::GetStyle().ItemSpacing.y));
+            }
+            ImGui::PushID(static_cast<int>(c));
+            ImGui::BeginChild("game-card", ImVec2(cardWidth, cardHeight), ImGuiChildFlags_Borders,
+                ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGui::TextDisabled("%s", tr(cards[c].group));
+            for (size_t slot = 0; slot < cards[c].games.size(); ++slot)
+            {
+                const size_t game = cards[c].games[slot];
+                if (game >= games.size())
+                {
+                    continue;
+                }
+                if (slot != 0)
+                {
+                    ImGui::SameLine(0.0f, tileGap);
+                }
+                ImGui::PushID(static_cast<int>(slot));
+                if (drawGameTile(games[game], tileWidth, tileHeight, game == selected))
+                {
+                    selected = game;
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+            ImGui::PopID();
+        }
+
+        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 28.0f);
+        ImGui::TextDisabled("%s", tr(Text::OriginalsUntouched));
+        endFrame();
+    }
+
+    void SwitchUi::drawSaveList(const GameCard& game, const std::string& group,
+        const std::vector<std::string>& files, size_t& selected, const std::string& error)
+    {
+        beginFrame();
+
+        ImGui::TextUnformatted(game.name.c_str());
+        ImGui::SameLine();
+        ImGui::TextDisabled("/ %s", tr(Text::SaveListTitle));
+        ImGui::Separator();
+        ImGui::TextDisabled("%s", tr(Text::SaveListControls));
+        ImGui::Spacing();
+
+        // The game on the left, its saves on the right.
+        constexpr float gamePanelWidth = 260.0f;
+        constexpr float panelGap       = 16.0f;
+        constexpr float panelHeight    = -32.0f;
+        const ImVec2 padding           = ImGui::GetStyle().WindowPadding;
+        ImGui::BeginChild("save-game", ImVec2(gamePanelWidth, panelHeight),
+            ImGuiChildFlags_Borders,
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::TextDisabled("%s", group.c_str());
+        const float tileWidth = gamePanelWidth - padding.x * 2.0f;
+        drawGameTile(game, tileWidth,
+            tileWidth + ImGui::GetTextLineHeightWithSpacing() * 3.0f + padding.y * 2.0f, true);
+        ImGui::EndChild();
+
+        ImGui::SameLine(0.0f, panelGap);
+        ImGui::BeginChild("save-files", ImVec2(0.0f, panelHeight), ImGuiChildFlags_Borders);
+        if (!error.empty())
+        {
+            ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
+        }
+        if (files.empty())
         {
             ImGui::TextWrapped("%s", tr(Text::NoSavesFound));
             ImGui::TextWrapped("%s", tr(Text::NoSavesHint));
         }
-        else
+        const float rowHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f + 12.0f;
+        for (size_t i = 0; i < files.size(); ++i)
         {
-            ImGui::TextUnformatted(tr(Text::SavesFound, {std::to_string(files.size())}).c_str());
-            ImGui::BeginChild("save-files", ImVec2(0.0f, -32.0f), ImGuiChildFlags_Borders);
-            for (size_t i = 0; i < files.size(); ++i)
+            ImGui::PushID(static_cast<int>(i));
+            const bool isSelected = i == selected;
+            if (isSelected)
             {
-                const std::string label =
-                    i < gameNames.size() ? gameNames[i] + "  /  " + files[i] : files[i];
-                ImGui::PushID(static_cast<int>(i));
-                const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
-                if (i < gameMascots.size())
-                {
-                    drawPokemonSprite(gameMascots[i],
-                        {static_cast<int>(itemPosition.x), static_cast<int>(itemPosition.y), 40, 40});
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 46.0f);
-                }
-                ImGui::Selectable(label.c_str(), i == selected, ImGuiSelectableFlags_SpanAllColumns,
-                    ImVec2(0.0f, 40.0f));
-                ImGui::PopID();
+                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
             }
-            ImGui::EndChild();
+            const ImVec2 rowStart = ImGui::GetCursorScreenPos();
+            if (ImGui::Selectable("##save", isSelected, ImGuiSelectableFlags_None,
+                    ImVec2(0.0f, rowHeight)))
+            {
+                selected = i;
+            }
+            if (isSelected)
+            {
+                ImGui::PopStyleColor(2);
+                ImGui::SetScrollHereY();
+            }
+            // The file name, with its full path below, drawn over the row. Moving the cursor
+            // back instead would leave it past the list, which Dear ImGui stops on.
+            const size_t slash     = files[i].find_last_of('/');
+            const std::string name =
+                slash == std::string::npos ? files[i] : files[i].substr(slash + 1);
+            const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + files[i];
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 namePosition(rowStart.x + 12.0f, rowStart.y + 6.0f);
+            drawList->AddText(namePosition, ImGui::GetColorU32(ImGuiCol_Text), name.c_str());
+            drawList->AddText(
+                ImVec2(namePosition.x, namePosition.y + ImGui::GetTextLineHeightWithSpacing()),
+                ImGui::GetColorU32(ImGuiCol_TextDisabled), path.c_str());
+            ImGui::PopID();
         }
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 28.0f);
+        ImGui::EndChild();
+
         ImGui::TextDisabled("%s", tr(Text::OriginalsUntouched));
         endFrame();
     }
