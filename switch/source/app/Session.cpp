@@ -63,4 +63,15 @@ namespace pksm::switchui
         }
         return written;
     }
+
+    bool Session::exportWithMessage(std::string& message)
+    {
+        std::string outputPath;
+        if (!exportChanges(outputPath, message))
+        {
+            return false;
+        }
+        message = "Exportado a " + outputPath;
+        return true;
+    }
 }
