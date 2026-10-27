@@ -1225,7 +1225,8 @@ namespace pksm::switchui
                 theme::rgb(theme::BACKGROUND, 140), 24);
             drawPokemonSprite(view.carried.species,
                 {static_cast<int>(center.x - sprite * 0.5f), static_cast<int>(center.y - sprite * 0.5f),
-                    static_cast<int>(sprite), static_cast<int>(sprite)});
+                    static_cast<int>(sprite), static_cast<int>(sprite)},
+                view.carried.formSprite);
         };
 
         // The party on the left: its six slots in a column.
