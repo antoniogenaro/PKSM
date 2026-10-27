@@ -22,5 +22,8 @@ namespace pksm::switchui
 
         // The screen that owns the open save. App::closeSession() returns below it.
         virtual bool ownsSession() const { return false; }
+
+        // A dialog drawn over the screen below it, which stays visible but gets no input.
+        virtual bool isOverlay() const { return false; }
     };
 }

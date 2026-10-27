@@ -67,6 +67,33 @@ namespace pksm::switchui
                 lighten(color & 0xFF), 255);
         }
 
+        // Type pills from `origin`, left to right: a dot in the type's colour and its name.
+        void drawTypePills(ImDrawList* drawList, const ImVec2& origin,
+            const std::vector<std::pair<std::string, size_t>>& types)
+        {
+            constexpr float height = 32.0f;
+            ImFont* bold           = theme::boldFont();
+            float x                = origin.x;
+            for (const auto& [name, type] : types)
+            {
+                const ImVec2 text = bold->CalcTextSizeA(theme::FONT_SMALL, FLT_MAX, 0.0f, name.c_str());
+                const float width = 4.0f + 24.0f + 8.0f + text.x + 14.0f;
+                drawList->AddRectFilled(ImVec2(x, origin.y), ImVec2(x + width, origin.y + height),
+                    theme::rgb(PILL), height * 0.5f);
+                const ImVec2 dot(x + 16.0f, origin.y + height * 0.5f);
+                drawList->AddCircleFilled(dot, 12.0f, typeRing(type), 24);
+                drawList->AddCircleFilled(dot, 7.0f, theme::rgb(typeColor(type)), 24);
+                drawList->AddText(bold, theme::FONT_SMALL,
+                    ImVec2(x + 36.0f, origin.y + (height - text.y) * 0.5f),
+                    theme::rgb(theme::BUTTON_FACE), name.c_str());
+                x += width + 8.0f;
+            }
+        }
+
+        // The canvas dialogs over a dimmed screen.
+        constexpr float MODAL_RADIUS  = 24.0f;
+        constexpr float MODAL_PADDING = 20.0f;
+
         // The space under the content panels: the button legend and the gap above it.
         constexpr float SCREEN_BOTTOM_SPACE = theme::LEGEND_HEIGHT + theme::SECTION_GAP;
 
@@ -553,14 +580,28 @@ namespace pksm::switchui
             BALL_SPRITE_BASE, destination);
     }
 
-    void SwitchUi::beginFrame()
+    void SwitchUi::beginScreens()
     {
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
+        ImGui::GetIO().DisplaySize =
+            ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+    }
 
-        ImGuiIO& io    = ImGui::GetIO();
-        io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+    void SwitchUi::endScreens()
+    {
+        ImGui::Render();
+        SDL_SetRenderDrawColor(renderer_, (theme::BACKGROUND >> 16) & 0xFF,
+            (theme::BACKGROUND >> 8) & 0xFF, theme::BACKGROUND & 0xFF, 255);
+        SDL_RenderClear(renderer_);
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
+        SDL_RenderPresent(renderer_);
+    }
+
+    void SwitchUi::beginFrame()
+    {
+        const ImGuiIO& io = ImGui::GetIO();
         // One full-screen window with the canvas margins; SDL clears the background. Screens
         // place their last line against the bottom margin, so it never scrolls.
         ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
@@ -578,12 +619,59 @@ namespace pksm::switchui
     void SwitchUi::endFrame()
     {
         ImGui::End();
-        ImGui::Render();
-        SDL_SetRenderDrawColor(renderer_, (theme::BACKGROUND >> 16) & 0xFF,
-            (theme::BACKGROUND >> 8) & 0xFF, theme::BACKGROUND & 0xFF, 255);
-        SDL_RenderClear(renderer_);
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
-        SDL_RenderPresent(renderer_);
+    }
+
+    void SwitchUi::beginModal(float width, float height)
+    {
+        // A window above the screen below: the screen dimmed, and a rounded dialog centred.
+        const ImGuiIO& io = ImGui::GetIO();
+        ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
+        // The screen margins, so the dialog's button legend sits where every screen's does.
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+            ImVec2(theme::SCREEN_PADDING_X, theme::SCREEN_PADDING_Y));
+        ImGui::Begin("PKSM Modal", nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                ImGuiWindowFlags_NoBackground);
+        ImGui::PopStyleVar();
+        // The canvas dim: rgba(10, 12, 18, .8) over the screen.
+        constexpr unsigned dim[] = {10, 12, 18};
+        constexpr unsigned dimAlpha = 204;
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(
+            ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(dim[0], dim[1], dim[2], dimAlpha));
+        // The legend row is covered outright, so the dialog's own legend does not mix with the
+        // screen's below. Its colour is the dim over the bare background, so it does not show.
+        const auto dimmed = [](unsigned over, unsigned under)
+        { return (over * dimAlpha + under * (255 - dimAlpha) + 127) / 255; };
+        const float legendTop =
+            io.DisplaySize.y - theme::SCREEN_PADDING_Y - theme::LEGEND_HEIGHT - theme::SECTION_GAP * 0.5f;
+        drawList->AddRectFilled(ImVec2(0.0f, legendTop), io.DisplaySize,
+            IM_COL32(dimmed(dim[0], (theme::BACKGROUND >> 16) & 0xFF),
+                dimmed(dim[1], (theme::BACKGROUND >> 8) & 0xFF),
+                dimmed(dim[2], theme::BACKGROUND & 0xFF), 255));
+
+        const ImVec2 min(std::round((io.DisplaySize.x - width) * 0.5f),
+            std::round((io.DisplaySize.y - height) * 0.5f));
+        const ImVec2 max(min.x + width, min.y + height);
+        // The canvas shadow: a soft dark border around the dialog.
+        for (int i = 1; i <= 6; ++i)
+        {
+            const float spread = static_cast<float>(i) * 4.0f;
+            drawList->AddRectFilled(ImVec2(min.x - spread, min.y - spread + 12.0f),
+                ImVec2(max.x + spread, max.y + spread + 12.0f), IM_COL32(0, 0, 0, 18),
+                MODAL_RADIUS + spread);
+        }
+        drawList->AddRectFilled(min, max, theme::rgb(theme::PANEL), MODAL_RADIUS);
+        drawList->AddRect(min, max, theme::rgb(theme::BORDER), MODAL_RADIUS);
+        ImGui::SetCursorScreenPos(ImVec2(min.x + MODAL_PADDING, min.y + MODAL_PADDING));
+    }
+
+    void SwitchUi::endModal()
+    {
+        ImGui::End();
     }
 
     void SwitchUi::drawStatusLine(bool dirty, const std::string& error)
@@ -655,6 +743,14 @@ namespace pksm::switchui
         if (buttons & HidNpadButton_Y)
         {
             return Action::Save;
+        }
+        if (buttons & HidNpadButton_ZL)
+        {
+            return Action::PreviousTab;
+        }
+        if (buttons & HidNpadButton_ZR)
+        {
+            return Action::NextTab;
         }
         if (buttons & HidNpadButton_Plus)
         {
@@ -1352,71 +1448,319 @@ namespace pksm::switchui
         endFrame();
     }
 
-    void SwitchUi::drawPokemonEditor(const std::string& game, const std::string& path,
-        const std::string& pokemon, size_t speciesIndex, size_t formSprite,
-        const std::vector<Field>& fields,
-        size_t selected, bool dirty, const std::string& error)
+    void SwitchUi::drawPokemonEditor(EditorView& view)
     {
-        beginFrame();
-        ImGui::TextUnformatted(tr(Text::PokemonEditorHeader, {game, path, pokemon}).c_str());
-        ImGui::Separator();
+        constexpr float rightWidth  = 400.0f;
+        constexpr float artSize     = 190.0f;
+        constexpr float artGap      = 20.0f;
+        constexpr float cardGap     = 8.0f;
+        constexpr float tabHeight   = 30.0f;
+        constexpr float statColumnIv = 60.0f;
+        constexpr float statColumnEv = 64.0f;
+        constexpr float statColumnTotal = 56.0f;
+        constexpr float statGap     = 6.0f;
+        constexpr float statRow     = 40.0f;
+        constexpr float moveRow     = 44.0f;
+        constexpr ImGuiWindowFlags fixed =
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
-        constexpr float summaryWidth = 315.0f;
-        constexpr float gap = 12.0f;
-        const float listWidth = ImGui::GetContentRegionAvail().x - summaryWidth - gap;
-        ImGui::BeginChild("field-list", ImVec2(listWidth, -58.0f), ImGuiChildFlags_Borders);
-        constexpr size_t visibleRows = 7;
-        const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
-        const size_t last = std::min(fields.size(), first + visibleRows);
-        for (size_t i = first; i < last; ++i)
+        ImFont* bold    = theme::boldFont();
+        ImFont* regular = ImGui::GetFont();
+        const auto size = [](ImFont* font, float px, const std::string& text)
+        { return font->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        const auto select = [&view](EditorView::Area area, size_t index)
         {
-            ImGui::PushID(static_cast<int>(i));
-            if (i == selected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
-            }
-            ImGui::Selectable(fields[i].label.c_str(), i == selected,
-                ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 42.0f));
-            ImGui::SameLine(340.0f);
-            ImGui::TextWrapped("%s", fields[i].value.c_str());
-            if (i == selected)
-            {
-                ImGui::PopStyleColor(2);
-            }
-            ImGui::PopID();
-        }
-        ImGui::EndChild();
-        ImGui::SameLine(0.0f, gap);
-        ImGui::BeginChild("pokemon-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
-        const auto valueFor = [&fields](Text key) -> std::string
-        {
-            const std::string_view label = tr(key);
-            const auto field = std::find_if(fields.begin(), fields.end(),
-                [label](const Field& candidate) { return candidate.label == label; });
-            return field == fields.end() ? std::string{} : field->value;
+            view.area     = area;
+            view.selected = index;
         };
-        ImGui::TextColored(ACCENT_COLOR, "%s", tr(Text::PokemonSummaryTitle));
-        ImGui::Separator();
-        const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
-        drawPokemonSprite(speciesIndex,
-            {static_cast<int>(spritePosition.x + 70.0f),
-                static_cast<int>(spritePosition.y), 150, 112},
-            formSprite);
-        ImGui::Dummy(ImVec2(0.0f, 114.0f));
-        ImGui::TextWrapped("%s", valueFor(Text::FieldSpecies).c_str());
-        ImGui::TextDisabled("%s", valueFor(Text::FieldNickname).c_str());
-        ImGui::Spacing();
-        for (const Text label :
-            {Text::FieldLevel, Text::FieldNature, Text::FieldGender, Text::FieldShiny})
+
+        beginFrame();
+        const float contentWidth = ImGui::GetContentRegionAvail().x;
+
+        // Left: the Pokémon, then a page of field cards.
+        widgets::beginPanel("editor-fields",
+            ImVec2(contentWidth - rightWidth - theme::PANEL_GAP, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
         {
-            ImGui::TextDisabled("%s", tr(label));
-            ImGui::SameLine(120.0f);
-            ImGui::TextWrapped("%s", valueFor(label).c_str());
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const PokemonDetail& header = view.header;
+
+            drawList->AddRectFilled(origin, ImVec2(origin.x + artSize, origin.y + artSize),
+                theme::rgb(DETAIL_ART), theme::ROW_RADIUS);
+            if (!header.empty)
+            {
+                drawPokemonSprite(header.species,
+                    {static_cast<int>(origin.x + 14.0f), static_cast<int>(origin.y + 14.0f),
+                        static_cast<int>(artSize - 28.0f), static_cast<int>(artSize - 28.0f)},
+                    header.formSprite);
+            }
+
+            // Number, species, level with ball and types, centred against the art.
+            const float left      = origin.x + artSize + artGap;
+            const float textWidth = origin.x + available.x - left;
+            const float numberH   = size(bold, 14.0f, header.number).y;
+            const float nameH     = size(bold, 28.0f, header.name).y;
+            const float column    = numberH + 6.0f + nameH + 6.0f + 26.0f + 6.0f + 32.0f;
+            float y               = origin.y + (artSize - column) * 0.5f;
+            widgets::drawTextEllipsis(drawList, bold, 14.0f, ImVec2(left, y),
+                theme::rgb(theme::TEXT_MUTED), header.number.c_str(), textWidth);
+            y += numberH + 6.0f;
+            widgets::drawTextEllipsis(drawList, bold, 28.0f, ImVec2(left, y),
+                theme::rgb(theme::TEXT), header.name.c_str(), textWidth);
+            y += nameH + 6.0f;
+            const float levelH = size(regular, theme::FONT_BODY, header.level).y;
+            drawList->AddText(regular, theme::FONT_BODY, ImVec2(left, y + (26.0f - levelH) * 0.5f),
+                theme::rgb(theme::TEXT_SOFT), header.level.c_str());
+            if (!header.empty)
+            {
+                drawBallSprite(header.ball,
+                    {static_cast<int>(left + size(regular, theme::FONT_BODY, header.level).x + 10.0f),
+                        static_cast<int>(y), 26, 26});
+            }
+            y += 26.0f + 6.0f;
+            drawTypePills(drawList, ImVec2(left, y), header.types);
+
+            // The page tabs.
+            float tabX         = origin.x;
+            const float tabTop = origin.y + artSize + 12.0f;
+            for (size_t page = 0; page < view.pageCount; ++page)
+            {
+                const std::string name = tr(page == 0 ? Text::EditorPageMain : Text::EditorPageMore);
+                const float width      = size(bold, theme::FONT_SMALL, name).x + 28.0f;
+                const bool active      = page == view.page;
+                drawList->AddRectFilled(ImVec2(tabX, tabTop), ImVec2(tabX + width, tabTop + tabHeight),
+                    theme::rgb(active ? theme::CARD_SELECTED : theme::CARD), tabHeight * 0.5f);
+                if (active)
+                {
+                    drawList->AddRect(ImVec2(tabX, tabTop), ImVec2(tabX + width, tabTop + tabHeight),
+                        theme::rgb(theme::ACCENT), tabHeight * 0.5f, ImDrawFlags_None, 2.0f);
+                }
+                drawList->AddText(bold, theme::FONT_SMALL,
+                    ImVec2(tabX + 14.0f, tabTop + (tabHeight - size(bold, theme::FONT_SMALL, name).y) * 0.5f),
+                    theme::rgb(active ? theme::TEXT : theme::TEXT_MUTED), name.c_str());
+                tabX += width + 8.0f;
+            }
+
+            // The field cards, filled row by row; a last card alone with one other on its row
+            // spans the rest of it.
+            const float gridTop    = tabTop + tabHeight + 12.0f;
+            const size_t count     = view.fields.size();
+            const size_t rows      = std::max<size_t>(5, (count + EditorView::COLUMNS - 1) / EditorView::COLUMNS);
+            const float columns    = static_cast<float>(EditorView::COLUMNS);
+            const float cardWidth  = (available.x - cardGap * (columns - 1.0f)) / columns;
+            const float cardHeight = (origin.y + available.y - gridTop - cardGap * static_cast<float>(rows - 1)) /
+                                     static_cast<float>(rows);
+            for (size_t i = 0; i < count; ++i)
+            {
+                const Field& field  = view.fields[i];
+                const size_t column = i % EditorView::COLUMNS;
+                const bool spans    = i + 1 == count && column + 1 < EditorView::COLUMNS;
+                const float width   = spans ? available.x - static_cast<float>(column) * (cardWidth + cardGap)
+                                            : cardWidth;
+                const ImVec2 min(origin.x + static_cast<float>(column) * (cardWidth + cardGap),
+                    gridTop + static_cast<float>(i / EditorView::COLUMNS) * (cardHeight + cardGap));
+                const ImVec2 max(min.x + width, min.y + cardHeight);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("field", ImVec2(width, cardHeight)))
+                {
+                    select(EditorView::Area::Fields, i);
+                }
+                ImGui::PopID();
+                const bool selected = view.area == EditorView::Area::Fields && view.selected == i;
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), theme::CARD_RADIUS);
+                if (selected)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
+                }
+
+                // What sits on the right: a switch, the gender mark, or an arrow to edit.
+                float trailing = 0.0f;
+                const float centerY = (min.y + max.y) * 0.5f;
+                if (field.checkbox)
+                {
+                    trailing = 44.0f;
+                    const ImVec2 switchMin(max.x - 14.0f - 44.0f, centerY - 13.0f);
+                    drawList->AddRectFilled(switchMin, ImVec2(switchMin.x + 44.0f, switchMin.y + 26.0f),
+                        theme::rgb(field.checked ? SHINY : theme::BORDER), 13.0f);
+                    drawList->AddCircleFilled(
+                        ImVec2(field.checked ? switchMin.x + 31.0f : switchMin.x + 13.0f, centerY),
+                        10.0f, theme::rgb(field.checked ? theme::BACKGROUND : theme::TEXT_MUTED), 20);
+                }
+                else if (field.genderMark != 0)
+                {
+                    trailing = 22.0f;
+                    icons::drawSized(drawList, field.genderMark == 1 ? icons::Icon::Male : icons::Icon::Female,
+                        ImVec2(max.x - 14.0f - 22.0f, centerY - 11.0f), 22,
+                        theme::rgb(field.genderMark == 1 ? MALE : FEMALE));
+                }
+                else if (field.editable)
+                {
+                    trailing = 10.0f;
+                    const float x = max.x - 14.0f - 10.0f;
+                    const ImVec2 points[] = {ImVec2(x + 2.0f, centerY - 6.0f),
+                        ImVec2(x + 8.0f, centerY), ImVec2(x + 2.0f, centerY + 6.0f)};
+                    drawList->AddPolyline(points, 3, theme::rgb(theme::TEXT_MUTED), ImDrawFlags_None, 2.4f);
+                }
+
+                const float textWidth = width - 28.0f - (trailing > 0.0f ? trailing + 8.0f : 0.0f);
+                const float labelH    = size(bold, theme::FONT_PATH, field.label).y;
+                const float valueH    = size(bold, theme::FONT_BODY, field.value).y;
+                const float textTop   = centerY - (labelH + 1.0f + valueH) * 0.5f;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_PATH, ImVec2(min.x + 14.0f, textTop),
+                    theme::rgb(theme::TEXT_MUTED), field.label.c_str(), textWidth);
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                    ImVec2(min.x + 14.0f, textTop + labelH + 1.0f),
+                    theme::rgb(field.editable ? theme::TEXT : theme::TEXT_MUTED), field.value.c_str(), textWidth);
+            }
         }
-        ImGui::EndChild();
-        drawStatusLine(dirty, error);
-        ImGui::TextDisabled("%s", tr(Text::PokemonEditorControls));
+        widgets::endPanel();
+
+        // Right: the stats table, then the moves.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        ImGui::BeginGroup();
+        const PokemonStats& stats = view.stats;
+        const float statsHeight   = theme::PANEL_PADDING * 2.0f + 28.0f + 6.0f + 15.0f + 6.0f +
+                                  statRow * EditorView::STAT_ROWS + statGap * (EditorView::STAT_ROWS - 1);
+        widgets::beginPanel("editor-stats", ImVec2(rightWidth, statsHeight), nullptr, fixed);
+        {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 origin  = ImGui::GetCursorScreenPos();
+            const float width    = ImGui::GetContentRegionAvail().x;
+            const std::string title = tr(Text::StatsTitle);
+            drawList->AddText(bold, theme::FONT_HEADING, origin, theme::rgb(theme::TEXT), title.c_str());
+            const std::string total =
+                tr(Text::EvTotal, {std::to_string(stats.evTotal), std::to_string(stats.evMax)});
+            const ImVec2 totalSize = size(regular, theme::FONT_SMALL, total);
+            drawList->AddText(regular, theme::FONT_SMALL,
+                ImVec2(origin.x + width - totalSize.x, origin.y + 28.0f - totalSize.y - 2.0f),
+                theme::rgb(theme::TEXT_MUTED), total.c_str());
+
+            // Column positions, from the right edge inwards.
+            const float totalX = origin.x + width - 12.0f - statColumnTotal;
+            const float evX    = totalX - statGap - statColumnEv;
+            const float ivX    = evX - statGap - statColumnIv;
+            const float headY  = origin.y + 28.0f + 6.0f;
+            const auto columnTitle = [&](const std::string& text, float x, float columnWidth)
+            {
+                const float textX = columnWidth > 0.0f
+                                        ? x + (columnWidth - size(bold, theme::FONT_PATH, text).x) * 0.5f
+                                        : x;
+                drawList->AddText(bold, theme::FONT_PATH, ImVec2(textX, headY),
+                    theme::rgb(theme::TEXT_MUTED), text.c_str());
+            };
+            columnTitle(tr(Text::StatColumn), origin.x + 14.0f, 0.0f);
+            columnTitle("IV", ivX, statColumnIv);
+            columnTitle("EV", evX, statColumnEv);
+            columnTitle(tr(Text::StatTotal), totalX, statColumnTotal);
+
+            float rowTop = headY + 15.0f + 6.0f;
+            for (size_t r = 0; r < stats.rows.size(); ++r)
+            {
+                const PokemonStats::Row& row = stats.rows[r];
+                const ImVec2 min(origin.x, rowTop);
+                drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + statRow),
+                    theme::rgb(theme::CARD), theme::CARD_RADIUS);
+                const unsigned color = row.nature > 0 ? RAISED : row.nature < 0 ? LOWERED : theme::TEXT;
+                const std::string name = row.name + (row.nature > 0 ? " +" : row.nature < 0 ? " -" : "");
+                drawList->AddText(bold, theme::FONT_BODY,
+                    ImVec2(min.x + 12.0f, min.y + (statRow - size(bold, theme::FONT_BODY, name).y) * 0.5f),
+                    theme::rgb(color), name.c_str());
+
+                // The IV and EV buttons.
+                const struct
+                {
+                    EditorView::Area area;
+                    float x;
+                    float cellWidth;
+                    const std::string& text;
+                } cells[] = {{EditorView::Area::Iv, ivX, statColumnIv, row.iv},
+                    {EditorView::Area::Ev, evX, statColumnEv, row.ev}};
+                for (const auto& cell : cells)
+                {
+                    const ImVec2 cellMin(cell.x, min.y + 4.0f);
+                    const ImVec2 cellMax(cell.x + cell.cellWidth, min.y + statRow - 4.0f);
+                    ImGui::SetCursorScreenPos(cellMin);
+                    ImGui::PushID(static_cast<int>(r * 2 + (cell.area == EditorView::Area::Ev ? 1 : 0)));
+                    if (ImGui::InvisibleButton("stat", ImVec2(cell.cellWidth, cellMax.y - cellMin.y)))
+                    {
+                        select(cell.area, r);
+                    }
+                    ImGui::PopID();
+                    drawList->AddRectFilled(cellMin, cellMax, theme::rgb(PILL), 8.0f);
+                    if (view.area == cell.area && view.selected == r)
+                    {
+                        widgets::drawSelectionOutline(drawList, cellMin, cellMax, 8.0f);
+                    }
+                    const ImVec2 textSize = size(bold, theme::FONT_BODY, cell.text);
+                    drawList->AddText(bold, theme::FONT_BODY,
+                        ImVec2(cell.x + (cell.cellWidth - textSize.x) * 0.5f,
+                            cellMin.y + (cellMax.y - cellMin.y - textSize.y) * 0.5f),
+                        theme::rgb(theme::TEXT), cell.text.c_str());
+                }
+                const ImVec2 totalText = size(bold, theme::FONT_ROW_TITLE, row.total);
+                drawList->AddText(bold, theme::FONT_ROW_TITLE,
+                    ImVec2(totalX + (statColumnTotal - totalText.x) * 0.5f,
+                        min.y + (statRow - totalText.y) * 0.5f),
+                    theme::rgb(theme::TEXT), row.total.c_str());
+                rowTop += statRow + statGap;
+            }
+        }
+        widgets::endPanel();
+
+        ImGui::Dummy(ImVec2(0.0f, 12.0f - ImGui::GetStyle().ItemSpacing.y * 2.0f));
+        widgets::beginPanel("editor-moves", ImVec2(rightWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            const ImVec2 origin  = ImGui::GetCursorScreenPos();
+            const float width    = ImGui::GetContentRegionAvail().x;
+            const std::string title = tr(Text::MovesTitle);
+            drawList->AddText(bold, theme::FONT_HEADING, origin, theme::rgb(theme::TEXT), title.c_str());
+            float rowTop = origin.y + 28.0f + 6.0f;
+            for (size_t i = 0; i < stats.moves.size(); ++i)
+            {
+                const PokemonStats::MoveRow& move = stats.moves[i];
+                const ImVec2 min(origin.x, rowTop);
+                const ImVec2 max(min.x + width, min.y + moveRow);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("move", ImVec2(width, moveRow)))
+                {
+                    select(EditorView::Area::Moves, i);
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, max, theme::rgb(PILL), theme::CARD_RADIUS);
+                if (view.area == EditorView::Area::Moves && view.selected == i)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
+                }
+                // The canvas dot for the move's type; core has no move types, so it stays grey.
+                const ImVec2 dot(min.x + 14.0f + 12.0f, min.y + moveRow * 0.5f);
+                drawList->AddCircleFilled(dot, 12.0f, theme::rgb(0xB8BDCB), 24);
+                drawList->AddCircleFilled(dot, 7.0f, theme::rgb(0x8A8F9B), 24);
+                const float ppWidth = move.pp.empty() ? 0.0f : size(bold, theme::FONT_SMALL, move.pp).x;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                    ImVec2(min.x + 48.0f, min.y + (moveRow - size(bold, theme::FONT_BODY, move.name).y) * 0.5f),
+                    theme::rgb(theme::BUTTON_FACE), move.name.c_str(), width - 48.0f - 14.0f - ppWidth - 10.0f);
+                if (!move.pp.empty())
+                {
+                    drawList->AddText(bold, theme::FONT_SMALL,
+                        ImVec2(max.x - 14.0f - ppWidth,
+                            min.y + (moveRow - size(bold, theme::FONT_SMALL, move.pp).y) * 0.5f),
+                        theme::rgb(theme::TEXT_SOFT), move.pp.c_str());
+                }
+                rowTop += moveRow + 4.0f;
+            }
+        }
+        widgets::endPanel();
+        ImGui::EndGroup();
+
+        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
+            {"L / R", tr(Text::HintChange)}, {"ZL / ZR", tr(Text::HintPage)},
+            {"X", tr(Text::HintReset)}, {"B", tr(Text::HintBack)}, {"+", tr(Text::HintSaveChanges)}});
+        widgets::drawFooterMessage(
+            view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
     }
 
@@ -1484,111 +1828,227 @@ namespace pksm::switchui
         return true;
     }
 
-    void SwitchUi::drawOptionPicker(const std::string& title,
+    void SwitchUi::drawOptionPicker(const std::string& title, const std::string& current,
         const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
-        size_t first, size_t visibleRows, size_t& index)
+        size_t firstRow, size_t& index)
     {
-        beginFrame();
-        ImGui::TextUnformatted(title.c_str());
-        ImGui::Separator();
-        ImGui::TextDisabled("%s", tr(Text::ChooseOption));
-        ImGui::BeginChild("options", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
-        const size_t last = std::min(options.size(), first + visibleRows);
+        // The canvas move dialog: 1120 wide, a title row, then the options four to a row.
+        constexpr float width     = 1120.0f;
+        constexpr float titleRow  = 44.0f;
+        constexpr float gap       = 14.0f;
+        constexpr float rowHeight = 40.0f;
+        constexpr float rowGap    = 4.0f;
+        constexpr float columnGap = 6.0f;
+        constexpr float scrollbar = 18.0f; // Room on the right for the scroll bar.
+        // As tall as the options need, up to PICKER_ROWS rows.
+        const size_t rows      = (options.size() + PICKER_COLUMNS - 1) / PICKER_COLUMNS;
+        const size_t shownRows = std::clamp<size_t>(rows, 1, PICKER_ROWS);
+        const float listHeight =
+            rowHeight * static_cast<float>(shownRows) + rowGap * static_cast<float>(shownRows - 1);
+        const float height = MODAL_PADDING * 2.0f + titleRow + gap + listHeight;
+
+        beginModal(width, height);
+        ImFont* bold         = theme::boldFont();
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const ImVec2 origin  = ImGui::GetCursorScreenPos();
+        const float inner    = width - MODAL_PADDING * 2.0f;
+        const auto size      = [bold](float px, const std::string& text)
+        { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+
+        // The title, and on the right the value before picking.
+        drawList->AddText(bold, 26.0f, ImVec2(origin.x, origin.y + (titleRow - size(26.0f, title).y) * 0.5f),
+            theme::rgb(theme::TEXT), title.c_str());
+        if (!current.empty())
+        {
+            const std::string label = tr(Text::PickerCurrent);
+            const float valueWidth  = std::min(size(22.0f, current).x, inner * 0.45f);
+            const float valueX      = origin.x + inner - valueWidth;
+            widgets::drawTextEllipsis(drawList, bold, 22.0f,
+                ImVec2(valueX, origin.y + (titleRow - size(22.0f, current).y) * 0.5f),
+                theme::rgb(theme::TEXT), current.c_str(), valueWidth);
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
+                    origin.y + (titleRow - size(theme::FONT_SMALL, label).y) * 0.5f),
+                theme::rgb(theme::TEXT_MUTED), label.c_str());
+        }
+
+        // The options.
+        const float top         = origin.y + titleRow + gap;
+        const float columns     = static_cast<float>(PICKER_COLUMNS);
+        const float optionWidth = (inner - scrollbar - columnGap * (columns - 1.0f)) / columns;
+        const size_t first      = firstRow * PICKER_COLUMNS;
+        const size_t last       = std::min(options.size(), first + PICKER_COLUMNS * PICKER_ROWS);
         for (size_t i = first; i < last; ++i)
         {
+            const size_t slot = i - first;
+            const ImVec2 min(origin.x + static_cast<float>(slot % PICKER_COLUMNS) * (optionWidth + columnGap),
+                top + static_cast<float>(slot / PICKER_COLUMNS) * (rowHeight + rowGap));
+            const ImVec2 max(min.x + optionWidth, min.y + rowHeight);
+            ImGui::SetCursorScreenPos(min);
             ImGui::PushID(static_cast<int>(i));
-            const bool selected = i == index;
-            if (selected)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
-            }
-            if (i < spriteIndices.size())
-            {
-                const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
-                drawBallSprite(spriteIndices[i], {static_cast<int>(itemPosition.x + 8.0f),
-                                                     static_cast<int>(itemPosition.y + 4.0f), 32, 32});
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 48.0f);
-            }
-            if (ImGui::Selectable(options[i].c_str(), selected,
-                    ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 40.0f)))
+            if (ImGui::InvisibleButton("option", ImVec2(optionWidth, rowHeight)))
             {
                 index = i;
             }
+            ImGui::PopID();
+            const bool selected = i == index;
+            drawList->AddRectFilled(min, max, theme::rgb(selected ? PILL : theme::CARD), 10.0f);
             if (selected)
             {
-                ImGui::PopStyleColor(2);
+                widgets::drawSelectionOutline(drawList, min, max, 10.0f);
             }
-            ImGui::PopID();
+            float textLeft = min.x + 10.0f;
+            if (i < spriteIndices.size())
+            {
+                drawBallSprite(spriteIndices[i],
+                    {static_cast<int>(textLeft), static_cast<int>(min.y + (rowHeight - 24.0f) * 0.5f), 24, 24});
+                textLeft += 24.0f + 8.0f;
+            }
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                ImVec2(textLeft, min.y + (rowHeight - size(theme::FONT_SMALL, options[i]).y) * 0.5f),
+                theme::rgb(theme::TEXT), options[i].c_str(), max.x - 10.0f - textLeft);
         }
-        ImGui::EndChild();
-        ImGui::TextDisabled("%zu / %zu", index + 1, options.size());
-        ImGui::SameLine();
-        ImGui::TextDisabled("%s", tr(Text::OptionPickerControls));
-        endFrame();
+
+        // The scroll bar, only when the options take more than one page: how much the page
+        // shows, and where.
+        if (rows > PICKER_ROWS)
+        {
+            const ImVec2 trackMin(origin.x + inner - 6.0f, top);
+            drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, top + listHeight),
+                theme::rgb(theme::CARD), 3.0f);
+            const float shown = static_cast<float>(PICKER_ROWS) / static_cast<float>(rows);
+            const float start = static_cast<float>(firstRow) / static_cast<float>(rows);
+            drawList->AddRectFilled(ImVec2(trackMin.x, top + listHeight * start),
+                ImVec2(trackMin.x + 6.0f, top + listHeight * (start + shown)),
+                theme::rgb(theme::BORDER), 3.0f);
+        }
+
+        // L/R only page through lists longer than one page.
+        if (rows > PICKER_ROWS)
+        {
+            widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)},
+                {"L / R", tr(Text::HintChangePage)}});
+        }
+        else
+        {
+            widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}});
+        }
+        endModal();
     }
 
     void SwitchUi::drawNaturePicker(
         const std::vector<std::string>& natures, size_t& row, size_t& column)
     {
         // Rows raise a stat and columns lower one, in this order; the diagonal is neutral.
-        static constexpr Text stats[] = {Text::StatAttack, Text::StatDefense, Text::StatSpeed,
-            Text::StatSpAttack, Text::StatSpDefense};
+        static constexpr Text stats[] = {Text::StatShortAttack, Text::StatShortDefense,
+            Text::StatShortSpeed, Text::StatShortSpAttack, Text::StatShortSpDefense};
+        // The canvas nature dialog: 780 wide, a 96 pixel label column and 56 pixel cells.
+        constexpr float width      = 780.0f;
+        constexpr float labelWidth = 96.0f;
+        constexpr float cell       = 56.0f;
+        constexpr float cellGap    = 6.0f;
+        constexpr float gap        = 14.0f;
+        constexpr unsigned NEUTRAL_TEXT = SHINY;
 
-        beginFrame();
+        ImFont* bold     = theme::boldFont();
+        const auto size  = [bold](float px, const std::string& text)
+        { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        const std::string key = tr(Text::NatureKey);
+        const float titleHeight = size(26.0f, "N").y;
+        const float gridHeight  = cell * 6.0f + cellGap * 5.0f;
+        const float height      = MODAL_PADDING * 2.0f + titleHeight + gap + gridHeight + gap +
+                             size(theme::FONT_SMALL, key).y;
+
+        beginModal(width, height);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const ImVec2 origin  = ImGui::GetCursorScreenPos();
+        const float inner    = width - MODAL_PADDING * 2.0f;
+
         std::string raised[5];
         std::string lowered[5];
-        // Wide enough for the longest raised stat, which can be longer in some languages.
-        float rowLabelWidth = 140.0f;
         for (size_t i = 0; i < 5; ++i)
         {
-            raised[i]     = std::string("+") + tr(stats[i]);
-            lowered[i]    = std::string("-") + tr(stats[i]);
-            rowLabelWidth = std::max(rowLabelWidth,
-                ImGui::CalcTextSize(raised[i].c_str()).x + ImGui::GetStyle().ItemSpacing.x);
+            raised[i]  = std::string("+") + tr(stats[i]);
+            lowered[i] = std::string("\xE2\x88\x92") + tr(stats[i]);
         }
-        ImGui::TextUnformatted(tr(Text::FieldNature));
-        ImGui::Separator();
-        ImGui::TextDisabled("%s", tr(Text::NaturePickerHint));
-        ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
-        constexpr float cellGap = 4.0f;
-        const float cellWidth =
-            (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
-        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", tr(Text::NatureNeutral));
+
+        // The title, and what the selected nature does.
+        const std::string title = tr(Text::FieldNature);
+        drawList->AddText(bold, 26.0f, origin, theme::rgb(theme::TEXT), title.c_str());
+        if (natures.size() == 25)
+        {
+            const std::string name = natures[row * 5 + column] + ": ";
+            const bool neutral     = row == column;
+            const std::string effects[] = {neutral ? std::string(tr(Text::NatureNeutralShort)) : raised[row],
+                neutral ? std::string{} : " \xC2\xB7 ", neutral ? std::string{} : lowered[column]};
+            const unsigned colors[] = {neutral ? NEUTRAL_TEXT : RAISED, theme::TEXT_SOFT, LOWERED};
+            float total = size(15.0f, name).x;
+            for (const std::string& part : effects)
+            {
+                total += size(15.0f, part).x;
+            }
+            float x       = origin.x + inner - total;
+            const float y = origin.y + titleHeight - size(15.0f, name).y - 2.0f;
+            drawList->AddText(bold, 15.0f, ImVec2(x, y), theme::rgb(theme::TEXT_SOFT), name.c_str());
+            x += size(15.0f, name).x;
+            for (size_t i = 0; i < 3; ++i)
+            {
+                drawList->AddText(bold, 15.0f, ImVec2(x, y), theme::rgb(colors[i]), effects[i].c_str());
+                x += size(15.0f, effects[i]).x;
+            }
+        }
+
+        // The grid: the neutral corner, the lowered stats along the top, the raised ones down
+        // the left, and the 25 natures.
+        const float top       = origin.y + titleHeight + gap;
+        const float cellWidth = (inner - labelWidth - cellGap * 5.0f) / 5.0f;
+        const auto centred    = [&](const std::string& text, float px, const ImVec2& min, float w,
+                                 unsigned color)
+        {
+            const ImVec2 textSize = size(px, text);
+            drawList->AddText(bold, px,
+                ImVec2(std::round(min.x + (w - textSize.x) * 0.5f),
+                    std::round(min.y + (cell - textSize.y) * 0.5f)),
+                theme::rgb(color), text.c_str());
+        };
+        centred(tr(Text::NatureNeutral), 13.0f, ImVec2(origin.x, top), labelWidth, NEUTRAL_TEXT);
         for (size_t x = 0; x < 5; ++x)
         {
-            ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-            ImGui::TextWrapped("%s", lowered[x].c_str());
+            centred(lowered[x], theme::FONT_BODY,
+                ImVec2(origin.x + labelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap), top),
+                cellWidth, LOWERED);
         }
-        ImGui::Separator();
         for (size_t y = 0; y < 5; ++y)
         {
-            ImGui::TextUnformatted(raised[y].c_str());
-            for (size_t x = 0; x < 5; ++x)
+            const float rowTop = top + static_cast<float>(y + 1) * (cell + cellGap);
+            centred(raised[y], theme::FONT_BODY, ImVec2(origin.x, rowTop), labelWidth, RAISED);
+            for (size_t x = 0; x < 5 && natures.size() == 25; ++x)
             {
-                const size_t natureIndex = y * 5 + x;
-                const bool isSelected    = row == y && column == x;
-                ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-                ImGui::PushID(static_cast<int>(natureIndex));
-                if (isSelected)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOR);
-                    ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
-                }
-                if (ImGui::Button(natures[natureIndex].c_str(), ImVec2(cellWidth, 44.0f)))
+                const ImVec2 min(origin.x + labelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap),
+                    rowTop);
+                const ImVec2 max(min.x + cellWidth, min.y + cell);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(y * 5 + x));
+                if (ImGui::InvisibleButton("nature", ImVec2(cellWidth, cell)))
                 {
                     row    = y;
                     column = x;
                 }
-                if (isSelected)
-                {
-                    ImGui::PopStyleColor(2);
-                }
                 ImGui::PopID();
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), 12.0f);
+                if (row == y && column == x)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, 12.0f);
+                }
+                centred(natures[y * 5 + x], theme::FONT_ROW_TITLE, min, cellWidth,
+                    x == y ? NEUTRAL_TEXT : theme::TEXT);
             }
         }
-        ImGui::EndChild();
-        ImGui::TextDisabled("%s", tr(Text::NaturePickerControls));
-        endFrame();
+
+        drawList->AddText(bold, theme::FONT_SMALL, ImVec2(origin.x, top + gridHeight + gap),
+            theme::rgb(theme::TEXT_MUTED), key.c_str());
+
+        widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}});
+        endModal();
     }
 }

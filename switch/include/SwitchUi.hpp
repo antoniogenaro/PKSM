@@ -20,8 +20,10 @@ namespace pksm::switchui
         Down,
         Left,
         Right,
-        PreviousPage,
-        NextPage,
+        PreviousPage, // L
+        NextPage,     // R
+        PreviousTab,  // ZL
+        NextTab,      // ZR
         Confirm,
         Back,
         Discard,
@@ -40,6 +42,32 @@ namespace pksm::switchui
         size_t ballSpriteIndex = 0;
         // False when the save cannot change it; editors then show no pencil.
         bool editable = true;
+        // 1 for male, 2 for female: the gender mark shown beside the value.
+        int genderMark = 0;
+    };
+
+    // The editor's stats table and moves panel.
+    struct PokemonStats
+    {
+        struct Row
+        {
+            std::string name; // "Atq"
+            std::string iv;
+            std::string ev;
+            std::string total;
+            // +1 when the nature raises the stat, -1 when it lowers it.
+            int nature = 0;
+        };
+        struct MoveRow
+        {
+            std::string name;
+            std::string pp; // "PP 15/15", or empty without a move.
+        };
+
+        std::vector<Row> rows;
+        unsigned int evTotal = 0;
+        unsigned int evMax   = 0;
+        std::vector<MoveRow> moves;
     };
 
     // A game as the game and save lists show it.
@@ -106,6 +134,31 @@ namespace pksm::switchui
         std::vector<std::string> moves;
     };
 
+    // Everything the Pokémon editor draws.
+    struct EditorView
+    {
+        // Where the selection is: a field card, an IV or EV cell, or a move.
+        enum class Area
+        {
+            Fields,
+            Iv,
+            Ev,
+            Moves
+        };
+        static constexpr size_t COLUMNS   = 3;
+        static constexpr size_t STAT_ROWS = 6;
+
+        PokemonDetail header;
+        // The fields of the shown page.
+        std::vector<Field> fields;
+        size_t page      = 0;
+        size_t pageCount = 2;
+        PokemonStats stats;
+        Area area       = Area::Fields;
+        size_t selected = 0;
+        std::string message;
+    };
+
     // Everything the box screen draws.
     struct BoxView
     {
@@ -142,6 +195,10 @@ namespace pksm::switchui
 
         bool initialize(std::string& error);
         Action pollAction();
+        // Every frame's screens are drawn between these two calls: a screen and the overlays
+        // above it, which then show on top of it.
+        void beginScreens();
+        void endScreens();
         // Every supported game, laid out by `grid`; `games` follows the grid's numbering.
         // A touch on a game moves the selection, so it is passed by reference.
         void drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
@@ -153,19 +210,22 @@ namespace pksm::switchui
         void drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message);
         // The boxes and party with the selected Pokémon's detail. Touching a slot selects it.
         void drawBoxes(BoxView& view);
-        void drawPokemonEditor(const std::string& game, const std::string& path,
-            const std::string& pokemon, size_t speciesIndex, size_t formSprite,
-            const std::vector<Field>& fields,
-            size_t selected, bool dirty, const std::string& error);
+        // The Pokémon editor: its header, a page of field cards, the stats table and the moves.
+        // Touching a card or cell selects it.
+        void drawPokemonEditor(EditorView& view);
         // The trainer's fields as a grid of TRAINER_COLUMNS cards, filled row by row. `message`
         // is shown under the game card.
         static constexpr size_t TRAINER_COLUMNS = 2;
         void drawTrainer(const SaveSummary& save, const std::vector<Field>& fields,
             size_t selected, const std::string& message);
-        // Pickers. A touch on an entry moves the selection, so it is passed by reference.
-        void drawOptionPicker(const std::string& title, const std::vector<std::string>& options,
-            const std::vector<size_t>& spriteIndices, size_t first, size_t visibleRows,
-            size_t& index);
+        // Pickers, as dialogs over the screen below. A touch on an entry moves the selection, so
+        // it is passed by reference. The option picker shows PICKER_ROWS rows of PICKER_COLUMNS
+        // from `firstRow`, with `current` (the value before picking) in its title.
+        static constexpr size_t PICKER_COLUMNS = 4;
+        static constexpr size_t PICKER_ROWS    = 10;
+        void drawOptionPicker(const std::string& title, const std::string& current,
+            const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
+            size_t firstRow, size_t& index);
         // `natures` holds the 25 natures in their usual order: row * 5 + column.
         void drawNaturePicker(const std::vector<std::string>& natures, size_t& row, size_t& column);
 
@@ -187,6 +247,10 @@ namespace pksm::switchui
         // Every screen draws inside the same full-screen window, between these two calls.
         void beginFrame();
         void endFrame();
+        // A dialog of `width` x `height` over the dimmed screen below, with the cursor at its
+        // top left inside the padding. Always call endModal() afterwards.
+        void beginModal(float width, float height);
+        void endModal();
         void drawStatusLine(bool dirty, const std::string& error);
         // A game's mascot over its name and how many saves it has. Returns true when touched.
         bool drawGameTile(const GameCard& game, float width, float height, bool selected);
