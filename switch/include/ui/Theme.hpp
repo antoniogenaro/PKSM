@@ -69,9 +69,9 @@ namespace pksm::switchui::theme
     inline constexpr float LEGEND_HEIGHT    = 26.0f;
 
     // Where the UI fonts are in romfs. The canvas uses a bold weight for titles, captions and
-    // names; Medium stands in for it.
+    // names; Roboto Bold covers both of its bold weights, 700 and 800.
     inline constexpr char FONT_REGULAR_PATH[] = "romfs:/fonts/Roboto.ttf";
-    inline constexpr char FONT_MEDIUM_PATH[]  = "romfs:/fonts/Roboto-Medium.ttf";
+    inline constexpr char FONT_BOLD_PATH[]    = "romfs:/fonts/Roboto-Bold.ttf";
 
     // Sets the colours, radii and spacing above on `style`.
     void applyStyle(ImGuiStyle& style);
@@ -81,7 +81,7 @@ namespace pksm::switchui::theme
     // could not be read.
     bool loadFonts(const char*& failedPath);
 
-    // The heavier font for titles, captions and names. Draw it with PushFont(mediumFont(), size)
+    // The heavier font for titles, captions and names. Draw it with PushFont(boldFont(), size)
     // or pass it to ImDrawList::AddText.
-    ImFont* mediumFont();
+    ImFont* boldFont();
 }

@@ -116,7 +116,7 @@ namespace pksm::switchui
             std::string text;
             float size;
             unsigned color;
-            bool medium;
+            bool bold;
             unsigned dotColor;
         };
         // The panel on the left of the save list and the game menu: `group` as its caption, the
