@@ -237,9 +237,10 @@ namespace pksm::switchui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         theme::applyStyle(ImGui::GetStyle());
-        if (!theme::loadFont())
+        const char* failedFont = nullptr;
+        if (!theme::loadFonts(failedFont))
         {
-            error = tr(Text::FontLoadFailed, {theme::FONT_PATH_ROMFS});
+            error = tr(Text::FontLoadFailed, {failedFont});
             ImGui::DestroyContext();
             return false;
         }
@@ -604,12 +605,8 @@ namespace pksm::switchui
         const ImVec2 namePosition(min.x + infoPadding, artMax.y + infoPadding);
         const float wrapWidth = width - infoPadding * 2.0f;
         const ImU32 nameColor = theme::rgb(theme::TEXT);
-        for (const float offset : {0.0f, 0.6f})
-        {
-            drawList->AddText(ImGui::GetFont(), theme::FONT_BODY,
-                ImVec2(namePosition.x + offset, namePosition.y), nameColor, game.name.c_str(),
-                nullptr, wrapWidth, &clip);
-        }
+        drawList->AddText(theme::mediumFont(), theme::FONT_BODY, namePosition, nameColor,
+            game.name.c_str(), nullptr, wrapWidth, &clip);
 
         widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f),
             saveCountText(game.saveCount).c_str(),

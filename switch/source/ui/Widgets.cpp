@@ -12,16 +12,21 @@ namespace pksm::switchui::widgets
     {
         constexpr float PI = 3.14159265358979323846f;
 
-        // Text at `position` in the current font at `size`, kept inside `clip` when given.
-        void drawText(ImDrawList* drawList, const ImVec2& position, float size, ImU32 color,
-            const char* text, const ImVec4* clip = nullptr)
+        ImFont* fontFor(bool medium)
         {
-            drawList->AddText(ImGui::GetFont(), size, position, color, text, nullptr, 0.0f, clip);
+            return medium ? theme::mediumFont() : ImGui::GetFont();
         }
 
-        ImVec2 textSize(const char* text, float size)
+        // Text at `position` at `size`, kept inside `clip` when given.
+        void drawText(ImDrawList* drawList, const ImVec2& position, float size, ImU32 color,
+            const char* text, const ImVec4* clip = nullptr, bool medium = false)
         {
-            ImGui::PushFont(nullptr, size);
+            drawList->AddText(fontFor(medium), size, position, color, text, nullptr, 0.0f, clip);
+        }
+
+        ImVec2 textSize(const char* text, float size, bool medium = false)
+        {
+            ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
             const ImVec2 result = ImGui::CalcTextSize(text);
             ImGui::PopFont();
             return result;
@@ -59,9 +64,9 @@ namespace pksm::switchui::widgets
         }
     }
 
-    void text(const char* text, float size, unsigned color)
+    void text(const char* text, float size, unsigned color, bool medium)
     {
-        ImGui::PushFont(nullptr, size);
+        ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
         ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(color));
         ImGui::TextUnformatted(text);
         ImGui::PopStyleColor();
@@ -97,28 +102,25 @@ namespace pksm::switchui::widgets
         const ImVec2 origin  = ImGui::GetCursorScreenPos();
         const float width    = ImGui::GetContentRegionAvail().x;
 
-        const ImVec2 titleSize = textSize(title, theme::FONT_TITLE);
+        const ImVec2 titleSize = textSize(title, theme::FONT_TITLE, true);
         const float rowWidth   = ballSize * 2.0f + ballGap * 2.0f + titleSize.x;
         const float left       = origin.x + (width - rowWidth) * 0.5f;
         const float centerY    = origin.y + titleRow * 0.5f;
         drawPokeBall(drawList, ImVec2(left + ballSize * 0.5f, centerY), 20.0f);
         const ImVec2 titlePosition(left + ballSize + ballGap, centerY - titleSize.y * 0.5f);
         const ImU32 titleColor = theme::rgb(theme::TEXT);
-        // Drawn twice, one pixel apart, to make the regular font look as heavy as the canvas.
-        drawText(drawList, titlePosition, theme::FONT_TITLE, titleColor, title);
-        drawText(drawList, ImVec2(titlePosition.x + 1.0f, titlePosition.y), theme::FONT_TITLE,
-            titleColor, title);
+        drawText(drawList, titlePosition, theme::FONT_TITLE, titleColor, title, nullptr, true);
         drawPokeBall(drawList,
             ImVec2(left + ballSize + ballGap * 2.0f + titleSize.x + ballSize * 0.5f, centerY),
             20.0f);
 
         if (subtitle && subtitle[0] != '\0')
         {
-            const ImVec2 size = textSize(subtitle, theme::FONT_SUBTITLE);
+            const ImVec2 size = textSize(subtitle, theme::FONT_SUBTITLE, true);
             drawText(drawList,
                 ImVec2(origin.x + (width - size.x) * 0.5f,
                     origin.y + subtitleY + (subtitleH - size.y) * 0.5f),
-                theme::FONT_SUBTITLE, theme::rgb(theme::TEXT_SOFT), subtitle);
+                theme::FONT_SUBTITLE, theme::rgb(theme::TEXT_SOFT), subtitle, nullptr, true);
         }
         ImGui::Dummy(ImVec2(width, subtitleY + subtitleH));
     }
@@ -139,13 +141,14 @@ namespace pksm::switchui::widgets
 
         const auto faceWidth = [&](const ButtonHint& hint)
         {
-            return std::max(faceSize, textSize(hint.button, theme::FONT_BODY).x + facePad * 2.0f);
+            return std::max(faceSize, textSize(hint.button, theme::FONT_BODY, true).x +
+                                      facePad * 2.0f);
         };
         float total = 0.0f;
         for (const ButtonHint& hint : hints)
         {
             total += (total > 0.0f ? hintGap : 0.0f) + faceWidth(hint) + faceGap +
-                     textSize(hint.label, theme::FONT_BODY).x;
+                     textSize(hint.label, theme::FONT_BODY, true).x;
         }
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -153,19 +156,18 @@ namespace pksm::switchui::widgets
         for (const ButtonHint& hint : hints)
         {
             const float width       = faceWidth(hint);
-            const ImVec2 buttonSize = textSize(hint.button, theme::FONT_BODY);
-            const ImVec2 labelSize  = textSize(hint.label, theme::FONT_BODY);
+            const ImVec2 buttonSize = textSize(hint.button, theme::FONT_BODY, true);
+            const ImVec2 labelSize  = textSize(hint.label, theme::FONT_BODY, true);
             drawList->AddRectFilled(ImVec2(x, top), ImVec2(x + width, top + faceSize),
                 theme::rgb(theme::BUTTON_FACE), faceSize * 0.5f);
             const ImVec2 buttonPosition(
                 x + (width - buttonSize.x) * 0.5f, top + (faceSize - buttonSize.y) * 0.5f);
             const ImU32 buttonColor = theme::rgb(theme::BACKGROUND);
-            drawText(drawList, buttonPosition, theme::FONT_BODY, buttonColor, hint.button);
-            drawText(drawList, ImVec2(buttonPosition.x + 0.6f, buttonPosition.y),
-                theme::FONT_BODY, buttonColor, hint.button);
+            drawText(drawList, buttonPosition, theme::FONT_BODY, buttonColor, hint.button, nullptr,
+                true);
             x += width + faceGap;
             drawText(drawList, ImVec2(x, top + (faceSize - labelSize.y) * 0.5f), theme::FONT_BODY,
-                theme::rgb(theme::TEXT_SOFT), hint.label);
+                theme::rgb(theme::TEXT_SOFT), hint.label, nullptr, true);
             x += labelSize.x + hintGap;
         }
     }
@@ -183,7 +185,7 @@ namespace pksm::switchui::widgets
         ImGui::PopStyleColor(2);
         if (caption && caption[0] != '\0')
         {
-            text(caption, theme::FONT_CAPTION, theme::TEXT_MUTED);
+            text(caption, theme::FONT_CAPTION, theme::TEXT_MUTED, true);
         }
         return open;
     }
@@ -250,18 +252,20 @@ namespace pksm::switchui::widgets
             const char* text;
             float size;
             unsigned color;
+            bool medium;
         };
         const Line lines[] = {
-            {row.title, theme::FONT_ROW_TITLE, row.enabled ? theme::TEXT : theme::TEXT_MUTED},
-            {row.subtitle, theme::FONT_SMALL, theme::TEXT_MUTED},
-            {row.detail, theme::FONT_PATH, theme::TEXT_PATH},
+            {row.title, theme::FONT_ROW_TITLE, row.enabled ? theme::TEXT : theme::TEXT_MUTED, true},
+            {row.subtitle, theme::FONT_SMALL, theme::TEXT_MUTED, false},
+            {row.detail, theme::FONT_PATH, theme::TEXT_PATH, false},
         };
         float height = 0.0f;
         for (const Line& line : lines)
         {
             if (line.text && line.text[0] != '\0')
             {
-                height += (height > 0.0f ? lineGap : 0.0f) + textSize(line.text, line.size).y;
+                height += (height > 0.0f ? lineGap : 0.0f) +
+                          textSize(line.text, line.size, line.medium).y;
             }
         }
         float y = min.y + (theme::LIST_ROW_HEIGHT - height) * 0.5f;
@@ -272,14 +276,8 @@ namespace pksm::switchui::widgets
                 continue;
             }
             drawText(drawList, ImVec2(textLeft, y), line.size, theme::rgb(line.color), line.text,
-                &clip);
-            if (&line == &lines[0])
-            {
-                // Heavier, like the canvas titles.
-                drawText(drawList, ImVec2(textLeft + 0.6f, y), line.size, theme::rgb(line.color),
-                    line.text, &clip);
-            }
-            y += textSize(line.text, line.size).y + lineGap;
+                &clip, line.medium);
+            y += textSize(line.text, line.size, line.medium).y + lineGap;
         }
 
         drawChevron(drawList,
@@ -332,7 +330,7 @@ namespace pksm::switchui::widgets
 
         const float plusSizePx  = stacked ? 36.0f : 28.0f;
         const ImVec2 plusSize   = textSize("+", plusSizePx);
-        const ImVec2 labelSize  = textSize(label, theme::FONT_BODY);
+        const ImVec2 labelSize  = textSize(label, theme::FONT_BODY, true);
         const ImU32 textColor   = theme::rgb(theme::TEXT_SOFT);
         const float centerX     = (min.x + max.x) * 0.5f;
         const float centerY     = (min.y + max.y) * 0.5f;
@@ -342,14 +340,14 @@ namespace pksm::switchui::widgets
             const float top    = centerY - (plusSize.y + gap + labelSize.y) * 0.5f;
             drawText(drawList, ImVec2(centerX - plusSize.x * 0.5f, top), plusSizePx, textColor, "+");
             drawText(drawList, ImVec2(centerX - labelSize.x * 0.5f, top + plusSize.y + gap),
-                theme::FONT_BODY, textColor, label);
+                theme::FONT_BODY, textColor, label, nullptr, true);
         }
         else
         {
             const float left = centerX - (plusSize.x + plusGap + labelSize.x) * 0.5f;
             drawText(drawList, ImVec2(left, centerY - plusSize.y * 0.5f), plusSizePx, textColor, "+");
             drawText(drawList, ImVec2(left + plusSize.x + plusGap, centerY - labelSize.y * 0.5f),
-                theme::FONT_BODY, textColor, label);
+                theme::FONT_BODY, textColor, label, nullptr, true);
         }
         return touched;
     }

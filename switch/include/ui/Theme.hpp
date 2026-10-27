@@ -68,13 +68,20 @@ namespace pksm::switchui::theme
     inline constexpr float ICON_BOX_SIZE    = 48.0f;
     inline constexpr float LEGEND_HEIGHT    = 26.0f;
 
-    // Where the UI font is in romfs.
-    inline constexpr char FONT_PATH_ROMFS[] = "romfs:/fonts/Roboto.ttf";
+    // Where the UI fonts are in romfs. The canvas uses a bold weight for titles, captions and
+    // names; Medium stands in for it.
+    inline constexpr char FONT_REGULAR_PATH[] = "romfs:/fonts/Roboto.ttf";
+    inline constexpr char FONT_MEDIUM_PATH[]  = "romfs:/fonts/Roboto-Medium.ttf";
 
     // Sets the colours, radii and spacing above on `style`.
     void applyStyle(ImGuiStyle& style);
 
-    // Loads the UI font into the font atlas of the current ImGui context. Returns false when the
-    // file cannot be read or is not a font.
-    bool loadFont(const char* path = FONT_PATH_ROMFS);
+    // Loads both UI fonts into the font atlas of the current ImGui context; the regular one
+    // becomes the default. On failure, returns false and sets `failedPath` to the font that
+    // could not be read.
+    bool loadFonts(const char*& failedPath);
+
+    // The heavier font for titles, captions and names. Draw it with PushFont(mediumFont(), size)
+    // or pass it to ImDrawList::AddText.
+    ImFont* mediumFont();
 }
