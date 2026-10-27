@@ -36,6 +36,9 @@ namespace pksm::switchui
         // the dirty flag on success.
         bool exportChanges(std::string& outputPath, std::string& error);
 
+        // Same, leaving in `message` what to show: where it was exported, or the error.
+        bool exportWithMessage(std::string& message);
+
     private:
         Session(std::unique_ptr<pksm::Sav> save, const GameProfile& profile, std::string path);
 

@@ -18,6 +18,7 @@ SOURCES		:=	source \
 				source/app \
 				source/domain \
 				source/platform \
+				source/screens \
 				../core/memecrypto \
 				../core/source/i18n \
 				../core/source/personal \
