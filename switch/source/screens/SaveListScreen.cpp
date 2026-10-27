@@ -1,62 +1,42 @@
 #include "screens/SaveListScreen.hpp"
 
-#include "SwitchUi.hpp"
 #include "app/App.hpp"
+#include "app/SaveLibrary.hpp"
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
-#include "domain/SaveCache.hpp"
 #include "platform/SaveStorage.hpp"
 #include "screens/GameMenuScreen.hpp"
+#include "ui/Text.hpp"
+#include <algorithm>
+#include <memory>
 
 namespace pksm::switchui
 {
-    SaveListScreen::SaveListScreen()
+    SaveListScreen::SaveListScreen(size_t game, std::vector<std::string> files)
+        : game_(game), files_(std::move(files))
     {
-        std::vector<std::string> files = storage::prepareSaveDirectory(storageError_)
-                                             ? storage::listSaveFiles(storageError_)
-                                             : std::vector<std::string>{};
-        SaveCache cache = SaveCache::parse(storage::readSaveCache());
-        files_.reserve(files.size());
-        gameNames_.reserve(files.size());
-        gameMascots_.reserve(files.size());
-        for (const auto& file : files)
-        {
-            if (const GameProfile* profile = identify(cache, file))
-            {
-                gameNames_.emplace_back(tr(profile->name));
-                gameMascots_.push_back(profile->mascotSpecies);
-                files_.push_back(file);
-            }
-        }
-        cache.keepOnly(files);
-        if (cache.changed())
-        {
-            storage::writeSaveCache(cache.serialize());
-        }
+        const GameProfile& profile = gameProfiles()[game_];
+        card_   = GameCard{tr(profile.name), profile.mascotSpecies, files_.size()};
+        group_  = tr(profile.group);
     }
 
-    const GameProfile* SaveListScreen::identify(SaveCache& cache, const std::string& file)
+    void SaveListScreen::onResume()
     {
-        const std::string path = storage::savePath(file);
-        SaveCache::Stamp stamp;
-        const bool stamped = storage::fileStamp(path, stamp.size, stamp.modified);
-
-        std::optional<int> version = stamped ? cache.lookup(file, stamp) : std::nullopt;
-        if (!version)
+        const std::string current = selected_ < files_.size() ? files_[selected_] : std::string{};
+        SaveLibrary library       = SaveLibrary::scan();
+        storageError_             = std::move(library.error);
+        files_                    = std::move(library.filesByGame[game_]);
+        card_.saveCount           = files_.size();
+        // Keep the same file selected when it is still there.
+        const auto found = std::find(files_.begin(), files_.end(), current);
+        if (found != files_.end())
         {
-            const auto identified = Session::identify(path);
-            version = identified ? static_cast<int>(static_cast<u8>(*identified))
-                                 : SaveCache::UNRECOGNIZED;
-            if (stamped)
-            {
-                cache.store(file, stamp, *version);
-            }
+            selected_ = static_cast<size_t>(found - files_.begin());
         }
-        if (*version < 0 || *version > UINT8_MAX)
+        else if (selected_ >= files_.size())
         {
-            return nullptr;
+            selected_ = files_.empty() ? 0 : files_.size() - 1;
         }
-        return findGameProfile(pksm::GameVersion{static_cast<u8>(*version)});
     }
 
     void SaveListScreen::update(App& app, Action action)
@@ -72,6 +52,11 @@ namespace pksm::switchui
             {
                 showingLoadError_ = false;
             }
+            return;
+        }
+        if (action == Action::Back)
+        {
+            app.pop();
             return;
         }
         if (files_.empty())
@@ -103,7 +88,7 @@ namespace pksm::switchui
 
     void SaveListScreen::draw(SwitchUi& ui)
     {
-        ui.drawFiles(files_, gameNames_, gameMascots_, selected_,
-            showingLoadError_ ? loadError_ : storageError_);
+        ui.drawSaveList(
+            card_, group_, files_, selected_, showingLoadError_ ? loadError_ : storageError_);
     }
 }

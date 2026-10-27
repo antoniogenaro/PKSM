@@ -5,6 +5,7 @@
 #include "ui/Text.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace pksm::switchui
 {
@@ -14,6 +15,8 @@ namespace pksm::switchui
     {
         pksm::GameVersion version;
         Text name;
+        // The card the game shares with its pair in the game list, such as "GEN III · GBA".
+        Text group;
         // Species shown next to the game's saves.
         size_t mascotSpecies;
         bool hasBattlePoints;
@@ -27,6 +30,10 @@ namespace pksm::switchui
                                                    : trainerNameLength;
         }
     };
+
+    // Every supported game, in the order the game list shows them. Games of one group are
+    // next to each other.
+    std::span<const GameProfile> gameProfiles();
 
     // Returns nullptr when the Switch app does not support the game.
     const GameProfile* findGameProfile(pksm::GameVersion version);

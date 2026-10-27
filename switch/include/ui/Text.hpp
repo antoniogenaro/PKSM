@@ -24,7 +24,9 @@
     X(GameShield)                                                                                  \
     X(GameFireRed)                                                                                 \
     X(GameLeafGreen)                                                                               \
-    /* Start-up */                                                                                 \
+    X(GroupGen3Gba)                                                                                \
+    X(GroupGen8SwordShield)                                                                        \
+    /* Start-up */                                                                                \
     X(SdlInitFailed)                                                                               \
     X(WindowFailed)                                                                                \
     X(RendererFailed)                                                                              \
@@ -62,13 +64,19 @@
     X(ExportEmptyNotRemoved)                                                                       \
     X(ExportPartialRemoved)                                                                        \
     X(ExportPartialKept)                                                                           \
+    /* Game list */                                                                                \
+    X(GameListTitle)                                                                               \
+    X(GameListPrompt)                                                                              \
+    X(GameListControls)                                                                            \
+    X(SaveCountNone)                                                                               \
+    X(SaveCountOne)                                                                                \
+    X(SaveCountMany)                                                                               \
+    X(OriginalsUntouched)                                                                          \
     /* Save list */                                                                                \
     X(SaveListTitle)                                                                               \
     X(SaveListControls)                                                                            \
     X(NoSavesFound)                                                                                \
     X(NoSavesHint)                                                                                 \
-    X(SavesFound)                                                                                  \
-    X(OriginalsUntouched)                                                                          \
     /* Game menu */                                                                                \
     X(TrainerSummary)                                                                              \
     X(MenuStorage)                                                                                 \

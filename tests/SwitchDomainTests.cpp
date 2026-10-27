@@ -27,6 +27,8 @@
 // The Switch app's pure rules: which games it supports and how editor values move.
 
 #include "domain/FieldValues.hpp"
+#include "domain/GameGrid.hpp"
+#include "domain/GameGrid.hpp"
 #include "domain/GameProfile.hpp"
 #include "domain/SaveCache.hpp"
 #include "nlohmann/json.hpp"
@@ -83,6 +85,49 @@ namespace
         check(findGameProfile(GameVersion::LG) != nullptr, "LeafGreen is supported");
         check(findGameProfile(GameVersion::X) == nullptr, "X is not supported");
         check(findGameProfile(GameVersion::SL) == nullptr, "Scarlet is not supported");
+
+        const auto profiles = gameProfiles();
+        check(profiles.size() == 4, "four games are listed");
+        bool allFound = true;
+        for (const auto& profile : profiles)
+        {
+            allFound = allFound && findGameProfile(profile.version) == &profile;
+        }
+        check(allFound, "every listed game can be found");
+    }
+
+    GameProfile profileIn(Text group)
+    {
+        return GameProfile{GameVersion::SW, Text::GameSword, group, 0, false, 0, 0, 0};
+    }
+
+    void testGameGrid()
+    {
+        const GameGrid real(gameProfiles());
+        check(real.gameCount() == 4, "the game list shows every game");
+        check(real.cards().size() == 2, "paired games share a card");
+        check(real.cards()[0].group == Text::GroupGen3Gba, "the GBA games come first");
+        check(real.cards()[0].games == std::vector<size_t>{0, 1}, "FireRed and LeafGreen pair up");
+        check(real.down(0) == 0, "down stays put with a single row");
+
+        // Cards: 0:{0,1} 1:{2} 2:{3,4} 3:{5,6} on the first row, 4:{7,8} 5:{9} below.
+        const std::vector<GameProfile> profiles{profileIn(Text::Yes), profileIn(Text::Yes),
+            profileIn(Text::No), profileIn(Text::Empty), profileIn(Text::Empty),
+            profileIn(Text::NotAvailable), profileIn(Text::NotAvailable), profileIn(Text::WithId),
+            profileIn(Text::WithId), profileIn(Text::ExportedTo)};
+        const GameGrid grid(profiles);
+        check(grid.cards().size() == 6, "a new card starts when the group changes");
+        check(grid.right(3) == 4 && grid.right(4) == 5, "right walks every game");
+        check(grid.right(9) == 0 && grid.left(0) == 9, "left and right wrap around");
+        check(grid.down(1) == 8, "down keeps the position on the card");
+        check(grid.down(2) == 9, "down reaches a smaller card");
+        check(grid.down(5) == 5 && grid.down(4) == 4, "down stays put without a card below");
+        check(grid.up(8) == 1 && grid.up(9) == 2, "up goes to the card above");
+        check(grid.up(1) == 1, "up stays put on the first row");
+
+        const GameGrid empty(std::span<const GameProfile>{});
+        check(empty.left(0) == 0 && empty.right(0) == 0 && empty.down(0) == 0,
+            "an empty grid does not move");
     }
 
     void testClampedSteps()
@@ -303,6 +348,8 @@ int main()
     testTexts();
     testLanguageFiles();
     testGameProfiles();
+    testGameGrid();
+    testGameGrid();
     testClampedSteps();
     testWrappedSteps();
     testChoices();

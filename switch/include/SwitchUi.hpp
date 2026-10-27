@@ -8,6 +8,8 @@
 
 namespace pksm::switchui
 {
+    class GameGrid;
+
     enum class Action
     {
         None,
@@ -35,6 +37,14 @@ namespace pksm::switchui
         size_t ballSpriteIndex = 0;
     };
 
+    // A game as the game and save lists show it.
+    struct GameCard
+    {
+        std::string name;
+        size_t mascotSpecies = 0;
+        size_t saveCount = 0;
+    };
+
     class SwitchUi
     {
     public:
@@ -45,9 +55,13 @@ namespace pksm::switchui
 
         bool initialize(std::string& error);
         Action pollAction();
-        void drawFiles(
-            const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
-            const std::vector<size_t>& gameMascots, size_t selected, const std::string& error);
+        // Every supported game, laid out by `grid`; `games` follows the grid's numbering.
+        // A touch on a game moves the selection, so it is passed by reference.
+        void drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
+            size_t& selected, const std::string& error);
+        // The saves of one game, as paths relative to the save folder.
+        void drawSaveList(const GameCard& game, const std::string& group,
+            const std::vector<std::string>& files, size_t& selected, const std::string& error);
         void drawGameMenu(const std::string& game, const std::string& path,
             const std::string& details, size_t selected, const std::string& message);
         void drawPokemonSlots(const std::string& game, const std::string& path,
@@ -84,6 +98,8 @@ namespace pksm::switchui
         void beginFrame();
         void endFrame();
         void drawStatusLine(bool dirty, const std::string& error);
+        // A game's mascot over its name and how many saves it has. Returns true when touched.
+        bool drawGameTile(const GameCard& game, float width, float height, bool selected);
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
