@@ -10,9 +10,9 @@
 // with the colours and sizes of ui/Theme.hpp.
 namespace pksm::switchui::widgets
 {
-    // Draws `text` at the cursor at `size` pixels in `color` (0xRRGGBB), in the medium font
-    // when `medium`, then moves the cursor below it.
-    void text(const char* text, float size, unsigned color, bool medium = false);
+    // Draws `text` at the cursor at `size` pixels in `color` (0xRRGGBB), in the bold font
+    // when `bold`, then moves the cursor below it.
+    void text(const char* text, float size, unsigned color, bool bold = false);
 
     // Draws `text` at `position`; when it is wider than `maxWidth`, cuts it short and ends it
     // with "…" so it fits.

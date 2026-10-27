@@ -56,7 +56,7 @@ namespace pksm::switchui::theme
 
     namespace
     {
-        ImFont* medium = nullptr;
+        ImFont* bold = nullptr;
 
         ImFont* loadFontFile(const char* path)
         {
@@ -92,17 +92,17 @@ namespace pksm::switchui::theme
             failedPath = FONT_REGULAR_PATH;
             return false;
         }
-        medium = loadFontFile(FONT_MEDIUM_PATH);
-        if (!medium)
+        bold = loadFontFile(FONT_BOLD_PATH);
+        if (!bold)
         {
-            failedPath = FONT_MEDIUM_PATH;
+            failedPath = FONT_BOLD_PATH;
             return false;
         }
         return true;
     }
 
-    ImFont* mediumFont()
+    ImFont* boldFont()
     {
-        return medium ? medium : ImGui::GetFont();
+        return bold ? bold : ImGui::GetFont();
     }
 }

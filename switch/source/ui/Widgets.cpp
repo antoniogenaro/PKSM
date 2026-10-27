@@ -14,21 +14,21 @@ namespace pksm::switchui::widgets
     {
         constexpr float PI = 3.14159265358979323846f;
 
-        ImFont* fontFor(bool medium)
+        ImFont* fontFor(bool bold)
         {
-            return medium ? theme::mediumFont() : ImGui::GetFont();
+            return bold ? theme::boldFont() : ImGui::GetFont();
         }
 
         // Text at `position` at `size`, kept inside `clip` when given.
         void drawText(ImDrawList* drawList, const ImVec2& position, float size, ImU32 color,
-            const char* text, const ImVec4* clip = nullptr, bool medium = false)
+            const char* text, const ImVec4* clip = nullptr, bool bold = false)
         {
-            drawList->AddText(fontFor(medium), size, position, color, text, nullptr, 0.0f, clip);
+            drawList->AddText(fontFor(bold), size, position, color, text, nullptr, 0.0f, clip);
         }
 
-        ImVec2 textSize(const char* text, float size, bool medium = false)
+        ImVec2 textSize(const char* text, float size, bool bold = false)
         {
-            ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
+            ImGui::PushFont(bold ? theme::boldFont() : nullptr, size);
             const ImVec2 result = ImGui::CalcTextSize(text);
             ImGui::PopFont();
             return result;
@@ -132,9 +132,9 @@ namespace pksm::switchui::widgets
             font, size, ImVec2(position.x + widthTo(end), position.y), color, ellipsis);
     }
 
-    void text(const char* text, float size, unsigned color, bool medium)
+    void text(const char* text, float size, unsigned color, bool bold)
     {
-        ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
+        ImGui::PushFont(bold ? theme::boldFont() : nullptr, size);
         ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(color));
         ImGui::TextUnformatted(text);
         ImGui::PopStyleColor();
@@ -222,7 +222,7 @@ namespace pksm::switchui::widgets
         // Text is centred on its strokes, not on its line: the line leaves room below for
         // descenders, which button names never have, so they would sit off centre. Labels are
         // centred on the capitals, so they share the button names' baseline.
-        ImFont* font            = theme::mediumFont();
+        ImFont* font            = theme::boldFont();
         const float centerY     = top + faceSize * 0.5f;
         const ImVec4 capitals   = inkBounds(font, theme::FONT_BODY, "H");
         const float labelY      = std::round(centerY - (capitals.y + capitals.w) * 0.5f);
@@ -322,7 +322,7 @@ namespace pksm::switchui::widgets
             const char* text;
             float size;
             unsigned color;
-            bool medium;
+            bool bold;
         };
         const Line lines[] = {
             {row.title, theme::FONT_ROW_TITLE, row.enabled ? theme::TEXT : theme::TEXT_MUTED, true},
@@ -335,7 +335,7 @@ namespace pksm::switchui::widgets
             if (line.text && line.text[0] != '\0')
             {
                 height += (height > 0.0f ? lineGap : 0.0f) +
-                          textSize(line.text, line.size, line.medium).y;
+                          textSize(line.text, line.size, line.bold).y;
             }
         }
         float y = min.y + (theme::LIST_ROW_HEIGHT - height) * 0.5f;
@@ -345,9 +345,9 @@ namespace pksm::switchui::widgets
             {
                 continue;
             }
-            drawTextEllipsis(drawList, fontFor(line.medium), line.size, ImVec2(textLeft, y),
+            drawTextEllipsis(drawList, fontFor(line.bold), line.size, ImVec2(textLeft, y),
                 theme::rgb(line.color), line.text, textRight - textLeft);
-            y += textSize(line.text, line.size, line.medium).y + lineGap;
+            y += textSize(line.text, line.size, line.bold).y + lineGap;
         }
 
         drawChevron(drawList,

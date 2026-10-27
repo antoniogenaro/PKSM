@@ -653,9 +653,9 @@ namespace pksm::switchui
         const ImVec2 min  = ImGui::GetCursorScreenPos();
 
         // Measure the lines first, so the card ends right after them.
-        const auto textSize = [](const std::string& text, float size, bool medium)
+        const auto textSize = [](const std::string& text, float size, bool bold)
         {
-            ImGui::PushFont(medium ? theme::mediumFont() : nullptr, size);
+            ImGui::PushFont(bold ? theme::boldFont() : nullptr, size);
             const ImVec2 result = ImGui::CalcTextSize(text.c_str());
             ImGui::PopFont();
             return result;
@@ -664,7 +664,7 @@ namespace pksm::switchui
         float infoHeight       = nameHeight;
         for (const CardLine& line : lines)
         {
-            infoHeight += lineGap + textSize(line.text, line.size, line.medium).y;
+            infoHeight += lineGap + textSize(line.text, line.size, line.bold).y;
         }
         const ImVec2 max(min.x + width, min.y + width + infoPadding * 2.0f + infoHeight);
 
@@ -675,12 +675,12 @@ namespace pksm::switchui
         const float left  = min.x + infoPadding;
         const float right = max.x - infoPadding;
         float y           = min.y + width + infoPadding;
-        widgets::drawTextEllipsis(drawList, theme::mediumFont(), theme::FONT_HEADING,
+        widgets::drawTextEllipsis(drawList, theme::boldFont(), theme::FONT_HEADING,
             ImVec2(left, y), theme::rgb(theme::TEXT), game.name.c_str(), right - left);
         y += nameHeight + lineGap;
         for (const CardLine& line : lines)
         {
-            const ImVec2 size = textSize(line.text, line.size, line.medium);
+            const ImVec2 size = textSize(line.text, line.size, line.bold);
             float x           = left;
             if (line.dotColor != 0)
             {
@@ -689,7 +689,7 @@ namespace pksm::switchui
                 x += dotSize + dotGap;
             }
             widgets::drawTextEllipsis(drawList,
-                line.medium ? theme::mediumFont() : ImGui::GetFont(), line.size, ImVec2(x, y),
+                line.bold ? theme::boldFont() : ImGui::GetFont(), line.size, ImVec2(x, y),
                 theme::rgb(line.color), line.text.c_str(), right - x);
             y += size.y + lineGap;
         }
@@ -720,7 +720,7 @@ namespace pksm::switchui
         // The name under the art, wrapping onto a second line when it must.
         const float artBottom = min.y + width;
         const ImVec4 clip(min.x, artBottom, max.x, max.y);
-        drawList->AddText(theme::mediumFont(), theme::FONT_BODY,
+        drawList->AddText(theme::boldFont(), theme::FONT_BODY,
             ImVec2(min.x + infoPadding, artBottom + infoPadding), theme::rgb(theme::TEXT),
             game.name.c_str(), nullptr, width - infoPadding * 2.0f, &clip);
 
