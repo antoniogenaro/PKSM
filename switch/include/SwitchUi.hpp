@@ -1,11 +1,9 @@
 #pragma once
 
 #include <SDL.h>
-#include <SDL_ttf.h>
 #include <switch.h>
 #include <cstddef>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace pksm::switchui
@@ -77,32 +75,24 @@ namespace pksm::switchui
             int width;
             int height;
             bool rotated;
+            int sheetWidth;
+            int sheetHeight;
         };
 
-        SDL_Texture* textTexture(const std::string& text, int fontSize, SDL_Color color);
-        void drawText(
-            const std::string& text, int x, int y, int fontSize, SDL_Color color, int maxWidth = 0);
-        void drawFieldValue(
-            const Field& field, int x, int y, int fontSize, SDL_Color color, int maxWidth = 0);
-        void drawHeader(const std::string& title, const std::string& subtitle);
-        void drawFooter(const std::string& text);
-        void drawRect(const SDL_Rect& rect, SDL_Color fill, SDL_Color border);
-        void drawPokemonSprite(size_t index, const SDL_Rect& destination);
-        void drawBallSprite(size_t index, const SDL_Rect& destination);
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
-        std::string fitText(const std::string& text, int fontSize, int maxWidth);
+        void drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,
+            size_t index, size_t baseIndex, const SDL_Rect& destination);
+        void drawPokemonSprite(size_t index, const SDL_Rect& destination);
+        void drawBallSprite(size_t index, const SDL_Rect& destination);
 
         bool imguiInitialized_ = false;
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
-        PadState pad_{};
-        TTF_Font* headingFont_ = nullptr;
-        TTF_Font* bodyFont_ = nullptr;
         SDL_Texture* pokemonSpritesheet_ = nullptr;
         SDL_Texture* ballSpritesheet_ = nullptr;
         std::vector<PokemonSprite> pokemonSprites_;
         std::vector<PokemonSprite> ballSprites_;
-        std::unordered_map<std::string, SDL_Texture*> textCache_;
+        PadState pad_{};
     };
 }
