@@ -160,16 +160,6 @@
     "NaturePickerHint": "Choose a nature by the stats it changes",
     "NaturePickerControls": "Arrows: move    A: select    B: back",
     "NatureNeutral": "Neutral",
-    "LowerAttack": "-Attack",
-    "LowerDefense": "-Defense",
-    "LowerSpeed": "-Speed",
-    "LowerSpAttack": "-Sp. Atk",
-    "LowerSpDefense": "-Sp. Def",
-    "RaiseAttack": "+Attack",
-    "RaiseDefense": "+Defense",
-    "RaiseSpeed": "+Speed",
-    "RaiseSpAttack": "+Sp. Atk",
-    "RaiseSpDefense": "+Sp. Def",
     "EnterNumber": "Enter a number.",
     "NumberOutOfRange": "The number is out of range."
 }

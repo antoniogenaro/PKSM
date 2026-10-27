@@ -904,31 +904,39 @@ namespace pksm::switchui
     void SwitchUi::drawNaturePicker(
         const std::vector<std::string>& natures, size_t& row, size_t& column)
     {
-        // Rows raise a stat and columns lower one; the diagonal is neutral.
-        static constexpr Text columnLabels[] = {Text::NatureNeutral, Text::LowerAttack,
-            Text::LowerDefense, Text::LowerSpeed, Text::LowerSpAttack, Text::LowerSpDefense};
-        static constexpr Text rowLabels[] = {Text::RaiseAttack, Text::RaiseDefense,
-            Text::RaiseSpeed, Text::RaiseSpAttack, Text::RaiseSpDefense};
+        // Rows raise a stat and columns lower one, in this order; the diagonal is neutral.
+        static constexpr Text stats[] = {Text::StatAttack, Text::StatDefense, Text::StatSpeed,
+            Text::StatSpAttack, Text::StatSpDefense};
 
         beginFrame();
+        std::string raised[5];
+        std::string lowered[5];
+        // Wide enough for the longest raised stat, which can be longer in some languages.
+        float rowLabelWidth = 140.0f;
+        for (size_t i = 0; i < 5; ++i)
+        {
+            raised[i]     = std::string("+") + tr(stats[i]);
+            lowered[i]    = std::string("-") + tr(stats[i]);
+            rowLabelWidth = std::max(rowLabelWidth,
+                ImGui::CalcTextSize(raised[i].c_str()).x + ImGui::GetStyle().ItemSpacing.x);
+        }
         ImGui::TextUnformatted(tr(Text::FieldNature));
         ImGui::Separator();
         ImGui::TextDisabled("%s", tr(Text::NaturePickerHint));
         ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
-        constexpr float rowLabelWidth = 140.0f;
-        constexpr float cellGap       = 4.0f;
+        constexpr float cellGap = 4.0f;
         const float cellWidth =
             (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
-        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", tr(columnLabels[0]));
+        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", tr(Text::NatureNeutral));
         for (size_t x = 0; x < 5; ++x)
         {
             ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-            ImGui::TextWrapped("%s", tr(columnLabels[x + 1]));
+            ImGui::TextWrapped("%s", lowered[x].c_str());
         }
         ImGui::Separator();
         for (size_t y = 0; y < 5; ++y)
         {
-            ImGui::TextUnformatted(tr(rowLabels[y]));
+            ImGui::TextUnformatted(raised[y].c_str());
             for (size_t x = 0; x < 5; ++x)
             {
                 const size_t natureIndex = y * 5 + x;
