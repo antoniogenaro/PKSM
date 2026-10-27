@@ -22,8 +22,9 @@ SOURCES		:=	source \
 				../core/source/sav \
 				../core/source/utils \
 				../core/source/wcx \
-				../external/imgui \
-				../external/imgui/backends
+				../external/imgui
+IMGUI_BACKEND_SOURCES := ../external/imgui/backends
+IMGUI_BACKEND_CPPFILES := imgui_impl_sdl2.cpp imgui_impl_sdlrenderer2.cpp
 INCLUDES	:=	include \
 				../core/include \
 				../core/include/enums \
@@ -40,19 +41,20 @@ INCLUDES	:=	include \
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS		:=	-g -Wall -Wextra -Werror -Wno-unused-parameter \
 				-Wno-missing-field-initializers -O2 \
-				-ffunction-sections $(ARCH) -D__SWITCH__ -D_GNU_SOURCE=1
+				-ffunction-sections $(ARCH) -D__SWITCH__ -D_GNU_SOURCE=1 \
+				-DIMGUI_DISABLE_DEFAULT_SHELL_FUNCTIONS
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -std=gnu++20
 LDFLAGS		=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) \
 				-Wl,-Map,$(notdir $*.map)
 SDL_PKG_CONFIG_PATH := $(PORTLIBS)/lib/pkgconfig
-SDL_CFLAGS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --cflags sdl2 SDL2_ttf)
-SDL_LIBS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --static --libs sdl2 SDL2_ttf)
+SDL_CFLAGS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --cflags sdl2)
+SDL_LIBS	:=	$(shell PKG_CONFIG_PATH=$(SDL_PKG_CONFIG_PATH) pkg-config --static --libs sdl2)
 CFLAGS		+=	$(SDL_CFLAGS)
 CXXFLAGS	+=	$(SDL_CFLAGS)
 LIBS		:=	$(SDL_LIBS) -lnx
 
 ifeq ($(strip $(SDL_CFLAGS)),)
-$(error SDL2 and SDL2_ttf development packages are required)
+$(error SDL2 development package is required)
 endif
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
@@ -64,10 +66,11 @@ export NROFLAGS	+=	--icon=$(TOPDIR)/icon.jpg \
 				--nacp=$(OUTPUT).nacp \
 				--romfsdir=$(ROMFS_PATH)
 export LD	:=	$(CXX)
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
+export VPATH	:=	$(foreach dir,$(SOURCES) $(IMGUI_BACKEND_SOURCES),$(CURDIR)/$(dir))
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp))) \
+				$(IMGUI_BACKEND_CPPFILES)
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 export OFILES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
@@ -102,25 +105,19 @@ else
 
 all: $(OUTPUT).nro
 
-$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg $(ROMFS_PATH)/i18n \
-		$(ROMFS_PATH)/personal $(ROMFS_PATH)/fonts/Roboto.ttf \
-		$(ROMFS_PATH)/fonts/OFL-Roboto.txt $(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
+$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg \
+		$(DEPSDIR)/i18n.stamp $(DEPSDIR)/personal.stamp \
+		$(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
 
-$(ROMFS_PATH)/i18n: $(CORE_STRING_FILES)
-	@mkdir -p $@
-	@cp -R $(TOPDIR)/../core/strings/* $@
+$(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) | $(DEPSDIR)
+	@mkdir -p $(ROMFS_PATH)/i18n
+	@cp -R $(TOPDIR)/../core/strings/* $(ROMFS_PATH)/i18n/
+	@touch $@
 
-$(ROMFS_PATH)/personal: $(CORE_PERSONAL_FILES)
-	@mkdir -p $@
-	@cp $(TOPDIR)/../core/personals/* $@
-
-$(ROMFS_PATH)/fonts/Roboto.ttf: $(TOPDIR)/../assets/gfx/ui/Roboto.ttf
-	@mkdir -p $(dir $@)
-	@cp $< $@
-
-$(ROMFS_PATH)/fonts/OFL-Roboto.txt: $(TOPDIR)/../assets/gfx/ui/OFL-Roboto.txt
-	@mkdir -p $(dir $@)
-	@cp $< $@
+$(DEPSDIR)/personal.stamp: $(CORE_PERSONAL_FILES) | $(DEPSDIR)
+	@mkdir -p $(ROMFS_PATH)/personal
+	@cp $(TOPDIR)/../core/personals/* $(ROMFS_PATH)/personal/
+	@touch $@
 
 $(PKM_SPRITESHEET):
 	@mkdir -p $(dir $@)

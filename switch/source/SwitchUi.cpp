@@ -6,11 +6,12 @@
 
 #include <switch.h>
 #include <algorithm>
-#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <string>
+#include <vector>
 
 namespace pksm::switchui
 {
@@ -19,18 +20,6 @@ namespace pksm::switchui
         constexpr int SCREEN_WIDTH = 1280;
         constexpr int SCREEN_HEIGHT = 720;
         constexpr SDL_Color BACKGROUND{20, 27, 43, 255};
-        constexpr SDL_Color PANEL{31, 42, 63, 255};
-        constexpr SDL_Color TABLE_HEADER{25, 34, 52, 255};
-        constexpr SDL_Color PANEL_BORDER{61, 82, 112, 255};
-        constexpr SDL_Color ROW_ALT{31, 42, 63, 255};
-        constexpr SDL_Color ROW_DIVIDER{61, 82, 112, 255};
-        constexpr SDL_Color TEXT{236, 241, 248, 255};
-        constexpr SDL_Color MUTED{166, 181, 202, 255};
-        constexpr SDL_Color ACCENT{91, 190, 170, 255};
-        constexpr SDL_Color SELECTED{50, 91, 111, 255};
-        constexpr SDL_Color YELLOW{255, 220, 92, 255};
-        constexpr SDL_Color ERROR{255, 163, 145, 255};
-        constexpr char FONT_PATH[] = "romfs:/fonts/Roboto.ttf";
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
         constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
         constexpr size_t BALL_SPRITE_BASE = 144;
@@ -113,8 +102,7 @@ namespace pksm::switchui
                         }
                         const u8 second = input[cursor++];
                         const u8 third = input[cursor++];
-                        length = ((static_cast<size_t>(first & 0x0F) << 4) | (second >> 4)) +
-                                 0x11;
+                        length = ((static_cast<size_t>(first & 0x0F) << 4) | (second >> 4)) + 0x11;
                         distance = ((static_cast<size_t>(second & 0x0F) << 8) | third) + 1;
                     }
                     else if (lengthType == 1)
@@ -138,8 +126,7 @@ namespace pksm::switchui
                             return false;
                         }
                         length = lengthType + 1;
-                        distance =
-                            ((static_cast<size_t>(first & 0x0F) << 8) | input[cursor++]) + 1;
+                        distance = ((static_cast<size_t>(first & 0x0F) << 8) | input[cursor++]) + 1;
                     }
 
                     if (distance > written)
@@ -155,20 +142,6 @@ namespace pksm::switchui
                 }
             }
             return true;
-        }
-
-        void removeLastUtf8Character(std::string& text)
-        {
-            if (text.empty())
-            {
-                return;
-            }
-            size_t index = text.size() - 1;
-            while (index > 0 && (static_cast<unsigned char>(text[index]) & 0xC0) == 0x80)
-            {
-                --index;
-            }
-            text.erase(index);
         }
     }
 
@@ -189,18 +162,6 @@ namespace pksm::switchui
         {
             SDL_DestroyTexture(ballSpritesheet_);
         }
-        for (const auto& entry : textCache_)
-        {
-            SDL_DestroyTexture(entry.second);
-        }
-        if (headingFont_)
-        {
-            TTF_CloseFont(headingFont_);
-        }
-        if (bodyFont_)
-        {
-            TTF_CloseFont(bodyFont_);
-        }
         if (renderer_)
         {
             SDL_DestroyRenderer(renderer_);
@@ -209,7 +170,6 @@ namespace pksm::switchui
         {
             SDL_DestroyWindow(window_);
         }
-        TTF_Quit();
         SDL_Quit();
     }
 
@@ -241,6 +201,18 @@ namespace pksm::switchui
             error = std::string("No se pudo crear el renderizador: ") + SDL_GetError();
             return false;
         }
+        if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, "Pokémon", pokemonSpritesheet_,
+                pokemonSprites_, error) ||
+            !loadSpriteSheet(BALL_SPRITESHEET_PATH, "Poké Ball", ballSpritesheet_, ballSprites_,
+                error))
+        {
+            return false;
+        }
+        if (ballSprites_.size() <= BALL_SPRITE_BASE + MAX_BALL_SPRITE)
+        {
+            error = "El spritesheet de Poké Ball no contiene todos los iconos.";
+            return false;
+        }
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -260,32 +232,6 @@ namespace pksm::switchui
         }
         imguiInitialized_ = true;
 
-        if (TTF_Init() != 0)
-        {
-            error = std::string("No se pudo iniciar SDL_ttf: ") + TTF_GetError();
-            return false;
-        }
-        headingFont_ = TTF_OpenFont(FONT_PATH, 36);
-        bodyFont_ = TTF_OpenFont(FONT_PATH, 24);
-        if (!headingFont_ || !bodyFont_)
-        {
-            error = std::string("No se pudo cargar la fuente: ") + TTF_GetError();
-            return false;
-        }
-        TTF_SetFontHinting(headingFont_, TTF_HINTING_NORMAL);
-        TTF_SetFontHinting(bodyFont_, TTF_HINTING_NORMAL);
-        if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, "Pokémon", pokemonSpritesheet_,
-                pokemonSprites_, error) ||
-            !loadSpriteSheet(BALL_SPRITESHEET_PATH, "Poké Ball", ballSpritesheet_, ballSprites_,
-                error))
-        {
-            return false;
-        }
-        if (ballSprites_.size() <= BALL_SPRITE_BASE + MAX_BALL_SPRITE)
-        {
-            error = "El spritesheet de Poké Ball no contiene todos los iconos.";
-            return false;
-        }
         return true;
     }
 
@@ -321,7 +267,7 @@ namespace pksm::switchui
             return false;
         }
 
-        const size_t tableOffset = 5;
+        constexpr size_t tableOffset = 5;
         if (spriteCount > (data.size() - tableOffset) / 12)
         {
             error = "La tabla de sprites de " + name + " está incompleta.";
@@ -356,10 +302,12 @@ namespace pksm::switchui
                 return false;
             }
 
-            const auto toPixelX = [width](u16 coordinate) {
+            const auto toPixelX = [width](u16 coordinate)
+            {
                 return static_cast<int>(static_cast<size_t>(coordinate) * width / 1024);
             };
-            const auto toPixelY = [height](u16 coordinate) {
+            const auto toPixelY = [height](u16 coordinate)
+            {
                 return static_cast<int>(static_cast<size_t>(coordinate) * height / 1024);
             };
             const bool rotated = top < bottom;
@@ -377,8 +325,9 @@ namespace pksm::switchui
                 error = "La tabla de sprites de " + name + " contiene coordenadas inválidas.";
                 return false;
             }
-            sprites.push_back({{sourceX, sourceY, sourceWidth, sourceHeight}, spriteWidth,
-                spriteHeight, rotated});
+            sprites.push_back(
+                {{sourceX, sourceY, sourceWidth, sourceHeight}, spriteWidth, spriteHeight, rotated,
+                    static_cast<int>(width), static_cast<int>(height)});
         }
 
         std::vector<u8> pixels(textureSize);
@@ -394,8 +343,7 @@ namespace pksm::switchui
                 const size_t morton = (localX & 1) | ((localY & 1) << 1) |
                                       ((localX & 2) << 1) | ((localY & 2) << 2) |
                                       ((localX & 4) << 2) | ((localY & 4) << 3);
-                const size_t source =
-                    ((tileY * tilesPerRow + tileX) * 64 + morton) * 4;
+                const size_t source = ((tileY * tilesPerRow + tileX) * 64 + morton) * 4;
                 const size_t destination = (y * width + x) * 4;
                 pixels[destination] = textureData[source + 3];
                 pixels[destination + 1] = textureData[source + 2];
@@ -404,9 +352,8 @@ namespace pksm::switchui
             }
         }
 
-        SDL_Texture* texture =
-            SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
-                static_cast<int>(width), static_cast<int>(height));
+        SDL_Texture* texture = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA32,
+            SDL_TEXTUREACCESS_STATIC, static_cast<int>(width), static_cast<int>(height));
         if (!texture)
         {
             error = "No se pudo crear la textura de " + name + ": " + SDL_GetError();
@@ -424,51 +371,66 @@ namespace pksm::switchui
         return true;
     }
 
-    void SwitchUi::drawPokemonSprite(size_t index, const SDL_Rect& destination)
+    void SwitchUi::drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,
+        size_t index, size_t baseIndex, const SDL_Rect& destination)
     {
-        if (!pokemonSpritesheet_ || index == 0 || index >= pokemonSprites_.size())
+        if (!texture || index > std::numeric_limits<size_t>::max() - baseIndex)
         {
             return;
         }
-        const PokemonSprite& sprite = pokemonSprites_[index];
-        if (sprite.rotated)
+        const size_t spriteIndex = baseIndex + index;
+        if (spriteIndex >= sprites.size())
         {
-            const SDL_Rect rotatedDestination{destination.x + (destination.w - destination.h) / 2,
-                destination.y + (destination.h - destination.w) / 2, destination.h,
-                destination.w};
-            SDL_RenderCopyEx(renderer_, pokemonSpritesheet_, &sprite.source, &rotatedDestination,
-                90.0, nullptr, SDL_FLIP_NONE);
+            return;
         }
-        else
+
+        const PokemonSprite& sprite = sprites[spriteIndex];
+        const int spriteWidth = sprite.rotated ? sprite.height : sprite.width;
+        const int spriteHeight = sprite.rotated ? sprite.width : sprite.height;
+        if (spriteWidth <= 0 || spriteHeight <= 0)
         {
-            SDL_RenderCopy(renderer_, pokemonSpritesheet_, &sprite.source, &destination);
+            return;
         }
+        const float scale = std::min(static_cast<float>(destination.w) / spriteWidth,
+            static_cast<float>(destination.h) / spriteHeight);
+        const float width = static_cast<float>(spriteWidth) * scale;
+        const float height = static_cast<float>(spriteHeight) * scale;
+        const ImVec2 topLeft(static_cast<float>(destination.x) +
+                (static_cast<float>(destination.w) - width) * 0.5f,
+            static_cast<float>(destination.y) + (static_cast<float>(destination.h) - height) * 0.5f);
+        const ImVec2 topRight(topLeft.x + width, topLeft.y);
+        const ImVec2 bottomRight(topLeft.x + width, topLeft.y + height);
+        const ImVec2 bottomLeft(topLeft.x, topLeft.y + height);
+        const float u0 = static_cast<float>(sprite.source.x);
+        const float v0 = static_cast<float>(sprite.source.y);
+        const float u1 = static_cast<float>(sprite.source.x + sprite.source.w);
+        const float v1 = static_cast<float>(sprite.source.y + sprite.source.h);
+        const ImVec2 uvTopLeft = sprite.rotated ? ImVec2(u0, v1) : ImVec2(u0, v0);
+        const ImVec2 uvTopRight = sprite.rotated ? ImVec2(u0, v0) : ImVec2(u1, v0);
+        const ImVec2 uvBottomRight = sprite.rotated ? ImVec2(u1, v0) : ImVec2(u1, v1);
+        const ImVec2 uvBottomLeft = sprite.rotated ? ImVec2(u1, v1) : ImVec2(u0, v1);
+
+        const ImTextureRef textureRef(static_cast<void*>(texture));
+        ImGui::GetWindowDrawList()->AddImageQuad(textureRef, topLeft, topRight, bottomRight,
+            bottomLeft, ImVec2(uvTopLeft.x / sprite.sheetWidth, uvTopLeft.y / sprite.sheetHeight),
+            ImVec2(uvTopRight.x / sprite.sheetWidth, uvTopRight.y / sprite.sheetHeight),
+            ImVec2(uvBottomRight.x / sprite.sheetWidth, uvBottomRight.y / sprite.sheetHeight),
+            ImVec2(uvBottomLeft.x / sprite.sheetWidth, uvBottomLeft.y / sprite.sheetHeight));
+    }
+
+    void SwitchUi::drawPokemonSprite(size_t index, const SDL_Rect& destination)
+    {
+        if (index == 0)
+        {
+            return;
+        }
+        drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination);
     }
 
     void SwitchUi::drawBallSprite(size_t index, const SDL_Rect& destination)
     {
-        if (!ballSpritesheet_)
-        {
-            return;
-        }
-        const size_t spriteIndex = BALL_SPRITE_BASE + std::min(index, MAX_BALL_SPRITE);
-        if (spriteIndex >= ballSprites_.size())
-        {
-            return;
-        }
-        const PokemonSprite& sprite = ballSprites_[spriteIndex];
-        if (sprite.rotated)
-        {
-            const SDL_Rect rotatedDestination{destination.x + (destination.w - destination.h) / 2,
-                destination.y + (destination.h - destination.w) / 2, destination.h,
-                destination.w};
-            SDL_RenderCopyEx(renderer_, ballSpritesheet_, &sprite.source, &rotatedDestination,
-                90.0, nullptr, SDL_FLIP_NONE);
-        }
-        else
-        {
-            SDL_RenderCopy(renderer_, ballSpritesheet_, &sprite.source, &destination);
-        }
+        drawSprite(ballSpritesheet_, ballSprites_, std::min(index, MAX_BALL_SPRITE),
+            BALL_SPRITE_BASE, destination);
     }
 
     Action SwitchUi::pollAction()
@@ -536,157 +498,11 @@ namespace pksm::switchui
         return Action::None;
     }
 
-    SDL_Texture* SwitchUi::textTexture(const std::string& text, int fontSize, SDL_Color color)
-    {
-        const std::string key = std::to_string(fontSize) + ":" +
-                                std::to_string(static_cast<unsigned int>(color.r) << 24 |
-                                               static_cast<unsigned int>(color.g) << 16 |
-                                               static_cast<unsigned int>(color.b) << 8 |
-                                               color.a) +
-                                ":" + text;
-        const auto found = textCache_.find(key);
-        if (found != textCache_.end())
-        {
-            return found->second;
-        }
-
-        TTF_Font* font = fontSize == 36 ? headingFont_ : bodyFont_;
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
-        if (!surface)
-        {
-            return nullptr;
-        }
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer_, surface);
-        SDL_FreeSurface(surface);
-        if (!texture)
-        {
-            return nullptr;
-        }
-        if (textCache_.size() >= 512)
-        {
-            const auto oldest = textCache_.begin();
-            SDL_DestroyTexture(oldest->second);
-            textCache_.erase(oldest);
-        }
-        textCache_.emplace(key, texture);
-        return texture;
-    }
-
-    void SwitchUi::drawText(
-        const std::string& text, int x, int y, int fontSize, SDL_Color color, int maxWidth)
-    {
-        const std::string displayText =
-            maxWidth > 0 ? fitText(text, fontSize, maxWidth) : text;
-        SDL_Texture* texture = textTexture(displayText, fontSize, color);
-        if (!texture)
-        {
-            return;
-        }
-        int width = 0;
-        int height = 0;
-        if (SDL_QueryTexture(texture, nullptr, nullptr, &width, &height) != 0)
-        {
-            return;
-        }
-        const SDL_Rect destination{x, y, width, height};
-        SDL_RenderCopy(renderer_, texture, nullptr, &destination);
-    }
-
-    void SwitchUi::drawFieldValue(
-        const Field& field, int x, int y, int fontSize, SDL_Color color, int maxWidth)
-    {
-        if (field.hasBallSprite)
-        {
-            const int size = fontSize + 8;
-            drawBallSprite(field.ballSpriteIndex, {x, y - 1, size, size});
-            const int textX = x + size + 10;
-            drawText(field.value, textX, y, fontSize, color,
-                maxWidth > 0 ? std::max(0, maxWidth - size - 10) : 0);
-            return;
-        }
-        if (!field.checkbox)
-        {
-            drawText(field.value, x, y, fontSize, color, maxWidth);
-            return;
-        }
-
-        const int size = fontSize;
-        const int boxY = y + 3;
-        const SDL_Rect box{x, boxY, size, size};
-        drawRect(box, PANEL, field.checked ? ACCENT : PANEL_BORDER);
-        if (field.checked)
-        {
-            SDL_SetRenderDrawColor(renderer_, ACCENT.r, ACCENT.g, ACCENT.b, ACCENT.a);
-            SDL_RenderDrawLine(renderer_, x + size / 5, boxY + size / 2,
-                x + size * 2 / 5, boxY + size * 4 / 5);
-            SDL_RenderDrawLine(renderer_, x + size * 2 / 5, boxY + size * 4 / 5,
-                x + size * 4 / 5, boxY + size / 5);
-        }
-        const int textX = x + size + 10;
-        drawText(field.value, textX, y, fontSize, color,
-            maxWidth > 0 ? std::max(0, maxWidth - size - 10) : 0);
-    }
-
-    void SwitchUi::drawHeader(const std::string& title, const std::string& subtitle)
-    {
-        drawText(title, 52, 32, 36, TEXT);
-        drawText(subtitle, 54, 84, 24, MUTED, SCREEN_WIDTH - 108);
-        SDL_Rect divider{52, 127, SCREEN_WIDTH - 104, 2};
-        SDL_SetRenderDrawColor(renderer_, PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, 255);
-        SDL_RenderFillRect(renderer_, &divider);
-    }
-
-    void SwitchUi::drawFooter(const std::string& text)
-    {
-        drawText(text, 54, SCREEN_HEIGHT - 47, 24, MUTED, SCREEN_WIDTH - 108);
-    }
-
-    void SwitchUi::drawRect(const SDL_Rect& rect, SDL_Color fill, SDL_Color border)
-    {
-        SDL_SetRenderDrawColor(renderer_, fill.r, fill.g, fill.b, fill.a);
-        SDL_RenderFillRect(renderer_, &rect);
-        SDL_SetRenderDrawColor(renderer_, border.r, border.g, border.b, border.a);
-        SDL_RenderDrawRect(renderer_, &rect);
-    }
-
-    std::string SwitchUi::fitText(const std::string& text, int fontSize, int maxWidth)
-    {
-        std::string result = text;
-        TTF_Font* font = fontSize == 36 ? headingFont_ : bodyFont_;
-        int width = 0;
-        int height = 0;
-        if (TTF_SizeUTF8(font, result.c_str(), &width, &height) != 0 || width <= maxWidth)
-        {
-            return result;
-        }
-        constexpr char ELLIPSIS[] = "...";
-        while (!result.empty())
-        {
-            removeLastUtf8Character(result);
-            const std::string candidate = result + ELLIPSIS;
-            if (TTF_SizeUTF8(font, candidate.c_str(), &width, &height) == 0 && width <= maxWidth)
-            {
-                return candidate;
-            }
-        }
-        return ELLIPSIS;
-    }
-
     void SwitchUi::drawFiles(
         const std::vector<std::string>& files, const std::vector<std::string>& gameNames,
         const std::vector<size_t>& gameMascots, size_t selected, const std::string& error)
     {
         (void)gameMascots;
-        if (!imguiInitialized_)
-        {
-            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
-            SDL_RenderClear(renderer_);
-            drawHeader("PKSM / SWITCH", "Respaldos de Sword/Shield y Rojo Fuego/Verde Hoja");
-            drawText(error.empty() ? "Dear ImGui no está inicializado." : error, 70, 180, 24, ERROR);
-            SDL_RenderPresent(renderer_);
-            return;
-        }
-
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -721,7 +537,15 @@ namespace pksm::switchui
                 const std::string label =
                     i < gameNames.size() ? gameNames[i] + "  /  " + files[i] : files[i];
                 ImGui::PushID(static_cast<int>(i));
-                ImGui::Selectable(label.c_str(), i == selected, ImGuiSelectableFlags_SpanAllColumns);
+                const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
+                if (i < gameMascots.size())
+                {
+                    drawPokemonSprite(gameMascots[i],
+                        {static_cast<int>(itemPosition.x), static_cast<int>(itemPosition.y), 40, 40});
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 46.0f);
+                }
+                ImGui::Selectable(label.c_str(), i == selected, ImGuiSelectableFlags_SpanAllColumns,
+                    ImVec2(0.0f, 40.0f));
                 ImGui::PopID();
             }
             ImGui::EndChild();
@@ -755,53 +579,176 @@ namespace pksm::switchui
             {"Editor entrenador", "Edita los datos del entrenador", true},
         };
 
-        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
-        SDL_RenderClear(renderer_);
-        drawHeader(game, path);
+        ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
 
-        const SDL_Rect detailsPanel{52, 151, SCREEN_WIDTH - 104, 70};
-        drawRect(detailsPanel, PANEL, PANEL_BORDER);
-        drawText(details, 76, 174, 24, TEXT, detailsPanel.w - 48);
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
-        constexpr int columns = 2;
-        constexpr int cardWidth = (SCREEN_WIDTH - 120) / columns;
-        constexpr int cardHeight = 92;
-        constexpr int horizontalGap = 16;
-        constexpr int verticalGap = 14;
-        constexpr int startY = 238;
-        for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i)
-        {
-            const int column = static_cast<int>(i % columns);
-            const int row = static_cast<int>(i / columns);
-            const SDL_Rect card{52 + column * (cardWidth + horizontalGap),
-                startY + row * (cardHeight + verticalGap), cardWidth, cardHeight};
-            const SDL_Color fill = i == selected ? SELECTED : PANEL;
-            const SDL_Color border =
-                i == selected && options[i].available ? ACCENT : PANEL_BORDER;
-            const SDL_Color labelColor = options[i].available ? TEXT : MUTED;
-            const SDL_Color descriptionColor = options[i].available ? MUTED : PANEL_BORDER;
-            drawRect(card, fill, border);
-            drawText(options[i].label, card.x + 24, card.y + 15, 24, labelColor);
-            drawText(options[i].description, card.x + 24, card.y + 51, 24, descriptionColor,
-                card.w - 48);
-            if (!options[i].available)
+            ImGui::TextUnformatted(game.c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled("/ %s", path.c_str());
+            ImGui::Separator();
+            ImGui::TextWrapped("%s", details.c_str());
+            ImGui::Spacing();
+
+            constexpr float cardHeight = 118.0f;
+            constexpr float cardGap    = 12.0f;
+            const float cardWidth = (ImGui::GetContentRegionAvail().x - cardGap) / 2.0f;
+            for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i)
             {
-                drawText("Próximamente", card.x + card.w - 184, card.y + 15, 24, PANEL_BORDER);
-            }
-        }
+                if (i % 2 != 0)
+                {
+                    ImGui::SameLine(0.0f, cardGap);
+                }
 
-        if (!message.empty())
-        {
-            drawText(message, 70, 590, 24, ACCENT, SCREEN_WIDTH - 140);
-        }
-        drawFooter("A: abrir    B: volver    Y: exportar    X: descartar    +: salir");
-        SDL_RenderPresent(renderer_);
+                ImGui::PushID(static_cast<int>(i));
+                if (i == selected)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Border,
+                        options[i].available ? ImVec4(0.28f, 0.70f, 0.96f, 1.0f) :
+                                               ImVec4(0.35f, 0.40f, 0.46f, 1.0f));
+                }
+                ImGui::BeginChild("menu-option", ImVec2(cardWidth, cardHeight),
+                    ImGuiChildFlags_Borders);
+                if (options[i].available)
+                {
+                    ImGui::TextUnformatted(options[i].label);
+                    ImGui::Spacing();
+                    ImGui::TextWrapped("%s", options[i].description);
+                }
+                else
+                {
+                    ImGui::TextDisabled("%s", options[i].label);
+                    ImGui::Spacing();
+                    ImGui::TextDisabled("%s", options[i].description);
+                    ImGui::SetCursorPosY(cardHeight - 30.0f);
+                    ImGui::TextDisabled("Próximamente");
+                }
+                ImGui::EndChild();
+                if (i == selected)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+                ImGui::PopID();
+            }
+
+            ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 52.0f);
+            if (!message.empty())
+            {
+                ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f), "%s", message.c_str());
+            }
+            else
+            {
+                ImGui::Dummy(ImVec2(0.0f, ImGui::GetTextLineHeight()));
+            }
+            ImGui::TextDisabled("A: abrir    B: volver    Y: exportar    X: descartar    +: salir");
+            ImGui::End();
+
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
+            SDL_RenderPresent(renderer_);
     }
 
     void SwitchUi::drawPokemonSlots(const std::string& game, const std::string& path,
         const std::string& section, const std::vector<Field>& fields, size_t selected, bool dirty,
         const std::string& error)
     {
+        ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::Text("Editor de Pokémon  /  %s  /  %s  /  %s", game.c_str(), path.c_str(),
+                section.c_str());
+            ImGui::Separator();
+
+            constexpr float summaryWidth = 290.0f;
+            constexpr float gap = 12.0f;
+            const float gridWidth = ImGui::GetContentRegionAvail().x - summaryWidth - gap;
+            ImGui::BeginChild("slot-grid", ImVec2(gridWidth, -58.0f), ImGuiChildFlags_Borders);
+            const size_t columns = fields.size() <= 6 ? 3 : 6;
+            const float tileGap = 6.0f;
+            const float tileWidth =
+                (ImGui::GetContentRegionAvail().x - tileGap * static_cast<float>(columns - 1)) /
+                static_cast<float>(columns);
+            for (size_t i = 0; i < fields.size(); ++i)
+            {
+                if (i % columns != 0)
+                {
+                    ImGui::SameLine(0.0f, tileGap);
+                }
+                ImGui::PushID(static_cast<int>(i));
+                if (i == selected)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.28f, 0.70f, 0.96f, 1.0f));
+                }
+                ImGui::BeginChild("slot", ImVec2(tileWidth, 68.0f), ImGuiChildFlags_Borders);
+                const ImVec2 tilePosition = ImGui::GetCursorScreenPos();
+                drawPokemonSprite(fields[i].spriteIndex,
+                    {static_cast<int>(tilePosition.x + 4.0f),
+                        static_cast<int>(tilePosition.y + 6.0f), 48, 48});
+                ImGui::SetCursorPosX(60.0f);
+                ImGui::TextDisabled("%zu", i + 1);
+                ImGui::TextWrapped("%s", fields[i].value.c_str());
+                ImGui::EndChild();
+                if (i == selected)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+            ImGui::SameLine(0.0f, gap);
+            ImGui::BeginChild("slot-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
+            ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f), "Pokémon seleccionado");
+            ImGui::Separator();
+            if (selected < fields.size())
+            {
+                const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
+                drawPokemonSprite(fields[selected].spriteIndex,
+                    {static_cast<int>(spritePosition.x + 35.0f),
+                        static_cast<int>(spritePosition.y), 180, 130});
+                ImGui::Dummy(ImVec2(0.0f, 132.0f));
+                ImGui::TextDisabled("%s", fields[selected].label.c_str());
+                ImGui::Spacing();
+                ImGui::TextWrapped("%s", fields[selected].value.c_str());
+            }
+            ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 120.0f);
+            ImGui::TextDisabled("A: abrir editor");
+            ImGui::EndChild();
+            if (dirty)
+            {
+                ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f),
+                    "Cambios pendientes de exportar");
+            }
+            if (!error.empty())
+            {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.35f, 1.0f), "%s", error.c_str());
+            }
+            ImGui::TextDisabled("D-pad: mover    L/R: cajas/equipo    A: editar    Y: exportar    B: volver");
+            ImGui::End();
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
+            SDL_RenderPresent(renderer_);
+        return;
+#if 0
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
         drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + section);
@@ -881,12 +828,96 @@ namespace pksm::switchui
         drawFooter(
             "D-pad: mover    L/R: cajas/equipo    A: editar    Y: exportar    B: volver");
         SDL_RenderPresent(renderer_);
+#endif
     }
 
     void SwitchUi::drawPokemonEditor(const std::string& game, const std::string& path,
         const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
         size_t selected, bool dirty, const std::string& error)
     {
+        ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::Text("Editor de Pokémon  /  %s  /  %s  /  %s", game.c_str(), path.c_str(),
+                pokemon.c_str());
+            ImGui::Separator();
+
+            constexpr float summaryWidth = 315.0f;
+            constexpr float gap = 12.0f;
+            const float listWidth = ImGui::GetContentRegionAvail().x - summaryWidth - gap;
+            ImGui::BeginChild("field-list", ImVec2(listWidth, -58.0f), ImGuiChildFlags_Borders);
+            constexpr size_t visibleRows = 7;
+            const size_t first = selected >= visibleRows ? selected - visibleRows + 1 : 0;
+            const size_t last = std::min(fields.size(), first + visibleRows);
+            for (size_t i = first; i < last; ++i)
+            {
+                ImGui::PushID(static_cast<int>(i));
+                if (i == selected)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                }
+                ImGui::Selectable(fields[i].label.c_str(), i == selected,
+                    ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 42.0f));
+                ImGui::SameLine(340.0f);
+                ImGui::TextWrapped("%s", fields[i].value.c_str());
+                if (i == selected)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+            ImGui::SameLine(0.0f, gap);
+            ImGui::BeginChild("pokemon-summary", ImVec2(summaryWidth, -58.0f), ImGuiChildFlags_Borders);
+            const auto valueFor = [&fields](const char* label) -> std::string
+            {
+                const auto field = std::find_if(fields.begin(), fields.end(),
+                    [label](const Field& candidate) { return candidate.label == label; });
+                return field == fields.end() ? std::string{} : field->value;
+            };
+            ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f), "Resumen del Pokémon");
+            ImGui::Separator();
+            const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
+            drawPokemonSprite(speciesIndex,
+                {static_cast<int>(spritePosition.x + 70.0f),
+                    static_cast<int>(spritePosition.y), 150, 112});
+            ImGui::Dummy(ImVec2(0.0f, 114.0f));
+            ImGui::TextWrapped("%s", valueFor("Especie").c_str());
+            ImGui::TextDisabled("%s", valueFor("Apodo").c_str());
+            ImGui::Spacing();
+            for (const char* label : {"Nivel", "Naturaleza", "Género", "Variocolor"})
+            {
+                ImGui::TextDisabled("%s", label);
+                ImGui::SameLine(120.0f);
+                ImGui::TextWrapped("%s", valueFor(label).c_str());
+            }
+            ImGui::EndChild();
+            if (dirty)
+            {
+                ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f),
+                    "Cambios pendientes de exportar");
+            }
+            if (!error.empty())
+            {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.35f, 1.0f), "%s", error.c_str());
+            }
+            ImGui::TextDisabled("D-pad: mover/cambiar    A: editar    Y: exportar    B: volver    X: descartar");
+            ImGui::End();
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
+            SDL_RenderPresent(renderer_);
+        return;
+#if 0
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
         drawHeader("Editor de Pokémon", game + "  /  " + path + "  /  " + pokemon);
@@ -957,11 +988,62 @@ namespace pksm::switchui
         }
         drawFooter("D-pad: mover/cambiar    A: editar    Y: exportar    B: volver    X: descartar");
         SDL_RenderPresent(renderer_);
+#endif
     }
 
     void SwitchUi::drawTrainer(const std::string& game, const std::string& path,
         const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error)
     {
+        ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::Text("Ficha del entrenador  /  %s  /  %s", game.c_str(), path.c_str());
+            ImGui::Separator();
+            ImGui::BeginChild("trainer-fields", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
+            for (size_t i = 0; i < fields.size(); ++i)
+            {
+                ImGui::PushID(static_cast<int>(i));
+                if (i == selected)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                }
+                ImGui::Selectable(fields[i].label.c_str(), i == selected,
+                    ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 42.0f));
+                ImGui::SameLine(420.0f);
+                ImGui::TextWrapped("%s", fields[i].value.c_str());
+                if (i == selected)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+            if (dirty)
+            {
+                ImGui::TextColored(ImVec4(0.28f, 0.70f, 0.96f, 1.0f),
+                    "Cambios pendientes de exportar");
+            }
+            if (!error.empty())
+            {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.35f, 1.0f), "%s", error.c_str());
+            }
+            ImGui::TextDisabled("D-pad: mover/cambiar    A: nombre    Y: exportar    B: menú    X: descartar");
+            ImGui::End();
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
+            SDL_RenderPresent(renderer_);
+        return;
+#if 0
         SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
         SDL_RenderClear(renderer_);
         drawHeader("Ficha del entrenador", game + "  /  " + path);
@@ -996,6 +1078,7 @@ namespace pksm::switchui
         drawFooter(
             "D-pad: mover/cambiar    A: nombre    Y: exportar    B: menu    X: descartar");
         SDL_RenderPresent(renderer_);
+#endif
     }
 
     bool SwitchUi::editText(const std::string& title, const std::string& initial,
@@ -1078,35 +1161,56 @@ namespace pksm::switchui
 
             const size_t first = std::min(
                 index > visibleRows / 2 ? index - visibleRows / 2 : 0, lastStart);
-            SDL_SetRenderDrawColor(
-                renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
-            SDL_RenderClear(renderer_);
-            drawHeader(title, "Selecciona una opción");
-            const SDL_Rect panel{52, 151, SCREEN_WIDTH - 104, 444};
-            drawRect(panel, PANEL, PANEL_BORDER);
+            ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::TextUnformatted(title.c_str());
+            ImGui::Separator();
+            ImGui::TextDisabled("Selecciona una opción");
+            ImGui::BeginChild("options", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
             const size_t last = std::min(options.size(), first + visibleRows);
             for (size_t i = first; i < last; ++i)
             {
-                const int y = 171 + static_cast<int>(i - first) * 44;
+                ImGui::PushID(static_cast<int>(i));
                 if (i == index)
                 {
-                    const SDL_Rect row{68, y - 5, panel.w - 32, 40};
-                    drawRect(row, SELECTED, SELECTED);
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
                 }
                 if (i < spriteIndices.size())
                 {
-                    drawBallSprite(spriteIndices[i], {88, y - 3, 32, 32});
-                    drawText(options[i], 130, y, 24, i == index ? TEXT : MUTED,
-                        panel.w - 114);
+                    const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
+                    drawBallSprite(spriteIndices[i],
+                        {static_cast<int>(itemPosition.x + 8.0f),
+                            static_cast<int>(itemPosition.y + 4.0f), 32, 32});
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 48.0f);
                 }
-                else
+                if (ImGui::Selectable(options[i].c_str(), i == index,
+                        ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 40.0f)))
                 {
-                    drawText(options[i], 88, y, 24, i == index ? TEXT : MUTED, panel.w - 72);
+                    index = i;
                 }
+                if (i == index)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+                ImGui::PopID();
             }
-            drawText(std::to_string(index + 1) + " / " + std::to_string(options.size()),
-                SCREEN_WIDTH - 170, 556, 24, MUTED);
-            drawFooter("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+            ImGui::EndChild();
+            ImGui::TextDisabled("%zu / %zu", index + 1, options.size());
+            ImGui::SameLine();
+            ImGui::TextDisabled("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+            ImGui::End();
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
             SDL_RenderPresent(renderer_);
             SDL_Delay(16);
         }
@@ -1154,14 +1258,6 @@ namespace pksm::switchui
             column = 0;
         }
 
-        constexpr int panelX = 52;
-        constexpr int panelY = 151;
-        constexpr int panelWidth = SCREEN_WIDTH - 104;
-        constexpr int panelHeight = 444;
-        constexpr int labelWidth = 180;
-        constexpr int cellWidth = (panelWidth - 24 - labelWidth) / 5;
-        constexpr int headerHeight = 58;
-        constexpr int cellHeight = 60;
         while (appletMainLoop())
         {
             const Action action = pollAction();
@@ -1191,49 +1287,63 @@ namespace pksm::switchui
                 ++column;
             }
 
-            SDL_SetRenderDrawColor(
-                renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, BACKGROUND.a);
-            SDL_RenderClear(renderer_);
-            drawHeader("Naturaleza", "Selecciona una naturaleza según sus estadísticas");
-            const SDL_Rect panel{panelX, panelY, panelWidth, panelHeight};
-            drawRect(panel, PANEL, PANEL_BORDER);
-
-            const int gridX = panelX + 12;
-            const int gridY = panelY + 14;
-            const SDL_Rect corner{gridX, gridY, labelWidth, headerHeight};
-            drawRect(corner, TABLE_HEADER, PANEL_BORDER);
-            drawText(columnLabels[0], corner.x + 8, corner.y + 17, 24, YELLOW,
-                corner.w - 16);
+            ImGui_ImplSDLRenderer2_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+            ImGuiIO& io = ImGui::GetIO();
+            io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
+            ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+            ImGui::Begin("PKSM Switch", nullptr,
+                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGui::TextUnformatted("Naturaleza");
+            ImGui::Separator();
+            ImGui::TextDisabled("Selecciona una naturaleza según sus estadísticas");
+            ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
+            constexpr float rowLabelWidth = 140.0f;
+            constexpr float cellGap = 4.0f;
+            const float cellWidth =
+                (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
+            ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", columnLabels[0]);
             for (size_t x = 0; x < 5; ++x)
             {
-                const SDL_Rect header{gridX + labelWidth + static_cast<int>(x) * cellWidth,
-                    gridY, cellWidth, headerHeight};
-                drawRect(header, TABLE_HEADER, PANEL_BORDER);
-                drawText(columnLabels[x + 1], header.x + 4, header.y + 17, 24, TEXT,
-                    header.w - 8);
+                ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
+                ImGui::TextWrapped("%s", columnLabels[x + 1]);
             }
+            ImGui::Separator();
             for (size_t y = 0; y < 5; ++y)
             {
-                const int cellY = gridY + headerHeight + static_cast<int>(y) * cellHeight;
-                const SDL_Rect rowHeader{gridX, cellY, labelWidth, cellHeight};
-                drawRect(rowHeader, TABLE_HEADER, PANEL_BORDER);
-                drawText(rowLabels[y], rowHeader.x + 8, rowHeader.y + 18, 24, TEXT,
-                    rowHeader.w - 16);
+                ImGui::TextUnformatted(rowLabels[y]);
                 for (size_t x = 0; x < 5; ++x)
                 {
-                    const SDL_Rect cell{
-                        gridX + labelWidth + static_cast<int>(x) * cellWidth, cellY, cellWidth,
-                        cellHeight};
                     const size_t natureIndex = natureGrid[y][x];
                     const bool isSelected = row == y && column == x;
-                    drawRect(cell, isSelected ? SELECTED : PANEL,
-                        isSelected ? ACCENT : PANEL_BORDER);
-                    const SDL_Color color = natureIndex % 6 == 0 ? YELLOW : TEXT;
-                    drawText(natures[natureIndex], cell.x + 5, cell.y + 18, 24, color,
-                        cell.w - 10);
+                    ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
+                    ImGui::PushID(static_cast<int>(natureIndex));
+                    if (isSelected)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.16f, 0.26f, 0.38f, 1.0f));
+                        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.28f, 0.70f, 0.96f, 1.0f));
+                    }
+                    if (ImGui::Button(natures[natureIndex].c_str(), ImVec2(cellWidth, 44.0f)))
+                    {
+                        row = y;
+                        column = x;
+                    }
+                    if (isSelected)
+                    {
+                        ImGui::PopStyleColor(2);
+                    }
+                    ImGui::PopID();
                 }
             }
-            drawFooter("Flechas: mover    A: seleccionar    B: volver");
+            ImGui::EndChild();
+            ImGui::TextDisabled("Flechas: mover    A: seleccionar    B: volver");
+            ImGui::End();
+            ImGui::Render();
+            SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+            SDL_RenderClear(renderer_);
+            ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
             SDL_RenderPresent(renderer_);
             SDL_Delay(16);
         }
