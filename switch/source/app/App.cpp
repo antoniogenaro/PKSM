@@ -67,7 +67,19 @@ namespace pksm::switchui
             {
                 break;
             }
-            stack_.back()->draw(ui_);
+            // The top screen, and when it is an overlay the screens below it down to the first
+            // that is not, drawn from the bottom up.
+            size_t first = stack_.size() - 1;
+            while (first > 0 && stack_[first]->isOverlay())
+            {
+                --first;
+            }
+            ui_.beginScreens();
+            for (size_t i = first; i < stack_.size(); ++i)
+            {
+                stack_[i]->draw(ui_);
+            }
+            ui_.endScreens();
             SDL_Delay(16);
         }
     }

@@ -79,6 +79,11 @@
     X(HintMove)                                                                                    \
     X(HintDrop)                                                                                    \
     X(HintCancel)                                                                                  \
+    X(HintPage)                                                                                    \
+    X(HintReset)                                                                                   \
+    X(HintSaveChanges)                                                                             \
+    X(HintSelect)                                                                                  \
+    X(HintChangePage)                                                                              \
     /* Boxes */                                                                                    \
     X(PartyTitle)                                                                                  \
     X(SlotCount)                                                                                   \
@@ -94,6 +99,19 @@
     X(StatShortSpAttack)                                                                           \
     X(StatShortSpDefense)                                                                          \
     X(StatShortSpeed)                                                                              \
+    /* Pokémon editor */                                                                          \
+    X(EditorPageMain)                                                                              \
+    X(EditorPageMore)                                                                              \
+    X(StatsTitle)                                                                                  \
+    X(EvTotal)                                                                                     \
+    X(StatColumn)                                                                                  \
+    X(StatTotal)                                                                                   \
+    X(MovesTitle)                                                                                  \
+    X(MovePp)                                                                                      \
+    X(EditorSaved)                                                                                 \
+    X(EditorReset)                                                                                 \
+    X(EditorUnsaved)                                                                               \
+    X(EditorUnsavedBack)                                                                           \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
@@ -120,16 +138,10 @@
     X(NoBoxes)                                                                                     \
     X(OptionUnavailable)                                                                           \
     /* Boxes and party */                                                                          \
-    X(PokemonEditorHeader)                                                                         \
     X(PokemonReadFailed)                                                                           \
     X(PokemonCarrying)                                                                             \
     X(PartyNeedsPokemon)                                                                           \
     /* Pokémon editor */                                                                          \
-    X(PokemonSummary)                                                                              \
-    X(PokemonInBox)                                                                                \
-    X(PokemonInParty)                                                                              \
-    X(PokemonSummaryTitle)                                                                         \
-    X(PokemonEditorControls)                                                                       \
     X(FieldSpecies)                                                                                \
     X(FieldNickname)                                                                               \
     X(FieldLevel)                                                                                  \
@@ -174,7 +186,6 @@
     X(StatSpeed)                                                                                   \
     X(FieldMove)                                                                                   \
     X(FieldRelearnMove)                                                                            \
-    X(MoveTitle)                                                                                   \
     X(RelearnUnavailable)                                                                          \
     X(January)                                                                                     \
     X(February)                                                                                    \
@@ -215,11 +226,10 @@
     X(LanguageChineseTraditional)                                                                  \
     X(LanguageUnknown)                                                                             \
     /* Pickers and keyboard */                                                                     \
-    X(ChooseOption)                                                                                \
-    X(OptionPickerControls)                                                                        \
-    X(NaturePickerHint)                                                                            \
-    X(NaturePickerControls)                                                                        \
     X(NatureNeutral)                                                                               \
+    X(NatureNeutralShort)                                                                          \
+    X(NatureKey)                                                                                   \
+    X(PickerCurrent)                                                                               \
     X(EnterNumber)                                                                                 \
     X(NumberOutOfRange)
 

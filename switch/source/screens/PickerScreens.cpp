@@ -11,9 +11,12 @@ namespace pksm::switchui
         : title_(std::move(title)),
           options_(std::move(options)),
           spriteIndices_(std::move(spriteIndices)),
-          index_(options_.empty() ? 0 : std::min(current, options_.size() - 1)),
+          current_(options_.empty() ? 0 : std::min(current, options_.size() - 1)),
+          index_(current_),
           onPick_(std::move(onPick))
     {
+        // Open with the current option on the first row shown.
+        firstRow_ = index_ / COLUMNS;
     }
 
     void OptionPickerScreen::update(App& app, Action action)
@@ -24,6 +27,7 @@ namespace pksm::switchui
             return;
         }
         const size_t last = options_.size() - 1;
+        const size_t page = COLUMNS * ROWS;
         switch (action)
         {
             case Action::Confirm:
@@ -34,23 +38,23 @@ namespace pksm::switchui
             case Action::Quit:
                 app.pop();
                 break;
-            case Action::Up:
+            case Action::Left:
                 index_ = index_ > 0 ? index_ - 1 : index_;
                 break;
-            case Action::Down:
+            case Action::Right:
                 index_ = std::min(last, index_ + 1);
                 break;
-            case Action::Left:
-                index_ = index_ > 10 ? index_ - 10 : 0;
+            case Action::Up:
+                index_ = index_ >= COLUMNS ? index_ - COLUMNS : index_;
                 break;
-            case Action::Right:
-                index_ = std::min(last, index_ + 10);
+            case Action::Down:
+                index_ = index_ + COLUMNS <= last ? index_ + COLUMNS : index_;
                 break;
             case Action::PreviousPage:
-                index_ = index_ > 100 ? index_ - 100 : 0;
+                index_ = index_ > page ? index_ - page : 0;
                 break;
             case Action::NextPage:
-                index_ = std::min(last, index_ + 100);
+                index_ = std::min(last, index_ + page);
                 break;
             default:
                 break;
@@ -59,11 +63,21 @@ namespace pksm::switchui
 
     void OptionPickerScreen::draw(SwitchUi& ui)
     {
-        const size_t lastStart =
-            options_.size() > VISIBLE_ROWS ? options_.size() - VISIBLE_ROWS : 0;
-        const size_t first =
-            std::min(index_ > VISIBLE_ROWS / 2 ? index_ - VISIBLE_ROWS / 2 : 0, lastStart);
-        ui.drawOptionPicker(title_, options_, spriteIndices_, first, VISIBLE_ROWS, index_);
+        // Keep the selection's row in view.
+        const size_t row = index_ / COLUMNS;
+        if (row < firstRow_)
+        {
+            firstRow_ = row;
+        }
+        else if (row >= firstRow_ + ROWS)
+        {
+            firstRow_ = row - ROWS + 1;
+        }
+        const size_t rows     = (options_.size() + COLUMNS - 1) / COLUMNS;
+        const size_t lastFirst = rows > ROWS ? rows - ROWS : 0;
+        firstRow_              = std::min(firstRow_, lastFirst);
+        const std::string current = options_.empty() ? std::string{} : options_[current_];
+        ui.drawOptionPicker(title_, current, options_, spriteIndices_, firstRow_, index_);
     }
 
     NaturePickerScreen::NaturePickerScreen(
