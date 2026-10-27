@@ -1,6 +1,8 @@
 #include "ui/Widgets.hpp"
 #include "ui/Theme.hpp"
 
+#include "imgui_internal.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -128,10 +130,12 @@ namespace pksm::switchui::widgets
         constexpr float faceSize  = theme::LEGEND_HEIGHT;
         constexpr float facePad   = 7.0f; // Around names longer than one letter, such as "L / R".
 
-        const ImVec2 windowPos  = ImGui::GetWindowPos();
-        const ImVec2 windowSize = ImGui::GetWindowSize();
-        const ImVec2 padding    = ImGui::GetStyle().WindowPadding;
-        const float top         = windowPos.y + windowSize.y - padding.y - faceSize;
+        // The window's own padding: the style's may differ from what the window was begun with.
+        const ImGuiWindow* window = ImGui::GetCurrentWindowRead();
+        const ImVec2 windowPos    = window->Pos;
+        const ImVec2 windowSize   = window->Size;
+        const ImVec2 padding      = window->WindowPadding;
+        const float top           = windowPos.y + windowSize.y - padding.y - faceSize;
 
         const auto faceWidth = [&](const ButtonHint& hint)
         {
@@ -350,18 +354,17 @@ namespace pksm::switchui::widgets
         return touched;
     }
 
-    void drawStatus(const char* text, unsigned dotColor)
+    void drawStatus(
+        ImDrawList* drawList, const ImVec2& bottomLeft, const char* text, unsigned dotColor)
     {
         constexpr float dotSize = 8.0f;
         constexpr float gap     = 6.0f;
-        const ImVec2 origin     = ImGui::GetCursorScreenPos();
         const ImVec2 size       = textSize(text, theme::FONT_PATH);
         const float height      = std::max(size.y, dotSize);
-        ImDrawList* drawList    = ImGui::GetWindowDrawList();
-        drawList->AddCircleFilled(ImVec2(origin.x + dotSize * 0.5f, origin.y + height * 0.5f),
+        const float top         = bottomLeft.y - height;
+        drawList->AddCircleFilled(ImVec2(bottomLeft.x + dotSize * 0.5f, top + height * 0.5f),
             dotSize * 0.5f, theme::rgb(dotColor), 12);
-        drawText(drawList, ImVec2(origin.x + dotSize + gap, origin.y + (height - size.y) * 0.5f),
+        drawText(drawList, ImVec2(bottomLeft.x + dotSize + gap, top + (height - size.y) * 0.5f),
             theme::FONT_PATH, theme::rgb(theme::TEXT_MUTED), text);
-        ImGui::Dummy(ImVec2(dotSize + gap + size.x, height));
     }
 }

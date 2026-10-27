@@ -98,7 +98,7 @@ namespace
 
     GameProfile profileIn(Text group)
     {
-        return GameProfile{GameVersion::SW, Text::GameSword, group, 0, false, 0, 0, 0};
+        return GameProfile{GameVersion::SW, Text::GameSword, group, 0, false, 0, 0, 0, 0};
     }
 
     void testGameGrid()
@@ -271,7 +271,7 @@ namespace
         check(textLanguage() == TextLanguage::Spanish, "the language can change");
         check(std::string(tr(Text::Yes)) == "Sí", "Spanish text");
         check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "Spanish value");
-        check(std::string(tr(Text::GameSword)) == "Pokemon Espada", "Spanish game name");
+        check(std::string(tr(Text::GameSword)) == "Espada", "Spanish game name");
 
         // A translation that lacks a text, or inserts other values, falls back to English.
         const std::filesystem::path folder =

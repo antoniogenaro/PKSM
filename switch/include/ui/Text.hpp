@@ -66,9 +66,9 @@
     X(ExportPartialRemoved)                                                                        \
     X(ExportPartialKept)                                                                           \
     /* Game list */                                                                                \
-    X(GameListTitle)                                                                               \
+    X(HintOpen)                                                                                    \
     X(GameListPrompt)                                                                              \
-    X(GameListControls)                                                                            \
+    X(HintQuit)                                                                                    \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
