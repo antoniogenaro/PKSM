@@ -15,6 +15,9 @@ ROMFS		:=	romfs
 include $(DEVKITPRO)/libnx/switch_rules
 
 SOURCES		:=	source \
+				source/app \
+				source/domain \
+				source/platform \
 				../core/memecrypto \
 				../core/source/i18n \
 				../core/source/personal \

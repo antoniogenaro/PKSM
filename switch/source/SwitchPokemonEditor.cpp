@@ -1,6 +1,7 @@
 #include "SwitchPokemonEditor.hpp"
 
 #include "SwitchUi.hpp"
+#include "app/Session.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
 #include "sav/Sav.hpp"
@@ -1027,11 +1028,22 @@ namespace pksm::switchui
             return fields;
         }
 
-        PokemonEditorResult editPokemon(pksm::Sav& save, SwitchUi& ui, const std::string& game,
-            const std::string& path, std::unique_ptr<pksm::PKX> pokemon, bool party, u8 box,
-            u8 slot, bool& dirty, std::string& error,
-            const std::function<bool(std::string&)>& exportChanges)
+        bool exportSession(Session& session, std::string& message)
         {
+            std::string outputPath;
+            if (!session.exportChanges(outputPath, message))
+            {
+                return false;
+            }
+            message = "Exportado a " + outputPath;
+            return true;
+        }
+
+        PokemonEditorResult editPokemon(Session& session, SwitchUi& ui, const std::string& game,
+            const std::string& path, std::unique_ptr<pksm::PKX> pokemon, bool party, u8 box,
+            u8 slot, std::string& error)
+        {
+            pksm::Sav& save = session.save();
             if (!pokemon)
             {
                 error = "No se pudo leer el Pokémon seleccionado.";
@@ -1056,7 +1068,7 @@ namespace pksm::switchui
                 const Action action = ui.pollAction();
                 if (action == Action::Quit)
                 {
-                    if (!dirty)
+                    if (!session.dirty())
                     {
                         return PokemonEditorResult::Quit;
                     }
@@ -1080,12 +1092,9 @@ namespace pksm::switchui
                 {
                     return PokemonEditorResult::Discard;
                 }
-                else if (action == Action::Save && dirty)
+                else if (action == Action::Save && session.dirty())
                 {
-                    if (exportChanges(error))
-                    {
-                        dirty = false;
-                    }
+                    exportSession(session, error);
                 }
                 else if (action == Action::Left || action == Action::Right ||
                          action == Action::Confirm)
@@ -1095,13 +1104,13 @@ namespace pksm::switchui
                     if (changeField(editorFields[selected], *pokemon, save, ui, direction, error))
                     {
                         savePokemon(save, *pokemon, party, box, slot);
-                        dirty = true;
+                        session.markDirty();
                         error.clear();
                     }
                 }
 
-                ui.drawPokemonEditor(game, path, title,
-                    static_cast<size_t>(pokemon->species()), displayFields, selected, dirty, error);
+                ui.drawPokemonEditor(game, path, title, static_cast<size_t>(pokemon->species()),
+                    displayFields, selected, session.dirty(), error);
                 SDL_Delay(16);
             }
             return PokemonEditorResult::Quit;
@@ -1109,10 +1118,10 @@ namespace pksm::switchui
 
     }
 
-    PokemonEditorResult runPokemonEditor(pksm::Sav& save, SwitchUi& ui,
-        const std::string& game, const std::string& path, bool& dirty, std::string& error,
-        const std::function<bool(std::string&)>& exportChanges)
+    PokemonEditorResult runPokemonEditor(Session& session, SwitchUi& ui, const std::string& game,
+        const std::string& path, std::string& error)
     {
+        pksm::Sav& save = session.save();
         const unsigned int maxBoxes = static_cast<unsigned int>(save.maxBoxes());
         if (maxBoxes == 0)
         {
@@ -1140,7 +1149,7 @@ namespace pksm::switchui
             const Action action = ui.pollAction();
             if (action == Action::Quit)
             {
-                if (!dirty)
+                if (!session.dirty())
                 {
                     return PokemonEditorResult::Quit;
                 }
@@ -1215,20 +1224,16 @@ namespace pksm::switchui
             {
                 return PokemonEditorResult::Discard;
             }
-            else if (action == Action::Save && dirty)
+            else if (action == Action::Save && session.dirty())
             {
-                if (exportChanges(error))
-                {
-                    dirty = false;
-                }
+                exportSession(session, error);
             }
             else if (action == Action::Confirm && !fields.empty())
             {
                 const u8 slot = static_cast<u8>(selected);
                 auto pokemon = party ? save.pkm(slot) : save.pkm(static_cast<u8>(box), slot);
-                const auto result = editPokemon(
-                    save, ui, game, path, std::move(pokemon), party, static_cast<u8>(box), slot,
-                    dirty, error, exportChanges);
+                const auto result = editPokemon(session, ui, game, path, std::move(pokemon), party,
+                    static_cast<u8>(box), slot, error);
                 if (result != PokemonEditorResult::Back)
                 {
                     return result;
@@ -1236,7 +1241,7 @@ namespace pksm::switchui
                 refreshFields = true;
             }
 
-            ui.drawPokemonSlots(game, path, section, fields, selected, dirty, error);
+            ui.drawPokemonSlots(game, path, section, fields, selected, session.dirty(), error);
             SDL_Delay(16);
         }
         return PokemonEditorResult::Quit;

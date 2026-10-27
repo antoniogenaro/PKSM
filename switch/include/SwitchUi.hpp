@@ -79,6 +79,11 @@ namespace pksm::switchui
             int sheetHeight;
         };
 
+        // Every screen draws inside the same full-screen window, between these two calls.
+        void beginFrame();
+        void endFrame();
+        void drawStatusLine(bool dirty, const std::string& error);
+
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
         void drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,

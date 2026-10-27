@@ -1,0 +1,39 @@
+#pragma once
+
+#include "utils/coretypes.h"
+#include <cstddef>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <vector>
+
+// Save files on the SD card. Errors are returned as user-facing messages.
+namespace pksm::switchui::storage
+{
+    inline constexpr char SAVE_DIRECTORY[] = "sdmc:/switch/pksm";
+    inline constexpr size_t MAX_SAVE_SIZE  = 16 * 1024 * 1024;
+
+    // Creates the backup folder when it does not exist yet.
+    bool prepareSaveDirectory(std::string& error);
+
+    // Main save files under SAVE_DIRECTORY, relative to it and sorted.
+    std::vector<std::string> listSaveFiles(std::string& error);
+
+    std::string savePath(const std::string& relativePath);
+
+    bool readSaveFile(
+        const std::string& path, std::shared_ptr<u8[]>& data, size_t& size, std::string& error);
+
+    // A new "<source>.pksm-edited[-N]" file, opened for writing. It never replaces an
+    // existing file.
+    struct ExportFile
+    {
+        FILE* file = nullptr;
+        std::string path;
+    };
+
+    bool createExportFile(const std::string& sourcePath, ExportFile& output, std::string& error);
+
+    // Writes and closes the file. On failure the partial file is removed.
+    bool writeExportFile(ExportFile& output, const u8* data, size_t length, std::string& error);
+}
