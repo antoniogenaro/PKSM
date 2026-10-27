@@ -532,10 +532,16 @@ namespace pksm::switchui
             ImVec2(uvBottomLeft.x / sprite.sheetWidth, uvBottomLeft.y / sprite.sheetHeight));
     }
 
-    void SwitchUi::drawPokemonSprite(size_t index, const SDL_Rect& destination)
+    void SwitchUi::drawPokemonSprite(
+        size_t index, const SDL_Rect& destination, size_t formSprite)
     {
         if (index == 0)
         {
+            return;
+        }
+        if (formSprite != 0 && formSprite < ballSprites_.size())
+        {
+            drawSprite(ballSpritesheet_, ballSprites_, formSprite, 0, destination);
             return;
         }
         drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination);
@@ -971,7 +977,8 @@ namespace pksm::switchui
             const float inset = size * 0.06f;
             drawPokemonSprite(slot.species,
                 {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
-                    static_cast<int>(size - inset * 2.0f), static_cast<int>(size - inset * 2.0f)});
+                    static_cast<int>(size - inset * 2.0f), static_cast<int>(size - inset * 2.0f)},
+                slot.formSprite);
         }
         if (selected)
         {
@@ -1015,7 +1022,8 @@ namespace pksm::switchui
         drawPokemonSprite(detail.species, {static_cast<int>(origin.x + 12.0f),
                                               static_cast<int>(origin.y + 12.0f),
                                               static_cast<int>(artSize - 24.0f),
-                                              static_cast<int>(artSize - 24.0f)});
+                                              static_cast<int>(artSize - 24.0f)},
+            detail.formSprite);
 
         constexpr float numberSize = 14.0f;
         constexpr float nameSize   = 30.0f;
@@ -1344,7 +1352,8 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawPokemonEditor(const std::string& game, const std::string& path,
-        const std::string& pokemon, size_t speciesIndex, const std::vector<Field>& fields,
+        const std::string& pokemon, size_t speciesIndex, size_t formSprite,
+        const std::vector<Field>& fields,
         size_t selected, bool dirty, const std::string& error)
     {
         beginFrame();
@@ -1391,7 +1400,8 @@ namespace pksm::switchui
         const ImVec2 spritePosition = ImGui::GetCursorScreenPos();
         drawPokemonSprite(speciesIndex,
             {static_cast<int>(spritePosition.x + 70.0f),
-                static_cast<int>(spritePosition.y), 150, 112});
+                static_cast<int>(spritePosition.y), 150, 112},
+            formSprite);
         ImGui::Dummy(ImVec2(0.0f, 114.0f));
         ImGui::TextWrapped("%s", valueFor(Text::FieldSpecies).c_str());
         ImGui::TextDisabled("%s", valueFor(Text::FieldNickname).c_str());
