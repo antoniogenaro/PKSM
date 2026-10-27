@@ -32,6 +32,7 @@
     "TextureCreateFailed": "Could not create the {} texture: {}",
     "TextureLoadFailed": "Could not load the {} texture: {}",
     "FontLoadFailed": "Could not load the font {}.",
+    "IconLoadFailed": "Could not load the icon {}.",
     "SdAccessFailed": "Could not access the SD card: {}",
     "SaveDirectoryFailed": "Could not prepare the backup folder: {}",
     "DirectoryTooDeep": "The backup folder is nested deeper than 32 levels.",

@@ -1,6 +1,7 @@
 #include "SwitchUi.hpp"
 #include "domain/GameGrid.hpp"
 #include "platform/SaveStorage.hpp"
+#include "ui/Icons.hpp"
 #include "ui/Text.hpp"
 #include "ui/Theme.hpp"
 #include "ui/Widgets.hpp"
@@ -229,6 +230,8 @@ namespace pksm::switchui
         {
             SDL_DestroyTexture(ballSpritesheet_);
         }
+        // The icon textures belong to the renderer, so they go first.
+        icons::unload();
         if (renderer_)
         {
             SDL_DestroyRenderer(renderer_);
@@ -278,6 +281,12 @@ namespace pksm::switchui
         if (ballSprites_.size() <= BALL_SPRITE_BASE + MAX_BALL_SPRITE)
         {
             error = tr(Text::BallSheetIncomplete);
+            return false;
+        }
+        const char* failedIcon = nullptr;
+        if (!icons::load(renderer_, failedIcon))
+        {
+            error = tr(Text::IconLoadFailed, {failedIcon});
             return false;
         }
 
@@ -825,7 +834,7 @@ namespace pksm::switchui
             const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + files[i];
             ImGui::PushID(static_cast<int>(i));
             if (widgets::drawListRow("save",
-                    {name.c_str(), folder.c_str(), path.c_str(), widgets::icons::backup},
+                    {name.c_str(), folder.c_str(), path.c_str(), icons::Icon::Backup},
                     i == selected))
             {
                 selected = i;
@@ -859,17 +868,17 @@ namespace pksm::switchui
         {
             Text label;
             Text description;
-            widgets::IconPainter icon;
+            icons::Icon icon;
             bool available;
         };
         // The order matches GameMenuScreen. A divider follows the third option.
         static constexpr MenuOption options[] = {
-            {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, widgets::icons::boxes, true},
-            {Text::MenuStorage, Text::MenuStorageHint, widgets::icons::bank, false},
-            {Text::MenuBag, Text::MenuBagHint, widgets::icons::bag, false},
-            {Text::MenuEvents, Text::MenuEventsHint, widgets::icons::gift, false},
-            {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, widgets::icons::trainer, true},
-            {Text::MenuScripts, Text::MenuScriptsHint, widgets::icons::more, false},
+            {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, icons::Icon::Boxes, true},
+            {Text::MenuStorage, Text::MenuStorageHint, icons::Icon::Bank, false},
+            {Text::MenuBag, Text::MenuBagHint, icons::Icon::Bag, false},
+            {Text::MenuEvents, Text::MenuEventsHint, icons::Icon::Gift, false},
+            {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, icons::Icon::Trainer, true},
+            {Text::MenuScripts, Text::MenuScriptsHint, icons::Icon::More, false},
         };
         constexpr size_t dividerAfter = 2;
 

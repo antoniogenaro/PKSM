@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "ui/Icons.hpp"
 
 #include <initializer_list>
 
@@ -46,9 +47,6 @@ namespace pksm::switchui::widgets
     void drawSelectionOutline(ImDrawList* drawList, const ImVec2& min, const ImVec2& max,
         float rounding);
 
-    // Draws an icon inside the square that starts at `min` and is `size` wide, in `color`.
-    using IconPainter = void (*)(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-
     // A row of a list panel: an icon box, a title, an optional subtitle and an optional detail
     // line in a smaller font (used for file paths), and an arrow on the right.
     struct ListRow
@@ -56,23 +54,9 @@ namespace pksm::switchui::widgets
         const char* title;
         const char* subtitle = nullptr;
         const char* detail   = nullptr;
-        IconPainter icon     = nullptr;
+        icons::Icon icon     = icons::Icon::None;
         bool enabled         = true;
     };
-
-    // The icons of the canvas list rows, for ListRow::icon. Each draws the canvas SVG, scaled so
-    // it fills the icon box as on the 48 pixel canvas box.
-    namespace icons
-    {
-        void boxes(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        void bank(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        void bag(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        void gift(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        void trainer(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        void more(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-        // Two overlapping squares: a backup copy.
-        void backup(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color);
-    }
 
     // Draws `row` across the available width. Returns true when touched.
     bool drawListRow(const char* id, const ListRow& row, bool selected);

@@ -245,142 +245,6 @@ namespace pksm::switchui::widgets
             ImDrawFlags_None, thickness);
     }
 
-    namespace icons
-    {
-        namespace
-        {
-            // Maps the coordinates of a canvas SVG, `viewBox` units wide and drawn `glyph`
-            // canvas pixels wide in the 48 pixel icon box, into the box at `min` of `size`.
-            struct Pen
-            {
-                Pen(const ImVec2& min, float size, float viewBox, float glyph)
-                {
-                    const float boxScale = size / theme::ICON_BOX_SIZE;
-                    unit                 = glyph * boxScale / viewBox;
-                    const float offset   = (size - glyph * boxScale) * 0.5f;
-                    origin               = ImVec2(min.x + offset, min.y + offset);
-                }
-
-                ImVec2 at(float x, float y) const
-                {
-                    return ImVec2(origin.x + x * unit, origin.y + y * unit);
-                }
-
-                float operator()(float length) const { return length * unit; }
-
-                ImVec2 origin;
-                float unit;
-            };
-
-            // The 26 pixel line icons share one 26 unit view box and a 2.4 unit line.
-            Pen linePen(const ImVec2& min, float size)
-            {
-                return Pen(min, size, 26.0f, 26.0f);
-            }
-
-            constexpr float LINE = 2.4f;
-
-            void roundedRect(ImDrawList* drawList, const Pen& pen, float x, float y, float width,
-                float height, float radius, ImU32 color, float line)
-            {
-                drawList->AddRect(pen.at(x, y), pen.at(x + width, y + height), color, pen(radius),
-                    ImDrawFlags_None, pen(line));
-            }
-        }
-
-        void boxes(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            const Pen pen = linePen(min, size);
-            for (const float y : {3.0f, 15.0f})
-            {
-                for (const float x : {3.0f, 15.0f})
-                {
-                    roundedRect(drawList, pen, x, y, 8.0f, 8.0f, 2.0f, color, LINE);
-                }
-            }
-        }
-
-        void bank(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            // A stack of coins: the top, the sides and two lower rims.
-            const Pen pen = linePen(min, size);
-            drawList->AddEllipse(pen.at(13.0f, 6.0f), ImVec2(pen(9.0f), pen(3.5f)), color, 0.0f,
-                32, pen(LINE));
-            drawList->AddLine(pen.at(4.0f, 6.0f), pen.at(4.0f, 20.0f), color, pen(LINE));
-            drawList->AddLine(pen.at(22.0f, 6.0f), pen.at(22.0f, 20.0f), color, pen(LINE));
-            for (const float y : {13.0f, 20.0f})
-            {
-                drawList->PathEllipticalArcTo(
-                    pen.at(13.0f, y), ImVec2(pen(9.0f), pen(3.5f)), 0.0f, 0.0f, PI, 20);
-                drawList->PathStroke(color, ImDrawFlags_None, pen(LINE));
-            }
-        }
-
-        void bag(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            const Pen pen = linePen(min, size);
-            const ImVec2 body[] = {pen.at(6.0f, 9.0f), pen.at(20.0f, 9.0f), pen.at(21.5f, 23.0f),
-                pen.at(4.5f, 23.0f)};
-            drawList->AddPolyline(body, 4, color, ImDrawFlags_Closed, pen(LINE));
-            // The handle: up from the bag, over a half circle and down again.
-            drawList->PathLineTo(pen.at(9.0f, 9.0f));
-            drawList->PathArcTo(pen.at(13.0f, 7.0f), pen(4.0f), PI, 2.0f * PI, 16);
-            drawList->PathLineTo(pen.at(17.0f, 9.0f));
-            drawList->PathStroke(color, ImDrawFlags_None, pen(LINE));
-        }
-
-        void gift(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            const Pen pen = linePen(min, size);
-            roundedRect(drawList, pen, 3.0f, 11.0f, 20.0f, 12.0f, 2.0f, color, LINE);
-            roundedRect(drawList, pen, 2.0f, 7.0f, 22.0f, 4.0f, 1.5f, color, LINE);
-            drawList->AddLine(pen.at(13.0f, 7.0f), pen.at(13.0f, 23.0f), color, pen(LINE));
-            // The two loops of the bow, as in the canvas path.
-            for (const float side : {-1.0f, 1.0f})
-            {
-                drawList->PathLineTo(pen.at(13.0f, 7.0f));
-                drawList->PathBezierCubicCurveTo(pen.at(13.0f + side, 3.0f),
-                    pen.at(13.0f + side * 6.0f, 3.0f), pen.at(13.0f + side * 6.0f, 5.5f));
-                drawList->PathBezierCubicCurveTo(pen.at(13.0f + side * 6.0f, 8.0f),
-                    pen.at(13.0f + side * 2.0f, 7.0f), pen.at(13.0f, 7.0f));
-                drawList->PathStroke(color, ImDrawFlags_None, pen(LINE));
-            }
-        }
-
-        void trainer(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            const Pen pen = linePen(min, size);
-            drawList->AddCircle(pen.at(13.0f, 8.0f), pen(4.5f), color, 24, pen(LINE));
-            drawList->PathLineTo(pen.at(4.0f, 23.0f));
-            drawList->PathBezierCubicCurveTo(
-                pen.at(4.0f, 18.0f), pen.at(8.0f, 15.0f), pen.at(13.0f, 15.0f));
-            drawList->PathBezierCubicCurveTo(
-                pen.at(18.0f, 15.0f), pen.at(22.0f, 18.0f), pen.at(22.0f, 23.0f));
-            drawList->PathStroke(color, ImDrawFlags_None, pen(LINE));
-        }
-
-        void more(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            const Pen pen = linePen(min, size);
-            for (const float x : {5.0f, 13.0f, 21.0f})
-            {
-                drawList->AddCircleFilled(pen.at(x, 13.0f), pen(2.0f + LINE * 0.5f), color, 12);
-            }
-        }
-
-        void backup(ImDrawList* drawList, const ImVec2& min, float size, ImU32 color)
-        {
-            // A 34 unit view box drawn 26 pixels wide, with a 3 unit line.
-            const Pen pen(min, size, 34.0f, 26.0f);
-            roundedRect(drawList, pen, 11.0f, 11.0f, 20.0f, 20.0f, 4.0f, color, 3.0f);
-            drawList->PathLineTo(pen.at(23.0f, 5.0f));
-            drawList->PathLineTo(pen.at(8.0f, 5.0f));
-            drawList->PathArcTo(pen.at(8.0f, 9.0f), pen(4.0f), PI * 1.5f, PI, 8);
-            drawList->PathLineTo(pen.at(4.0f, 24.0f));
-            drawList->PathStroke(color, ImDrawFlags_None, pen(3.0f));
-        }
-    }
-
     bool drawListRow(const char* id, const ListRow& row, bool selected)
     {
         constexpr float iconLeft   = 12.0f;
@@ -411,12 +275,9 @@ namespace pksm::switchui::widgets
         drawList->AddRectFilled(iconMin,
             ImVec2(iconMin.x + theme::ICON_BOX_SIZE, iconMin.y + theme::ICON_BOX_SIZE),
             theme::rgb(highlighted ? theme::ACCENT : theme::BORDER), theme::ICON_BOX_RADIUS);
-        if (row.icon)
-        {
-            row.icon(drawList, iconMin, theme::ICON_BOX_SIZE,
-                theme::rgb(highlighted ? theme::BACKGROUND
-                                       : (row.enabled ? theme::TEXT : theme::TEXT_MUTED)));
-        }
+        icons::draw(drawList, row.icon, iconMin, theme::ICON_BOX_SIZE,
+            theme::rgb(highlighted ? theme::BACKGROUND
+                                   : (row.enabled ? theme::TEXT : theme::TEXT_MUTED)));
 
         // The lines are centred together in the row and stop before the arrow.
         const float textLeft  = iconMin.x + theme::ICON_BOX_SIZE + textGap;
