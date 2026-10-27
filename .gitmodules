@@ -10,3 +10,6 @@
 [submodule "external/picoc"]
 	path = external/picoc
 	url = https://github.com/FlagBrew/picoc
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui.git
