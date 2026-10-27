@@ -1,61 +1,15 @@
 #include "screens/EditableField.hpp"
 
 #include "app/App.hpp"
+#include "domain/FieldValues.hpp"
 #include "screens/PickerScreens.hpp"
 #include <algorithm>
-#include <charconv>
 #include <memory>
-#include <system_error>
 
 namespace pksm::switchui
 {
     namespace
     {
-        bool parseNumber(
-            const std::string& text, unsigned int maximum, unsigned int& value, std::string& error)
-        {
-            if (text.empty())
-            {
-                error = "Introduce un número.";
-                return false;
-            }
-            unsigned int parsed = 0;
-            const auto result   = std::from_chars(text.data(), text.data() + text.size(), parsed);
-            if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
-                parsed > maximum)
-            {
-                error = "El número está fuera del rango permitido.";
-                return false;
-            }
-            value = parsed;
-            return true;
-        }
-
-        unsigned int stepNumber(const EditableField& field, unsigned int value, int direction)
-        {
-            if (field.wrap)
-            {
-                if (direction > 0)
-                {
-                    return value >= field.max ? field.min : value + field.step;
-                }
-                return value <= field.min ? field.max : value - field.step;
-            }
-            if (direction > 0)
-            {
-                return value >= field.max || field.max - value < field.step ? field.max
-                                                                             : value + field.step;
-            }
-            return value > field.min && value - field.min >= field.step ? value - field.step
-                                                                        : field.min;
-        }
-
-        size_t indexOf(const std::vector<unsigned int>& values, unsigned int value)
-        {
-            const auto it = std::find(values.begin(), values.end(), value);
-            return it == values.end() ? 0 : static_cast<size_t>(it - values.begin());
-        }
-
         // Opens a picker over `values` that applies the chosen one through `field.set`.
         void pickValue(const EditableField& field, App& app, std::vector<unsigned int> values,
             std::vector<std::string> options, std::vector<size_t> sprites,
@@ -163,7 +117,8 @@ namespace pksm::switchui
             case EditableField::Kind::Number:
             {
                 const unsigned int current = field.get();
-                const unsigned int next    = stepNumber(field, current, direction);
+                const unsigned int next =
+                    stepNumber({field.min, field.max, field.step, field.wrap}, current, direction);
                 if (next == current)
                 {
                     return false;
@@ -179,11 +134,7 @@ namespace pksm::switchui
                     return false;
                 }
                 const unsigned int current = field.get();
-                const size_t index         = indexOf(values, current);
-                const size_t nextIndex     = direction > 0
-                                                 ? (index + 1) % values.size()
-                                                 : (index == 0 ? values.size() - 1 : index - 1);
-                const unsigned int next = values[nextIndex];
+                const unsigned int next    = nextChoice(values, current, direction);
                 if (next == current)
                 {
                     return false;
