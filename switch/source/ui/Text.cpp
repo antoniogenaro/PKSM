@@ -7,17 +7,38 @@ namespace pksm::switchui
 {
     namespace
     {
-        constexpr std::array<const char*, static_cast<size_t>(Text::Count)> SPANISH = {
-#define PKSM_SWITCH_TEXT_VALUE(key, spanish) spanish,
+        using Table = std::array<const char*, static_cast<size_t>(Text::Count)>;
+
+        constexpr Table ENGLISH = {
+#define PKSM_SWITCH_TEXT_VALUE(key, english, spanish) english,
             PKSM_SWITCH_TEXTS(PKSM_SWITCH_TEXT_VALUE)
 #undef PKSM_SWITCH_TEXT_VALUE
         };
+
+        constexpr Table SPANISH = {
+#define PKSM_SWITCH_TEXT_VALUE(key, english, spanish) spanish,
+            PKSM_SWITCH_TEXTS(PKSM_SWITCH_TEXT_VALUE)
+#undef PKSM_SWITCH_TEXT_VALUE
+        };
+
+        TextLanguage currentLanguage = TextLanguage::English;
+    }
+
+    void setTextLanguage(TextLanguage language)
+    {
+        currentLanguage = language;
+    }
+
+    TextLanguage textLanguage()
+    {
+        return currentLanguage;
     }
 
     const char* tr(Text key)
     {
-        const auto index = static_cast<size_t>(key);
-        return index < SPANISH.size() ? SPANISH[index] : "";
+        const Table& table = currentLanguage == TextLanguage::Spanish ? SPANISH : ENGLISH;
+        const auto index   = static_cast<size_t>(key);
+        return index < table.size() ? table[index] : "";
     }
 
     std::string tr(Text key, std::initializer_list<std::string_view> values)
