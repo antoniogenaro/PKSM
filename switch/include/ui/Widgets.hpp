@@ -63,6 +63,8 @@ namespace pksm::switchui::widgets
     bool drawDashedButton(const char* id, const char* label, const ImVec2& size, bool stacked = false,
         float rounding = 16.0f);
 
-    // A small dot of `dotColor` (0xRRGGBB) and `text` after it, as in "● Has saves".
-    void drawStatus(const char* text, unsigned dotColor);
+    // A small dot of `dotColor` (0xRRGGBB) and `text` after it, as in "● Has saves", with its
+    // bottom left corner at `bottomLeft`. It does not move the cursor.
+    void drawStatus(
+        ImDrawList* drawList, const ImVec2& bottomLeft, const char* text, unsigned dotColor);
 }

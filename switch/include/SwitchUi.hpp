@@ -43,6 +43,7 @@ namespace pksm::switchui
         std::string name;
         size_t mascotSpecies = 0;
         size_t saveCount = 0;
+        unsigned artColor = 0; // 0xRRGGBB, from the game's profile.
     };
 
     class SwitchUi

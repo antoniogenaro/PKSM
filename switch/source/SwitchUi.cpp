@@ -3,6 +3,7 @@
 #include "platform/SaveStorage.hpp"
 #include "ui/Text.hpp"
 #include "ui/Theme.hpp"
+#include "ui/Widgets.hpp"
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -571,54 +572,77 @@ namespace pksm::switchui
 
     bool SwitchUi::drawGameTile(const GameCard& game, float width, float height, bool selected)
     {
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, selected ? SELECTED_COLOR : CARD_COLOR);
-        ImGui::PushStyleColor(ImGuiCol_Border, selected ? ACCENT_COLOR : CARD_COLOR);
-        ImGui::BeginChild("game-tile", ImVec2(width, height), ImGuiChildFlags_Borders,
-            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-        const ImVec2 origin    = ImGui::GetCursorScreenPos();
-        const float spriteSize = ImGui::GetContentRegionAvail().x;
+        // Sizes of the canvas tile, which is about 125 pixels wide; the art scales with it.
+        constexpr float canvasWidth = 125.0f;
+        constexpr float infoPadding = 10.0f;
+        const float scale           = width / canvasWidth;
+
+        const ImVec2 min   = ImGui::GetCursorScreenPos();
+        const bool touched = ImGui::InvisibleButton("game-tile", ImVec2(width, height));
+        const ImVec2 max(min.x + width, min.y + height);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(min, max,
+            theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), theme::CARD_RADIUS);
+
+        // The square art: the game's colour, a faint ring in the corner and the mascot.
+        const ImVec2 artMax(max.x, min.y + width);
+        drawList->AddRectFilled(min, artMax, theme::rgb(game.artColor), theme::CARD_RADIUS,
+            ImDrawFlags_RoundCornersTop);
+        drawList->PushClipRect(min, artMax, true);
+        // The canvas ring is 108 pixels across with an 8 pixel line, 20 pixels past the right
+        // edge and 28 past the bottom, so its centre is 34 in from the right and 26 up.
+        drawList->AddCircle(ImVec2(artMax.x - 34.0f * scale, artMax.y - 26.0f * scale),
+            50.0f * scale, IM_COL32(255, 255, 255, 89), 48, 8.0f * scale);
+        drawList->PopClipRect();
+        const float inset = width * 0.1f;
         drawPokemonSprite(game.mascotSpecies,
-            {static_cast<int>(origin.x), static_cast<int>(origin.y),
-                static_cast<int>(spriteSize), static_cast<int>(spriteSize)});
-        ImGui::Dummy(ImVec2(spriteSize, spriteSize));
-        ImGui::TextWrapped("%s", game.name.c_str());
-        ImGui::SetCursorPosY(
-            height - ImGui::GetStyle().WindowPadding.y - ImGui::GetTextLineHeight());
-        ImGui::TextColored(game.saveCount > 0 ? HAS_SAVES_COLOR : NO_SAVES_COLOR, "%s",
-            saveCountText(game.saveCount).c_str());
-        ImGui::EndChild();
-        ImGui::PopStyleColor(2);
-        return ImGui::IsItemClicked();
+            {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
+                static_cast<int>(width - inset * 2.0f), static_cast<int>(width - inset * 2.0f)});
+
+        // The name under the art, wrapping onto a second line when it must.
+        const ImVec4 clip(min.x, artMax.y, max.x, max.y);
+        const ImVec2 namePosition(min.x + infoPadding, artMax.y + infoPadding);
+        const float wrapWidth = width - infoPadding * 2.0f;
+        const ImU32 nameColor = theme::rgb(theme::TEXT);
+        for (const float offset : {0.0f, 0.6f})
+        {
+            drawList->AddText(ImGui::GetFont(), theme::FONT_BODY,
+                ImVec2(namePosition.x + offset, namePosition.y), nameColor, game.name.c_str(),
+                nullptr, wrapWidth, &clip);
+        }
+
+        widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f),
+            saveCountText(game.saveCount).c_str(),
+            game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL);
+
+        if (selected)
+        {
+            widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
+        }
+        return touched;
     }
 
     void SwitchUi::drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
         size_t& selected, const std::string& error)
     {
         beginFrame();
-
-        ImGui::TextUnformatted(tr(Text::GameListTitle));
-        ImGui::SameLine();
-        ImGui::TextDisabled("/ %s", tr(Text::GameListPrompt));
-        ImGui::Separator();
-        ImGui::TextDisabled("%s", tr(Text::GameListControls));
-        ImGui::Spacing();
+        widgets::drawHeader(tr(Text::GameListPrompt));
         if (!error.empty())
         {
             ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
         }
 
-        // Cards fill rows of GameGrid::COLUMNS; each holds its games side by side.
-        constexpr float cardGap = 12.0f;
-        constexpr float tileGap = 8.0f;
-        const ImVec2 padding    = ImGui::GetStyle().WindowPadding;
-        const float columns     = static_cast<float>(GameGrid::COLUMNS);
+        // Cards fill rows of GameGrid::COLUMNS; each holds its games side by side, and a card
+        // with one game keeps it at the width of a pair's.
+        constexpr float cardGap    = 16.0f;
+        constexpr float cardHeight = 256.0f;
+        constexpr float tileGap    = 10.0f;
+        const float columns        = static_cast<float>(GameGrid::COLUMNS);
         const float cardWidth =
             (ImGui::GetContentRegionAvail().x - cardGap * (columns - 1.0f)) / columns;
-        const float tileWidth  = (cardWidth - padding.x * 2.0f - tileGap) / 2.0f;
-        const float lineHeight = ImGui::GetTextLineHeightWithSpacing();
-        const float tileHeight = tileWidth + lineHeight * 3.0f + padding.y * 2.0f;
-        const float cardHeight = tileHeight + lineHeight + padding.y * 2.0f;
-        const auto& cards      = grid.cards();
+        const float tileWidth = (cardWidth - theme::PANEL_PADDING * 2.0f - tileGap) / 2.0f;
+        const auto& cards     = grid.cards();
+        ImGui::Dummy(ImVec2(0.0f, theme::SECTION_GAP - ImGui::GetStyle().ItemSpacing.y * 2.0f));
         for (size_t c = 0; c < cards.size(); ++c)
         {
             if (c % GameGrid::COLUMNS != 0)
@@ -627,12 +651,12 @@ namespace pksm::switchui
             }
             else if (c != 0)
             {
-                ImGui::Dummy(ImVec2(0.0f, cardGap - ImGui::GetStyle().ItemSpacing.y));
+                ImGui::Dummy(ImVec2(0.0f, cardGap - ImGui::GetStyle().ItemSpacing.y * 2.0f));
             }
             ImGui::PushID(static_cast<int>(c));
-            ImGui::BeginChild("game-card", ImVec2(cardWidth, cardHeight), ImGuiChildFlags_Borders,
+            widgets::beginPanel("game-card", ImVec2(cardWidth, cardHeight), tr(cards[c].group),
                 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-            ImGui::TextDisabled("%s", tr(cards[c].group));
+            const float tileHeight = ImGui::GetContentRegionAvail().y;
             for (size_t slot = 0; slot < cards[c].games.size(); ++slot)
             {
                 const size_t game = cards[c].games[slot];
@@ -651,12 +675,11 @@ namespace pksm::switchui
                 }
                 ImGui::PopID();
             }
-            ImGui::EndChild();
+            widgets::endPanel();
             ImGui::PopID();
         }
 
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 28.0f);
-        ImGui::TextDisabled("%s", tr(Text::OriginalsUntouched));
+        widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)}});
         endFrame();
     }
 

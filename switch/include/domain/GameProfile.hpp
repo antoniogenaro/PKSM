@@ -23,6 +23,8 @@ namespace pksm::switchui
         uint32_t maxMoney;
         size_t trainerNameLength;
         size_t trainerNameLengthJapanese;
+        // The background of the game's art on its card, as 0xRRGGBB.
+        unsigned artColor;
 
         size_t trainerNameLengthFor(pksm::Language language) const
         {

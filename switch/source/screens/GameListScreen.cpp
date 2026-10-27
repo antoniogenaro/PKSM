@@ -31,7 +31,7 @@ namespace pksm::switchui
         for (size_t i = 0; i < profiles.size(); ++i)
         {
             games_.push_back(GameCard{tr(profiles[i].name), profiles[i].mascotSpecies,
-                library_.filesByGame[i].size()});
+                library_.filesByGame[i].size(), profiles[i].artColor});
         }
     }
 

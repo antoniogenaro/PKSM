@@ -16,7 +16,7 @@ namespace pksm::switchui
         : game_(game), files_(std::move(files))
     {
         const GameProfile& profile = gameProfiles()[game_];
-        card_   = GameCard{tr(profile.name), profile.mascotSpecies, files_.size()};
+        card_   = GameCard{tr(profile.name), profile.mascotSpecies, files_.size(), profile.artColor};
         group_  = tr(profile.group);
     }
 
