@@ -25,6 +25,7 @@
 
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
+#include "platform/SystemLanguage.hpp"
 #include "screens/SaveListScreen.hpp"
 #include "utils/i18n.hpp"
 #include <switch.h>
@@ -52,6 +53,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     RomfsCleanup romfsCleanup;
+    pksm::switchui::setTextLanguage(pksm::switchui::systemTextLanguage());
     pksm::switchui::SwitchUi ui;
     std::string uiError;
     if (!ui.initialize(uiError))

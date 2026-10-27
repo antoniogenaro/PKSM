@@ -32,6 +32,7 @@
 #include "ui/Text.hpp"
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace
@@ -57,7 +58,7 @@ namespace
         check(sword != nullptr, "Sword is supported");
         if (sword)
         {
-            check(std::string(tr(sword->name)) == "Pokemon Espada", "Sword name");
+            check(std::string(tr(sword->name)) == "Pokémon Sword", "Sword name");
             check(sword->mascotSpecies == 888, "Sword mascot is Zacian");
             check(sword->hasBattlePoints, "Sword has BP");
             check(sword->maxMoney == 9999999, "Sword money cap");
@@ -136,31 +137,60 @@ namespace
 
         error.clear();
         check(!parseNumber("101", 100, value, error), "rejects above maximum");
-        check(error == "El número está fuera del rango permitido.", "range error message");
+        check(error == "The number is out of range.", "range error message");
 
         error.clear();
         check(!parseNumber("", 100, value, error), "rejects empty input");
-        check(error == "Introduce un número.", "empty error message");
+        check(error == "Enter a number.", "empty error message");
 
         check(!parseNumber("12a", 100, value, error), "rejects trailing text");
         check(!parseNumber("-1", 100, value, error), "rejects negative numbers");
         check(!parseNumber("99999999999", 4294967295u, value, error), "rejects overflow");
     }
 
+    size_t placeholders(std::string_view text)
+    {
+        size_t count = 0;
+        for (size_t at = text.find("{}"); at != std::string_view::npos; at = text.find("{}", at + 2))
+        {
+            ++count;
+        }
+        return count;
+    }
+
     void testTexts()
     {
-        bool allPresent = true;
-        for (size_t key = 0; key < static_cast<size_t>(Text::Count); ++key)
+        check(textLanguage() == TextLanguage::English, "English is the default language");
+
+        bool allPresent       = true;
+        bool samePlaceholders = true;
+        for (size_t index = 0; index < static_cast<size_t>(Text::Count); ++index)
         {
-            allPresent = allPresent && tr(static_cast<Text>(key))[0] != '\0';
+            const Text key = static_cast<Text>(index);
+            setTextLanguage(TextLanguage::English);
+            const std::string english = tr(key);
+            setTextLanguage(TextLanguage::Spanish);
+            const std::string spanish = tr(key);
+            allPresent       = allPresent && !english.empty() && !spanish.empty();
+            samePlaceholders = samePlaceholders && placeholders(english) == placeholders(spanish);
         }
-        check(allPresent, "every text has a value");
-        check(std::string(tr(Text::Yes)) == "Sí", "plain text");
-        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "one value");
-        check(tr(Text::BoxSection, {"3", "32", "Caja 3"}) == "Caja 3/32  /  Caja 3",
+        check(allPresent, "every text has a value in every language");
+        check(samePlaceholders, "every language inserts the same values");
+
+        setTextLanguage(TextLanguage::English);
+        check(std::string(tr(Text::Yes)) == "Yes", "English text");
+        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exported to sdmc:/a", "one value");
+        check(tr(Text::BoxSection, {"3", "32", "Box 3"}) == "Box 3/32  /  Box 3",
             "values go in order");
         check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
-        check(tr(Text::Yes, {"ignored"}) == "Sí", "extra values are ignored");
+        check(tr(Text::Yes, {"ignored"}) == "Yes", "extra values are ignored");
+
+        setTextLanguage(TextLanguage::Spanish);
+        check(textLanguage() == TextLanguage::Spanish, "the language can change");
+        check(std::string(tr(Text::Yes)) == "Sí", "Spanish text");
+        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "Spanish value");
+        check(std::string(tr(Text::GameSword)) == "Pokemon Espada", "Spanish game name");
+        setTextLanguage(TextLanguage::English);
     }
 
     void testSaveCache()
@@ -207,13 +237,14 @@ namespace
 
 int main()
 {
+    // Before anything changes the language, so it checks the default.
+    testTexts();
     testGameProfiles();
     testClampedSteps();
     testWrappedSteps();
     testChoices();
     testParseNumber();
     testSaveCache();
-    testTexts();
 
     if (failures != 0)
     {
