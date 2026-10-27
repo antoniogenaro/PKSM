@@ -1,8 +1,8 @@
 #pragma once
 
 #include "SwitchUi.hpp"
+#include "screens/EditableField.hpp"
 #include "utils/coretypes.h"
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -16,56 +16,11 @@ namespace pksm
 // browser and the Pokémon editor screens.
 namespace pksm::switchui
 {
-    enum class FieldKind
-    {
-        Species,
-        Nickname,
-        Level,
-        Nature,
-        Ability,
-        Item,
-        Shiny,
-        Pokerus,
-        OriginalTrainer,
-        Gender,
-        Friendship,
-        Ball,
-        Form,
-        Egg,
-        FatefulEncounter,
-        MetLevel,
-        MetDay,
-        MetMonth,
-        MetYear,
-        MetLocation,
-        EggDay,
-        EggMonth,
-        EggYear,
-        EggLocation,
-        Enjoyment,
-        Fullness,
-        IV,
-        EV,
-        Move,
-        RelearnMove
-    };
-
-    struct EditorField
-    {
-        FieldKind kind;
-        // Which stat or move slot, for IV, EV, Move and RelearnMove.
-        size_t index;
-        Field display;
-    };
-
     std::string numericValue(unsigned int value);
 
-    std::vector<EditorField> makeFields(const pksm::PKX& pokemon);
-
-    // direction: -1 or 1 to step the value, 0 to open a picker or the keyboard.
-    // Returns whether the Pokémon changed; `error` explains a rejected input.
-    bool changeField(EditorField& field, pksm::PKX& pokemon, pksm::Sav& save, SwitchUi& ui,
-        int direction, std::string& error);
+    // Every editable field of `pokemon`, in display order. The fields keep references to
+    // `pokemon` and `save`.
+    std::vector<EditableField> pokemonFields(pksm::PKX& pokemon, pksm::Sav& save);
 
     // Writes the Pokémon back into its slot.
     void savePokemon(pksm::Sav& save, pksm::PKX& pokemon, bool party, u8 box, u8 slot);

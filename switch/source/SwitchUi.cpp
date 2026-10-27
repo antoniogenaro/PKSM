@@ -856,229 +856,103 @@ namespace pksm::switchui
         return true;
     }
 
-    bool SwitchUi::selectOption(const std::string& title,
-        const std::vector<std::string>& options, size_t current, size_t& selected,
-        const std::vector<size_t>& spriteIndices)
+    void SwitchUi::drawOptionPicker(const std::string& title,
+        const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
+        size_t first, size_t visibleRows, size_t& index)
     {
-        if (options.empty())
+        beginFrame();
+        ImGui::TextUnformatted(title.c_str());
+        ImGui::Separator();
+        ImGui::TextDisabled("Selecciona una opción");
+        ImGui::BeginChild("options", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
+        const size_t last = std::min(options.size(), first + visibleRows);
+        for (size_t i = first; i < last; ++i)
         {
-            return false;
+            ImGui::PushID(static_cast<int>(i));
+            const bool selected = i == index;
+            if (selected)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
+            }
+            if (i < spriteIndices.size())
+            {
+                const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
+                drawBallSprite(spriteIndices[i], {static_cast<int>(itemPosition.x + 8.0f),
+                                                     static_cast<int>(itemPosition.y + 4.0f), 32, 32});
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 48.0f);
+            }
+            if (ImGui::Selectable(options[i].c_str(), selected,
+                    ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 40.0f)))
+            {
+                index = i;
+            }
+            if (selected)
+            {
+                ImGui::PopStyleColor(2);
+            }
+            ImGui::PopID();
         }
+        ImGui::EndChild();
+        ImGui::TextDisabled("%zu / %zu", index + 1, options.size());
+        ImGui::SameLine();
+        ImGui::TextDisabled("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
+        endFrame();
+    }
 
-        constexpr size_t visibleRows = 9;
-        const size_t lastStart = options.size() > visibleRows ? options.size() - visibleRows : 0;
-        size_t index = std::min(current, options.size() - 1);
-        while (appletMainLoop())
+    void SwitchUi::drawNaturePicker(
+        const std::vector<std::string>& natures, size_t& row, size_t& column)
+    {
+        // Rows raise a stat and columns lower one; the diagonal is neutral.
+        static constexpr const char* columnLabels[] = {
+            "Neutra", "-Ataque", "-Defensa", "-Velocidad", "-At. Esp.", "-Def. Esp."};
+        static constexpr const char* rowLabels[] = {
+            "+Ataque", "+Defensa", "+Velocidad", "+At. Esp.", "+Def. Esp."};
+
+        beginFrame();
+        ImGui::TextUnformatted("Naturaleza");
+        ImGui::Separator();
+        ImGui::TextDisabled("Selecciona una naturaleza según sus estadísticas");
+        ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
+        constexpr float rowLabelWidth = 140.0f;
+        constexpr float cellGap       = 4.0f;
+        const float cellWidth =
+            (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
+        ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", columnLabels[0]);
+        for (size_t x = 0; x < 5; ++x)
         {
-            const Action action = pollAction();
-            if (action == Action::Confirm)
+            ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
+            ImGui::TextWrapped("%s", columnLabels[x + 1]);
+        }
+        ImGui::Separator();
+        for (size_t y = 0; y < 5; ++y)
+        {
+            ImGui::TextUnformatted(rowLabels[y]);
+            for (size_t x = 0; x < 5; ++x)
             {
-                selected = index;
-                return true;
-            }
-            if (action == Action::Back || action == Action::Quit)
-            {
-                return false;
-            }
-            if (action == Action::Up)
-            {
-                if (index > 0)
+                const size_t natureIndex = y * 5 + x;
+                const bool isSelected    = row == y && column == x;
+                ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
+                ImGui::PushID(static_cast<int>(natureIndex));
+                if (isSelected)
                 {
-                    --index;
+                    ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOR);
+                    ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
                 }
-            }
-            else if (action == Action::Down)
-            {
-                if (index + 1 < options.size())
+                if (ImGui::Button(natures[natureIndex].c_str(), ImVec2(cellWidth, 44.0f)))
                 {
-                    ++index;
+                    row    = y;
+                    column = x;
                 }
-            }
-            else if (action == Action::Left)
-            {
-                index = index > 10 ? index - 10 : 0;
-            }
-            else if (action == Action::Right)
-            {
-                index = std::min(options.size() - 1, index + 10);
-            }
-            else if (action == Action::PreviousPage)
-            {
-                index = index > 100 ? index - 100 : 0;
-            }
-            else if (action == Action::NextPage)
-            {
-                index = std::min(options.size() - 1, index + 100);
-            }
-
-            const size_t first = std::min(
-                index > visibleRows / 2 ? index - visibleRows / 2 : 0, lastStart);
-            beginFrame();
-            ImGui::TextUnformatted(title.c_str());
-            ImGui::Separator();
-            ImGui::TextDisabled("Selecciona una opción");
-            ImGui::BeginChild("options", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
-            const size_t last = std::min(options.size(), first + visibleRows);
-            for (size_t i = first; i < last; ++i)
-            {
-                ImGui::PushID(static_cast<int>(i));
-                if (i == index)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Header, SELECTED_COLOR);
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECTED_COLOR);
-                }
-                if (i < spriteIndices.size())
-                {
-                    const ImVec2 itemPosition = ImGui::GetCursorScreenPos();
-                    drawBallSprite(spriteIndices[i],
-                        {static_cast<int>(itemPosition.x + 8.0f),
-                            static_cast<int>(itemPosition.y + 4.0f), 32, 32});
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 48.0f);
-                }
-                if (ImGui::Selectable(options[i].c_str(), i == index,
-                        ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.0f, 40.0f)))
-                {
-                    index = i;
-                }
-                if (i == index)
+                if (isSelected)
                 {
                     ImGui::PopStyleColor(2);
                 }
                 ImGui::PopID();
             }
-            ImGui::EndChild();
-            ImGui::TextDisabled("%zu / %zu", index + 1, options.size());
-            ImGui::SameLine();
-            ImGui::TextDisabled("Flechas: mover    L/R: avanzar 100 opciones    A: seleccionar    B: volver");
-            endFrame();
-            SDL_Delay(16);
         }
-        return false;
-    }
-
-    bool SwitchUi::selectNature(
-        const std::vector<std::string>& natures, size_t current, size_t& selected)
-    {
-        static constexpr size_t natureGrid[5][5] = {
-            {0, 1, 2, 3, 4},
-            {5, 6, 7, 8, 9},
-            {10, 11, 12, 13, 14},
-            {15, 16, 17, 18, 19},
-            {20, 21, 22, 23, 24},
-        };
-        static constexpr const char* columnLabels[] = {
-            "Neutra", "-Ataque", "-Defensa", "-Velocidad", "-At. Esp.", "-Def. Esp."};
-        static constexpr const char* rowLabels[] = {
-            "+Ataque", "+Defensa", "+Velocidad", "+At. Esp.", "+Def. Esp."};
-        if (natures.size() != 25)
-        {
-            return false;
-        }
-
-        size_t row = 0;
-        size_t column = 0;
-        bool found = false;
-        for (size_t y = 0; y < 5 && !found; ++y)
-        {
-            for (size_t x = 0; x < 5; ++x)
-            {
-                if (natureGrid[y][x] == current)
-                {
-                    row = y;
-                    column = x;
-                    found = true;
-                    break;
-                }
-            }
-        }
-        if (!found)
-        {
-            row = 0;
-            column = 0;
-        }
-
-        while (appletMainLoop())
-        {
-            const Action action = pollAction();
-            if (action == Action::Confirm)
-            {
-                selected = natureGrid[row][column];
-                return true;
-            }
-            if (action == Action::Back || action == Action::Quit)
-            {
-                return false;
-            }
-            if (action == Action::Up && row > 0)
-            {
-                --row;
-            }
-            else if (action == Action::Down && row < 4)
-            {
-                ++row;
-            }
-            else if (action == Action::Left && column > 0)
-            {
-                --column;
-            }
-            else if (action == Action::Right && column < 4)
-            {
-                ++column;
-            }
-
-            beginFrame();
-            ImGui::TextUnformatted("Naturaleza");
-            ImGui::Separator();
-            ImGui::TextDisabled("Selecciona una naturaleza según sus estadísticas");
-            ImGui::BeginChild("nature-grid", ImVec2(0.0f, -58.0f), ImGuiChildFlags_Borders);
-            constexpr float rowLabelWidth = 140.0f;
-            constexpr float cellGap = 4.0f;
-            const float cellWidth =
-                (ImGui::GetContentRegionAvail().x - rowLabelWidth - cellGap * 5.0f) / 5.0f;
-            ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.36f, 1.0f), "%s", columnLabels[0]);
-            for (size_t x = 0; x < 5; ++x)
-            {
-                ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-                ImGui::TextWrapped("%s", columnLabels[x + 1]);
-            }
-            ImGui::Separator();
-            for (size_t y = 0; y < 5; ++y)
-            {
-                ImGui::TextUnformatted(rowLabels[y]);
-                for (size_t x = 0; x < 5; ++x)
-                {
-                    const size_t natureIndex = natureGrid[y][x];
-                    const bool isSelected = row == y && column == x;
-                    ImGui::SameLine(rowLabelWidth + cellGap + static_cast<float>(x) * (cellWidth + cellGap));
-                    ImGui::PushID(static_cast<int>(natureIndex));
-                    if (isSelected)
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOR);
-                        ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
-                    }
-                    if (ImGui::Button(natures[natureIndex].c_str(), ImVec2(cellWidth, 44.0f)))
-                    {
-                        row = y;
-                        column = x;
-                    }
-                    if (isSelected)
-                    {
-                        ImGui::PopStyleColor(2);
-                    }
-                    ImGui::PopID();
-                }
-            }
-            ImGui::EndChild();
-            ImGui::TextDisabled("Flechas: mover    A: seleccionar    B: volver");
-            endFrame();
-            SDL_Delay(16);
-        }
-        return false;
-    }
-
-    bool SwitchUi::editTrainerName(
-        const std::string& initial, std::string& result, size_t maxLength)
-    {
-        return editText("Nombre del entrenador", initial, result, maxLength);
+        ImGui::EndChild();
+        ImGui::TextDisabled("Flechas: mover    A: seleccionar    B: volver");
+        endFrame();
     }
 }

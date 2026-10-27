@@ -27,7 +27,13 @@ namespace pksm::switchui
 
     void PokemonEditorScreen::update(App& app, Action action)
     {
-        std::vector<EditorField> fields = makeFields(*pokemon_);
+        const std::vector<EditableField> fields = pokemonFields(*pokemon_, session_.save());
+        const auto onChanged = [this]
+        {
+            savePokemon(session_.save(), *pokemon_, party_, box_, slot_);
+            session_.markDirty();
+            message_.clear();
+        };
         switch (action)
         {
             case Action::Quit:
@@ -60,18 +66,15 @@ namespace pksm::switchui
                 break;
             case Action::Left:
             case Action::Right:
-            case Action::Confirm:
-            {
-                const int direction = action == Action::Left ? -1 : action == Action::Right ? 1 : 0;
-                if (changeField(fields[selected_], *pokemon_, session_.save(), app.ui(), direction,
-                        message_))
+                if (stepField(fields[selected_], action == Action::Right ? 1 : -1))
                 {
-                    savePokemon(session_.save(), *pokemon_, party_, box_, slot_);
-                    session_.markDirty();
-                    message_.clear();
+                    onChanged();
                 }
                 break;
-            }
+            case Action::Confirm:
+                // A picker calls onChanged later, while this screen is still below it.
+                openField(fields[selected_], app, message_, onChanged);
+                break;
             default:
                 break;
         }
@@ -79,18 +82,12 @@ namespace pksm::switchui
 
     void PokemonEditorScreen::draw(SwitchUi& ui)
     {
-        const std::vector<EditorField> fields = makeFields(*pokemon_);
-        std::vector<Field> displayFields;
-        displayFields.reserve(fields.size());
-        for (const auto& field : fields)
-        {
-            displayFields.push_back(field.display);
-        }
+        const std::vector<Field> fields = displayFields(pokemonFields(*pokemon_, session_.save()));
         const std::string title =
             pokemonSummary(*pokemon_) + "  /  " +
             std::string(party_ ? "Equipo " : "Caja " + numericValue(box_ + 1)) + "  /  " +
             numericValue(slot_ + 1);
         ui.drawPokemonEditor(game_, path_, title, static_cast<size_t>(pokemon_->species()),
-            displayFields, selected_, session_.dirty(), message_);
+            fields, selected_, session_.dirty(), message_);
     }
 }

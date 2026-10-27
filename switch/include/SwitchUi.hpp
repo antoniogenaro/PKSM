@@ -58,15 +58,16 @@ namespace pksm::switchui
             size_t selected, bool dirty, const std::string& error);
         void drawTrainer(const std::string& game, const std::string& path,
             const std::vector<Field>& fields, size_t selected, bool dirty, const std::string& error);
+        // Pickers. A touch on an entry moves the selection, so it is passed by reference.
+        void drawOptionPicker(const std::string& title, const std::vector<std::string>& options,
+            const std::vector<size_t>& spriteIndices, size_t first, size_t visibleRows,
+            size_t& index);
+        // `natures` holds the 25 natures in their usual order: row * 5 + column.
+        void drawNaturePicker(const std::vector<std::string>& natures, size_t& row, size_t& column);
+
+        // Shows the system keyboard and waits for it. Returns false when cancelled or empty.
         bool editText(const std::string& title, const std::string& initial, std::string& result,
             size_t maxLength);
-        bool selectOption(const std::string& title, const std::vector<std::string>& options,
-            size_t current, size_t& selected,
-            const std::vector<size_t>& spriteIndices = {});
-        bool selectNature(const std::vector<std::string>& natures, size_t current,
-            size_t& selected);
-        bool editTrainerName(
-            const std::string& initial, std::string& result, size_t maxLength = 12);
 
     private:
         struct PokemonSprite

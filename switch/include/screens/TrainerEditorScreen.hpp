@@ -1,8 +1,10 @@
 #pragma once
 
 #include "app/Screen.hpp"
+#include "screens/EditableField.hpp"
 #include <cstddef>
 #include <string>
+#include <vector>
 
 namespace pksm::switchui
 {
@@ -18,22 +20,7 @@ namespace pksm::switchui
         void draw(SwitchUi& ui) override;
 
     private:
-        enum class Row
-        {
-            Name,
-            TID,
-            SID,
-            Money,
-            BP,
-            Hours,
-            Minutes,
-            Seconds
-        };
-
-        Row rowAt(size_t index) const;
-        size_t rowCount() const;
-        // Moves the value on the selected row one step. Returns whether it changed.
-        bool step(Row row, bool increase);
+        std::vector<EditableField> fields();
 
         Session& session_;
         std::string game_;
