@@ -31,6 +31,7 @@
     "SheetBadCoordinates": "La tabla de sprites de {} contiene coordenadas inválidas.",
     "TextureCreateFailed": "No se pudo crear la textura de {}: {}",
     "TextureLoadFailed": "No se pudo cargar la textura de {}: {}",
+    "FontLoadFailed": "No se pudo cargar la fuente {}.",
     "SdAccessFailed": "No se pudo acceder a la SD: {}",
     "SaveDirectoryFailed": "No se pudo preparar la carpeta de respaldos: {}",
     "DirectoryTooDeep": "La carpeta de respaldos supera la profundidad maxima de 32 niveles.",

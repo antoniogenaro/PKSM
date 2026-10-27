@@ -44,6 +44,7 @@
     X(SheetBadCoordinates)                                                                         \
     X(TextureCreateFailed)                                                                         \
     X(TextureLoadFailed)                                                                           \
+    X(FontLoadFailed)                                                                              \
     /* SD card and files */                                                                        \
     X(SdAccessFailed)                                                                              \
     X(SaveDirectoryFailed)                                                                         \

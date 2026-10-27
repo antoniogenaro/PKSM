@@ -2,6 +2,7 @@
 #include "domain/GameGrid.hpp"
 #include "platform/SaveStorage.hpp"
 #include "ui/Text.hpp"
+#include "ui/Theme.hpp"
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -22,12 +23,12 @@ namespace pksm::switchui
     {
         constexpr int SCREEN_WIDTH = 1280;
         constexpr int SCREEN_HEIGHT = 720;
-        constexpr SDL_Color BACKGROUND{20, 27, 43, 255};
-        constexpr ImVec4 SELECTED_COLOR{0.16f, 0.26f, 0.38f, 1.0f};
-        constexpr ImVec4 ACCENT_COLOR{0.28f, 0.70f, 0.96f, 1.0f};
-        constexpr ImVec4 ERROR_COLOR{1.0f, 0.45f, 0.35f, 1.0f};
-        constexpr ImVec4 HAS_SAVES_COLOR{0.29f, 0.87f, 0.50f, 1.0f};
-        constexpr ImVec4 NO_SAVES_COLOR{0.49f, 0.52f, 0.60f, 1.0f};
+        constexpr ImVec4 CARD_COLOR      = theme::vec(theme::CARD);
+        constexpr ImVec4 SELECTED_COLOR  = theme::vec(theme::CARD_SELECTED);
+        constexpr ImVec4 ACCENT_COLOR    = theme::vec(theme::ACCENT);
+        constexpr ImVec4 ERROR_COLOR     = theme::vec(theme::ERROR_TEXT);
+        constexpr ImVec4 HAS_SAVES_COLOR = theme::vec(theme::POSITIVE);
+        constexpr ImVec4 NO_SAVES_COLOR  = theme::vec(theme::NEUTRAL);
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
         constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
         constexpr size_t BALL_SPRITE_BASE = 144;
@@ -234,7 +235,13 @@ namespace pksm::switchui
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGui::StyleColorsDark();
+        theme::applyStyle(ImGui::GetStyle());
+        if (!theme::loadFont())
+        {
+            error = tr(Text::FontLoadFailed, {theme::FONT_PATH_ROMFS});
+            ImGui::DestroyContext();
+            return false;
+        }
         if (!ImGui_ImplSDL2_InitForSDLRenderer(window_, renderer_))
         {
             error = tr(Text::ImGuiPlatformFailed);
@@ -459,17 +466,26 @@ namespace pksm::switchui
 
         ImGuiIO& io    = ImGui::GetIO();
         io.DisplaySize = ImVec2(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT));
-        ImGui::SetNextWindowPos(ImVec2(28.0f, 28.0f), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(1224.0f, 664.0f), ImGuiCond_Always);
+        // One full-screen window with the canvas margins; SDL clears the background. Screens
+        // place their last line against the bottom margin, so it never scrolls.
+        ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+            ImVec2(theme::SCREEN_PADDING_X, theme::SCREEN_PADDING_Y));
         ImGui::Begin("PKSM Switch", nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::PopStyleVar();
     }
 
     void SwitchUi::endFrame()
     {
         ImGui::End();
         ImGui::Render();
-        SDL_SetRenderDrawColor(renderer_, BACKGROUND.r, BACKGROUND.g, BACKGROUND.b, 255);
+        SDL_SetRenderDrawColor(renderer_, (theme::BACKGROUND >> 16) & 0xFF,
+            (theme::BACKGROUND >> 8) & 0xFF, theme::BACKGROUND & 0xFF, 255);
         SDL_RenderClear(renderer_);
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer_);
         SDL_RenderPresent(renderer_);
@@ -555,11 +571,8 @@ namespace pksm::switchui
 
     bool SwitchUi::drawGameTile(const GameCard& game, float width, float height, bool selected)
     {
-        if (selected)
-        {
-            ImGui::PushStyleColor(ImGuiCol_ChildBg, SELECTED_COLOR);
-            ImGui::PushStyleColor(ImGuiCol_Border, ACCENT_COLOR);
-        }
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, selected ? SELECTED_COLOR : CARD_COLOR);
+        ImGui::PushStyleColor(ImGuiCol_Border, selected ? ACCENT_COLOR : CARD_COLOR);
         ImGui::BeginChild("game-tile", ImVec2(width, height), ImGuiChildFlags_Borders,
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
         const ImVec2 origin    = ImGui::GetCursorScreenPos();
@@ -574,10 +587,7 @@ namespace pksm::switchui
         ImGui::TextColored(game.saveCount > 0 ? HAS_SAVES_COLOR : NO_SAVES_COLOR, "%s",
             saveCountText(game.saveCount).c_str());
         ImGui::EndChild();
-        if (selected)
-        {
-            ImGui::PopStyleColor(2);
-        }
+        ImGui::PopStyleColor(2);
         return ImGui::IsItemClicked();
     }
 
