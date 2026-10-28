@@ -1,0 +1,2 @@
+# Keep text files in LF in the repository and in the working tree, on every OS.
+* text=auto eol=lf
