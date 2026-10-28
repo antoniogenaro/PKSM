@@ -114,10 +114,6 @@ namespace pksm::switchui
             const std::string label =
                 tr(relearn ? Text::FieldRelearnMove : Text::FieldMove, {numericValue(slot + 1)});
             const pksm::Move move = relearn ? pokemon.relearnMove(slot) : pokemon.move(slot);
-            if (relearn && pokemon.generation() < pksm::Generation::SIX)
-            {
-                return readOnlyField(display(label, tr(Text::RelearnUnavailable)));
-            }
             return choiceField(
                 display(label, withId(move.localize(language), static_cast<unsigned int>(move))),
                 // Titled with the slot, such as "Move 1", as on the canvas.
@@ -189,6 +185,7 @@ namespace pksm::switchui
             [&pokemon] { return static_cast<unsigned int>(pokemon.level()); },
             [&pokemon](unsigned int value) { pokemon.level(static_cast<u8>(value)); }));
 
+        // Fields that cannot change for this Pokémon are left out rather than shown locked.
         if (generation >= pksm::Generation::THREE)
         {
             EditableField nature = choiceField(display(tr(Text::FieldNature), pokemon.nature().localize(language)),
@@ -199,10 +196,6 @@ namespace pksm::switchui
                 [&pokemon](unsigned int id) { pokemon.nature(pksm::Nature{static_cast<u8>(id)}); });
             nature.picker = EditableField::ChoicePicker::NatureGrid;
             fields.push_back(std::move(nature));
-        }
-        else
-        {
-            fields.push_back(readOnlyField(display(tr(Text::FieldNature), tr(Text::NotAvailable))));
         }
 
         const u8 abilitySlot = pokemon.abilityNumber() >> 1;
@@ -329,18 +322,14 @@ namespace pksm::switchui
             display(tr(Text::DetailOriginGame), i18n::game(language, pokemon.version()))));
 
         // The second page: form, egg, met and egg data, and the relearn moves.
-        const Field formDisplay = display(tr(Text::FieldForm),
-            withId(i18n::form(language, pokemon.version(), pokemon.species(),
-                       static_cast<u8>(pokemon.alternativeForm())),
-                pokemon.alternativeForm()));
         const unsigned int formCount =
             pokemon.species() == pksm::Species::None ? 0 : save.formCount(pokemon.species());
-        if (formCount < 2)
+        if (formCount >= 2)
         {
-            more.push_back(readOnlyField(formDisplay));
-        }
-        else
-        {
+            const Field formDisplay = display(tr(Text::FieldForm),
+                withId(i18n::form(language, pokemon.version(), pokemon.species(),
+                           static_cast<u8>(pokemon.alternativeForm())),
+                    pokemon.alternativeForm()));
             more.push_back(choiceField(formDisplay, tr(Text::FieldForm),
                 [formCount] { return range(0, formCount - 1); },
                 [&pokemon, &save](unsigned int form)
@@ -400,9 +389,13 @@ namespace pksm::switchui
                 [&pk8] { return static_cast<unsigned int>(pk8.fullness()); },
                 [&pk8](unsigned int value) { pk8.fullness(static_cast<u8>(value)); }));
         }
-        for (size_t i = 0; i < 4; ++i)
+        // Relearn moves exist from generation VI on.
+        if (generation >= pksm::Generation::SIX)
         {
-            more.push_back(moveField(pokemon, save, i, true));
+            for (size_t i = 0; i < 4; ++i)
+            {
+                more.push_back(moveField(pokemon, save, i, true));
+            }
         }
 
         for (size_t i = 0; i < stats.size(); ++i)
