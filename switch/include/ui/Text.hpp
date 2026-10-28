@@ -232,7 +232,6 @@
     X(BagPouchTreasures)                                                                           \
     X(BagPouchIngredients)                                                                         \
     X(BagPouchOther)                                                                               \
-    X(BagPouchCount)                                                                               \
     X(BagItemCount)                                                                                \
     X(BagAddItem)                                                                                  \
     X(BagRemoveItem)                                                                               \
@@ -241,6 +240,12 @@
     X(HintPouch)                                                                                   \
     X(HintQuantity)                                                                                \
     X(HintTypeQuantity)                                                                            \
+    X(BagPouchesCaption)                                                                           \
+    X(BagItemsOne)                                                                                 \
+    X(BagItemsMany)                                                                                \
+    X(BagCarrying)                                                                                 \
+    X(HintChangeItem)                                                                              \
+    X(HintRemove)                                                                                  \
     /* Pickers and keyboard */                                                                     \
     X(NatureNeutral)                                                                               \
     X(NatureNeutralShort)                                                                          \

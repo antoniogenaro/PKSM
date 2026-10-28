@@ -5,6 +5,7 @@
 #include "app/Session.hpp"
 #include "domain/BagValues.hpp"
 #include "domain/FieldValues.hpp"
+#include "domain/GameProfile.hpp"
 #include "sav/Item.hpp"
 #include "sav/Sav3.hpp"
 #include "screens/PickerScreens.hpp"
@@ -101,6 +102,46 @@ namespace pksm::switchui
                     return Text::BagPouchOther;
             }
         }
+
+        icons::Icon pouchIcon(pksm::Sav::Pouch pouch)
+        {
+            switch (pouch)
+            {
+                case pksm::Sav::Pouch::KeyItem:
+                    return icons::Icon::PouchKey;
+                case pksm::Sav::Pouch::TM:
+                    return icons::Icon::PouchTms;
+                case pksm::Sav::Pouch::Berry:
+                    return icons::Icon::PouchBerries;
+                case pksm::Sav::Pouch::Ball:
+                    return icons::Icon::PouchBalls;
+                case pksm::Sav::Pouch::PCItem:
+                    return icons::Icon::PouchPc;
+                case pksm::Sav::Pouch::Medicine:
+                    return icons::Icon::PouchMedicine;
+                case pksm::Sav::Pouch::Battle:
+                    return icons::Icon::PouchBattle;
+                case pksm::Sav::Pouch::Treasure:
+                    return icons::Icon::PouchTreasures;
+                case pksm::Sav::Pouch::Ingredient:
+                    return icons::Icon::PouchIngredients;
+                default:
+                    return icons::Icon::Bag;
+            }
+        }
+
+        // Captions are written in capitals; game names are plain ASCII.
+        std::string upper(std::string text)
+        {
+            for (char& c : text)
+            {
+                if (c >= 'a' && c <= 'z')
+                {
+                    c = static_cast<char>(c - 'a' + 'A');
+                }
+            }
+            return text;
+        }
     }
 
     BagScreen::BagScreen(Session& session, std::string path)
@@ -120,7 +161,7 @@ namespace pksm::switchui
 
     size_t BagScreen::shownSlots() const
     {
-        return std::min(slots_.size() + 1, capacity());
+        return carried_ ? slots_.size() : std::min(slots_.size() + 1, capacity());
     }
 
     void BagScreen::refresh()
@@ -204,8 +245,49 @@ namespace pksm::switchui
     void BagScreen::changed()
     {
         session_.markDirty();
-        message_.clear();
         refresh();
+        clearMessage();
+    }
+
+    void BagScreen::clearMessage()
+    {
+        if (carried_ && *carried_ < slots_.size())
+        {
+            message_ = tr(Text::BagCarrying, {itemName(session_.save(), slots_[*carried_].id)});
+        }
+        else
+        {
+            message_.clear();
+        }
+    }
+
+    void BagScreen::pickUpOrDrop()
+    {
+        const size_t slot = selected_[pouch_];
+        if (slot >= slots_.size())
+        {
+            return;
+        }
+        if (!carried_)
+        {
+            carried_ = slot;
+            clearMessage();
+            return;
+        }
+        const size_t from = *carried_;
+        carried_.reset();
+        if (from == slot || from >= slots_.size())
+        {
+            clearMessage();
+            return;
+        }
+        // Swap the two slots as they are in the save, so nothing else of either item changes.
+        pksm::Sav& save   = session_.save();
+        const auto first  = save.item(pouch(), static_cast<u16>(from));
+        const auto second = save.item(pouch(), static_cast<u16>(slot));
+        save.item(*second, pouch(), static_cast<u16>(from));
+        save.item(*first, pouch(), static_cast<u16>(slot));
+        changed();
     }
 
     void BagScreen::pickItem(App& app)
@@ -353,53 +435,68 @@ namespace pksm::switchui
         switch (action)
         {
             case Action::Quit:
-                if (session_.dirty())
-                {
-                    message_ = tr(Text::UnsavedBeforeQuit);
-                }
-                else
+                if (!session_.dirty())
                 {
                     app.quit();
+                    return;
                 }
+                message_ = tr(Text::UnsavedBeforeQuit);
                 break;
             case Action::Back:
-                if (session_.dirty())
+                if (carried_)
                 {
-                    message_ = tr(Text::UnsavedBeforeBack);
+                    // Nothing was written yet, so cancelling only puts it down.
+                    carried_.reset();
+                    clearMessage();
+                    break;
                 }
-                else
-                {
-                    app.pop();
-                }
-                break;
-            case Action::Discard:
-                app.closeSession();
-                break;
-            case Action::Save:
-                if (session_.dirty())
-                {
-                    session_.exportWithMessage(message_);
-                }
+                // The game menu below keeps the save open and warns about unexported changes.
+                app.pop();
                 break;
             case Action::Up:
             case Action::Down:
             case Action::Left:
             case Action::Right:
                 move(action);
-                break;
-            case Action::PreviousTab:
-            case Action::NextTab:
-                changePouch(action == Action::NextTab ? 1 : -1);
+                clearMessage();
                 break;
             case Action::PreviousPage:
             case Action::NextPage:
-                stepCount(action == Action::NextPage ? 1 : -1);
+                // The carried item stays in its pouch.
+                if (!carried_)
+                {
+                    changePouch(action == Action::NextPage ? 1 : -1);
+                }
+                break;
+            case Action::PreviousTab:
+            case Action::NextTab:
+                if (!carried_)
+                {
+                    stepCount(action == Action::NextTab ? 1 : -1);
+                }
                 break;
             case Action::Confirm:
-                pickItem(app);
+                if (!carried_)
+                {
+                    pickItem(app);
+                }
                 break;
             case Action::Alternate:
-                typeCount(app);
+                if (!carried_)
+                {
+                    typeCount(app);
+                }
+                break;
+            case Action::Discard:
+                // X takes the item out here; the game menu discards the save's changes.
+                if (!carried_)
+                {
+                    removeItem(selected_[pouch_]);
+                }
+                break;
+            case Action::Save:
+                // Y moves items here; the game menu exports.
+                pickUpOrDrop();
                 break;
             default:
                 break;
@@ -414,35 +511,39 @@ namespace pksm::switchui
         }
         const pksm::Sav& save = session_.save();
         BagView view;
-        view.group = summarizeSave(session_, path_).group;
+        view.caption = tr(Text::BagPouchesCaption, {upper(tr(session_.profile().name))});
         for (size_t i = 0; i < pouches_.size(); ++i)
         {
-            view.pouches.push_back({tr(pouchName(pouches_[i].first)),
-                tr(Text::BagPouchCount,
-                    {std::to_string(filled_[i]), std::to_string(pouches_[i].second)})});
+            view.pouches.push_back({tr(pouchName(pouches_[i].first)), std::to_string(filled_[i]),
+                pouchIcon(pouches_[i].first)});
         }
-        view.pouch = pouch_;
+        view.pouch     = pouch_;
+        view.itemCount = slots_.size() == 1
+                             ? std::string(tr(Text::BagItemsOne))
+                             : tr(Text::BagItemsMany, {std::to_string(slots_.size())});
 
         const bool counted = maxCount() > 1;
         for (const Slot& slot : slots_)
         {
-            view.items.push_back({itemName(save, slot.id),
-                counted ? tr(Text::BagItemCount, {std::to_string(slot.count)}) : std::string{}});
+            view.items.push_back(
+                {itemName(save, slot.id), counted ? std::to_string(slot.count) : std::string{}});
         }
-        if (slots_.size() < capacity())
+        if (!carried_ && slots_.size() < capacity())
         {
             view.items.push_back({});
         }
 
-        const size_t rows   = (view.items.size() + COLUMNS - 1) / COLUMNS;
-        firstRow_[pouch_]   = firstShownRow(firstRow_[pouch_], selected_[pouch_] / COLUMNS, ROWS, rows);
-        view.firstRow       = firstRow_[pouch_];
-        view.selected       = selected_[pouch_];
-        view.message        = sessionMessage(session_, message_);
+        const size_t rows = (view.items.size() + COLUMNS - 1) / COLUMNS;
+        firstRow_[pouch_] =
+            firstShownRow(firstRow_[pouch_], selected_[pouch_] / COLUMNS, ROWS, rows);
+        view.firstRow = firstRow_[pouch_];
+        view.selected = selected_[pouch_];
+        view.carried  = carried_ ? *carried_ : BagView::NONE;
+        view.message  = sessionMessage(session_, message_);
         ui.drawBag(view);
 
         // A touch on a pouch or an item.
-        if (view.pouch != pouch_ && view.pouch < pouches_.size())
+        if (view.pouch != pouch_ && view.pouch < pouches_.size() && !carried_)
         {
             pouch_ = view.pouch;
             message_.clear();
