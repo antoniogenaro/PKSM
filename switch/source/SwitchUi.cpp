@@ -752,6 +752,10 @@ namespace pksm::switchui
         {
             return Action::NextTab;
         }
+        if (buttons & HidNpadButton_Minus)
+        {
+            return Action::Alternate;
+        }
         if (buttons & HidNpadButton_Plus)
         {
             return Action::Quit;
@@ -1015,7 +1019,7 @@ namespace pksm::switchui
         static constexpr MenuOption options[] = {
             {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, icons::Icon::Boxes, true},
             {Text::MenuStorage, Text::MenuStorageHint, icons::Icon::Bank, false},
-            {Text::MenuBag, Text::MenuBagHint, icons::Icon::Bag, false},
+            {Text::MenuBag, Text::MenuBagHint, icons::Icon::Bag, true},
             {Text::MenuEvents, Text::MenuEventsHint, icons::Icon::Gift, false},
             {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, icons::Icon::Trainer, true},
             {Text::MenuOther, Text::MenuOtherHint, icons::Icon::More, false},
@@ -1802,6 +1806,169 @@ namespace pksm::switchui
 
         widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"L / R", tr(Text::HintChange)},
             {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
+        endFrame();
+    }
+
+    void SwitchUi::drawBag(BagView& view)
+    {
+        constexpr float pouchRowHeight = 54.0f;
+        constexpr float pouchGap       = 8.0f;
+        constexpr float pouchPadding   = 16.0f;
+        constexpr float markerWidth    = 4.0f;
+        constexpr float cardGap        = 12.0f;
+        constexpr float cardPadding    = 16.0f;
+        constexpr float nameSize       = 18.0f;
+        constexpr float scrollbar      = 18.0f; // Room on the right for the scroll bar.
+        constexpr ImGuiWindowFlags fixed =
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+        beginFrame();
+        widgets::drawHeader(tr(Text::MenuBag));
+        sectionGap();
+
+        ImFont* bold             = theme::boldFont();
+        ImFont* regular          = ImGui::GetFont();
+        const float contentWidth = ImGui::GetContentRegionAvail().x;
+        const auto size          = [](ImFont* font, float px, const std::string& text)
+        { return font->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+
+        // The pouches, the shown one marked in the accent colour. Rows shrink to fit them all.
+        widgets::beginPanel("bag-pouches", ImVec2(theme::SIDE_PANEL_WIDTH, -SCREEN_BOTTOM_SPACE),
+            view.group.c_str(), fixed);
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const float count      = static_cast<float>(std::max<size_t>(view.pouches.size(), 1));
+            const float rowHeight =
+                std::min(pouchRowHeight, (available.y - pouchGap * (count - 1.0f)) / count);
+            for (size_t i = 0; i < view.pouches.size(); ++i)
+            {
+                const BagView::Pouch& pouch = view.pouches[i];
+                const bool shown            = i == view.pouch;
+                const ImVec2 min(origin.x, origin.y + static_cast<float>(i) * (rowHeight + pouchGap));
+                const ImVec2 max(min.x + available.x, min.y + rowHeight);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("pouch", ImVec2(available.x, rowHeight)))
+                {
+                    view.pouch = i;
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, max,
+                    theme::rgb(shown ? theme::CARD_SELECTED : theme::CARD), theme::CARD_RADIUS);
+                if (shown)
+                {
+                    const float inset = rowHeight * 0.25f;
+                    drawList->AddRectFilled(ImVec2(min.x, min.y + inset),
+                        ImVec2(min.x + markerWidth, max.y - inset), theme::rgb(theme::ACCENT),
+                        markerWidth * 0.5f);
+                }
+                const ImVec2 countSize = size(regular, theme::FONT_SMALL, pouch.count);
+                const float countX     = max.x - pouchPadding - countSize.x;
+                drawList->AddText(regular, theme::FONT_SMALL,
+                    ImVec2(countX, min.y + (rowHeight - countSize.y) * 0.5f),
+                    theme::rgb(theme::TEXT_MUTED), pouch.count.c_str());
+                const float nameLeft = min.x + pouchPadding;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                    ImVec2(nameLeft,
+                        min.y + (rowHeight - size(bold, theme::FONT_BODY, pouch.name).y) * 0.5f),
+                    theme::rgb(shown ? theme::ACCENT : theme::TEXT), pouch.name.c_str(),
+                    countX - 12.0f - nameLeft);
+            }
+        }
+        widgets::endPanel();
+
+        // The items of the shown pouch, ROWS rows at a time.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("bag-items", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const size_t rows      = (view.items.size() + BagView::COLUMNS - 1) / BagView::COLUMNS;
+            const bool scrolls     = rows > BagView::ROWS;
+            const float columns    = static_cast<float>(BagView::COLUMNS);
+            const float shownRows  = static_cast<float>(BagView::ROWS);
+            const float listWidth  = available.x - (scrolls ? scrollbar : 0.0f);
+            const ImVec2 cardSize((listWidth - cardGap * (columns - 1.0f)) / columns,
+                (available.y - cardGap * (shownRows - 1.0f)) / shownRows);
+            const size_t first = view.firstRow * BagView::COLUMNS;
+            const size_t last =
+                std::min(view.items.size(), first + BagView::COLUMNS * BagView::ROWS);
+            for (size_t i = first; i < last; ++i)
+            {
+                const BagView::Item& item = view.items[i];
+                const size_t slot         = i - first;
+                const ImVec2 min(
+                    origin.x + static_cast<float>(slot % BagView::COLUMNS) * (cardSize.x + cardGap),
+                    origin.y + static_cast<float>(slot / BagView::COLUMNS) * (cardSize.y + cardGap));
+                const ImVec2 max(min.x + cardSize.x, min.y + cardSize.y);
+                const bool selected = i == view.selected;
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (item.name.empty())
+                {
+                    // The slot after the last item: a dashed button that adds one.
+                    if (widgets::drawDashedButton("add", tr(Text::BagAddItem), cardSize, false,
+                            theme::ROW_RADIUS))
+                    {
+                        view.selected = i;
+                    }
+                }
+                else
+                {
+                    if (ImGui::InvisibleButton("item", cardSize))
+                    {
+                        view.selected = i;
+                    }
+                    drawList->AddRectFilled(min, max,
+                        theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), theme::ROW_RADIUS);
+                    float nameRight = max.x - cardPadding;
+                    if (!item.count.empty())
+                    {
+                        const ImVec2 countSize = size(bold, theme::FONT_BODY, item.count);
+                        nameRight              = max.x - cardPadding - countSize.x - 12.0f;
+                        drawList->AddText(bold, theme::FONT_BODY,
+                            ImVec2(max.x - cardPadding - countSize.x,
+                                min.y + (cardSize.y - countSize.y) * 0.5f),
+                            theme::rgb(theme::TEXT_SOFT), item.count.c_str());
+                    }
+                    widgets::drawTextEllipsis(drawList, bold, nameSize,
+                        ImVec2(min.x + cardPadding,
+                            min.y + (cardSize.y - size(bold, nameSize, item.name).y) * 0.5f),
+                        theme::rgb(theme::TEXT), item.name.c_str(), nameRight - min.x - cardPadding);
+                }
+                ImGui::PopID();
+                if (selected)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, theme::ROW_RADIUS);
+                }
+            }
+
+            // The scroll bar, only when the pouch takes more than one page: how much it shows,
+            // and where.
+            if (scrolls)
+            {
+                const float height = available.y;
+                const ImVec2 trackMin(origin.x + available.x - 6.0f, origin.y);
+                drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, origin.y + height),
+                    theme::rgb(theme::CARD), 3.0f);
+                const float shown = shownRows / static_cast<float>(rows);
+                const float start = static_cast<float>(view.firstRow) / static_cast<float>(rows);
+                drawList->AddRectFilled(ImVec2(trackMin.x, origin.y + height * start),
+                    ImVec2(trackMin.x + 6.0f, origin.y + height * (start + shown)),
+                    theme::rgb(theme::BORDER), 3.0f);
+            }
+        }
+        widgets::endPanel();
+
+        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
+            {"L / R", tr(Text::HintQuantity)}, {"−", tr(Text::HintTypeQuantity)},
+            {"ZL / ZR", tr(Text::HintPouch)}, {"Y", tr(Text::HintExport)},
+            {"B", tr(Text::HintBack)}});
+        widgets::drawFooterMessage(
+            view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
     }
 

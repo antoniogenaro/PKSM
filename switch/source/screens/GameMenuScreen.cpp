@@ -5,6 +5,7 @@
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
 #include "sav/Sav.hpp"
+#include "screens/BagScreen.hpp"
 #include "screens/BoxBrowserScreen.hpp"
 #include "screens/SaveSummary.hpp"
 #include "screens/TrainerEditorScreen.hpp"
@@ -18,6 +19,7 @@ namespace pksm::switchui
         // The menu is a list; the order matches SwitchUi::drawGameMenu.
         constexpr size_t MENU_OPTIONS        = 6;
         constexpr size_t POKEMON_EDITOR_ITEM = 0;
+        constexpr size_t BAG_ITEM            = 2;
         constexpr size_t TRAINER_EDITOR_ITEM = 4;
     }
 
@@ -89,6 +91,15 @@ namespace pksm::switchui
                 return;
             }
             app.push(std::make_unique<BoxBrowserScreen>(*session_, game, path_));
+        }
+        else if (selected_ == BAG_ITEM)
+        {
+            if (session_->save().pouches().empty())
+            {
+                message_ = tr(Text::OptionUnavailable);
+                return;
+            }
+            app.push(std::make_unique<BagScreen>(*session_, path_));
         }
         else if (selected_ == TRAINER_EDITOR_ITEM)
         {

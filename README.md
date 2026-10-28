@@ -140,7 +140,7 @@ save, the file list shows only `main`, hiding the other files in that backup
 folder. Files in folders without `main` remain available. Core language and
 personal data, as well as the Roboto interface font and its SIL Open Font
 License, are packaged into the NRO at build time. The SDL2 interface can edit
-trainer information and Pokémon in boxes or the party. The Pokémon editor
+trainer information, the bag, and Pokémon in boxes or the party. The Pokémon editor
 covers species, nickname and original trainer, level, nature, ability, item,
 shiny status, gender, friendship, Poké Ball, form, IVs, EVs, moves, encounter
 details, and generation-eight enjoyment/fullness. It then exports a new
@@ -148,7 +148,9 @@ details, and generation-eight enjoyment/fullness. It then exports a new
 backup. In the Pokémon selector, use Up/Down to choose a slot and L/R to
 change boxes or open the party. In the editor, use Left/Right to cycle values,
 A to enter text or numeric IDs, Y to export, B to return, and X to discard
-changes. This remains an early controller-driven proof of concept, not the
+changes. The bag screen lists every pouch: ZL/ZR change pouch, A picks the
+item in a slot (or none, to take it out), L/R change its quantity and − types
+it. This remains an early controller-driven proof of concept, not the
 full 3DS interface or a tool for accessing active game saves.
 
 ## Credits

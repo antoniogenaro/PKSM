@@ -28,6 +28,8 @@ namespace pksm::switchui
         Back,
         Discard,
         Save,
+        // The − button: a second way to edit the selection, such as typing an item's quantity.
+        Alternate,
         Quit
     };
 
@@ -207,6 +209,35 @@ namespace pksm::switchui
         int stepRequest = 0;
     };
 
+    // Everything the bag screen draws: the pouches on the left and the selected pouch's items
+    // as a grid of COLUMNS cards, ROWS rows at a time from `firstRow`.
+    struct BagView
+    {
+        static constexpr size_t COLUMNS = 3;
+        static constexpr size_t ROWS    = 8;
+
+        struct Pouch
+        {
+            std::string name;
+            std::string count; // "12 / 60"
+        };
+        struct Item
+        {
+            // Empty for the slot after the last item, which adds one.
+            std::string name;
+            std::string count; // "× 5", or empty when the item has no quantity to show.
+        };
+
+        // The game's group, as the caption of the pouch list.
+        std::string group;
+        std::vector<Pouch> pouches;
+        size_t pouch = 0;
+        std::vector<Item> items;
+        size_t firstRow = 0;
+        size_t selected = 0;
+        std::string message;
+    };
+
     class SwitchUi
     {
     public:
@@ -240,6 +271,9 @@ namespace pksm::switchui
         static constexpr size_t TRAINER_COLUMNS = 2;
         void drawTrainer(const SaveSummary& save, const std::vector<Field>& fields,
             size_t selected, const std::string& message);
+        // The bag: the pouches and the items of the selected one. Touching a pouch or an item
+        // selects it.
+        void drawBag(BagView& view);
         // Pickers, as dialogs over the screen below. A touch on an entry moves the selection, so
         // it is passed by reference. The option picker shows PICKER_ROWS rows of PICKER_COLUMNS
         // from `firstRow`, with `current` (the value before picking) in its title.
