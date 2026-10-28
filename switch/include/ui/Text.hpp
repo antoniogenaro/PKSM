@@ -220,6 +220,27 @@
     X(LanguageChineseSimplified)                                                                   \
     X(LanguageChineseTraditional)                                                                  \
     X(LanguageUnknown)                                                                             \
+    /* Bag */                                                                                      \
+    X(BagPouchItems)                                                                               \
+    X(BagPouchKeyItems)                                                                            \
+    X(BagPouchTms)                                                                                 \
+    X(BagPouchBerries)                                                                             \
+    X(BagPouchBalls)                                                                               \
+    X(BagPouchPcItems)                                                                             \
+    X(BagPouchMedicine)                                                                            \
+    X(BagPouchBattle)                                                                              \
+    X(BagPouchTreasures)                                                                           \
+    X(BagPouchIngredients)                                                                         \
+    X(BagPouchOther)                                                                               \
+    X(BagPouchCount)                                                                               \
+    X(BagItemCount)                                                                                \
+    X(BagAddItem)                                                                                  \
+    X(BagRemoveItem)                                                                               \
+    X(BagCountTitle)                                                                               \
+    X(BagCountFixed)                                                                               \
+    X(HintPouch)                                                                                   \
+    X(HintQuantity)                                                                                \
+    X(HintTypeQuantity)                                                                            \
     /* Pickers and keyboard */                                                                     \
     X(NatureNeutral)                                                                               \
     X(NatureNeutralShort)                                                                          \

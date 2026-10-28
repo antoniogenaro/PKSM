@@ -26,6 +26,7 @@
 
 // The Switch app's pure rules: which games it supports and how editor values move.
 
+#include "domain/BagValues.hpp"
 #include "domain/FieldValues.hpp"
 #include "domain/GameGrid.hpp"
 #include "domain/GameGrid.hpp"
@@ -64,7 +65,7 @@ namespace
         check(sword != nullptr, "Sword is supported");
         if (sword)
         {
-            check(std::string(tr(sword->name)) == "Pokémon Sword", "Sword name");
+            check(std::string(tr(sword->name)) == "Sword", "Sword name");
             check(sword->mascotSpecies == 888, "Sword mascot is Zacian");
             check(sword->hasBattlePoints, "Sword has BP");
             check(sword->maxMoney == 9999999, "Sword money cap");
@@ -294,8 +295,7 @@ namespace
         check(loadTexts(TextLanguage::English, SWITCH_STRINGS), "English loads");
         check(std::string(tr(Text::Yes)) == "Yes", "English text");
         check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exported to sdmc:/a", "one value");
-        check(tr(Text::BoxSection, {"3", "32", "Box 3"}) == "Box 3/32  /  Box 3",
-            "values go in order");
+        check(tr(Text::BagPouchCount, {"12", "60"}) == "12 / 60", "values go in order");
         check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
         check(tr(Text::Yes, {"ignored"}) == "Yes", "extra values are ignored");
 
@@ -374,6 +374,51 @@ namespace
     }
 }
 
+namespace
+{
+    void testBag()
+    {
+        const int valid[] = {17, 0, 18, 17, 70000, -1, 4};
+        check(pouchItems(valid, UINT16_MAX) == std::vector<unsigned int>{17, 18, 4},
+            "a pouch's items drop the empty item, repeats and impossible numbers");
+        check(pouchItems(valid, 17) == std::vector<unsigned int>{17, 4},
+            "a pouch's items stop at the game's last item");
+
+        const auto name = [](unsigned int item)
+        {
+            switch (item)
+            {
+                case 1:
+                    return std::string("Potion");
+                case 2:
+                    return std::string("Antidote");
+                case 3:
+                    return std::string("Ether");
+                default:
+                    return std::string("Potion");
+            }
+        };
+        const std::vector<unsigned int> allowed{1, 2, 3, 4};
+        check(slotChoices(allowed, {}, 0, name) == std::vector<unsigned int>{0, 2, 3, 1, 4},
+            "choices start with no item and follow the names, then the numbers");
+        check(slotChoices(allowed, {1, 3}, 0, name) == std::vector<unsigned int>{0, 2, 4},
+            "an empty slot cannot take an item already in the pouch");
+        check(slotChoices(allowed, {1, 3}, 3, name) == std::vector<unsigned int>{0, 2, 3, 4},
+            "a slot keeps its own item among the choices");
+        check(slotChoices({2}, {9}, 9, name) == std::vector<unsigned int>{0, 2, 9},
+            "a slot keeps an item the list leaves out");
+        check(slotChoices({}, {}, 0, name) == std::vector<unsigned int>{0},
+            "a pouch without items still offers no item");
+
+        check(firstShownRow(0, 3, 8, 20) == 0, "a row in view does not scroll");
+        check(firstShownRow(0, 8, 8, 20) == 1, "a row below the view scrolls down by one");
+        check(firstShownRow(5, 2, 8, 20) == 2, "a row above the view scrolls up to it");
+        check(firstShownRow(15, 19, 8, 20) == 12, "the view never runs past the last row");
+        check(firstShownRow(3, 0, 8, 4) == 0, "a short pouch never scrolls");
+        check(firstShownRow(3, 2, 0, 4) == 0, "no rows shown keeps the first row");
+    }
+}
+
 int main()
 {
     // Before anything changes the language, so it checks the default.
@@ -388,6 +433,7 @@ int main()
     testParseNumber();
     testDates();
     testSaveCache();
+    testBag();
 
     if (failures != 0)
     {
