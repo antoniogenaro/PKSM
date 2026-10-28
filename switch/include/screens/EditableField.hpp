@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SwitchUi.hpp"
+#include "domain/FieldValues.hpp"
 #include <cstddef>
 #include <functional>
 #include <string>
@@ -24,7 +25,9 @@ namespace pksm::switchui
             // L/R step between min and max; A opens `input`.
             Number,
             // L/R cycle through choices(); A opens a picker.
-            Choice
+            Choice,
+            // L/R move one day; A opens the date picker.
+            Date
         };
 
         enum class NumberInput
@@ -72,6 +75,10 @@ namespace pksm::switchui
         // Poké Ball sprite for each choice, when the picker shows them.
         std::function<size_t(unsigned int)> sprite;
         ChoicePicker picker = ChoicePicker::List;
+
+        std::function<::Date()> getDate;
+        std::function<void(const ::Date&)> setDate;
+        YearRange years;
     };
 
     EditableField readOnlyField(Field display);
@@ -86,6 +93,9 @@ namespace pksm::switchui
         std::function<std::vector<unsigned int>()> choices,
         std::function<std::string(unsigned int)> label, std::function<unsigned int()> get,
         std::function<void(unsigned int)> set);
+    // A whole date, shown with formatDate() and picked with the date picker.
+    EditableField dateField(std::string label, std::string title, YearRange years,
+        std::function<::Date()> get, std::function<void(const ::Date&)> set);
 
     // Applies L (-1) or R (1). Returns whether the value changed.
     bool stepField(const EditableField& field, int direction);

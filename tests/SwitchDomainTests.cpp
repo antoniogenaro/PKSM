@@ -177,6 +177,38 @@ namespace
         check(indexOf(balls, 99) == 0, "index of an unknown value");
     }
 
+    void testDates()
+    {
+        const YearRange years{2000, 2099};
+        check(daysInMonth(2023, 2) == 28, "February has 28 days");
+        check(daysInMonth(2024, 2) == 29, "a leap February has 29 days");
+        check(daysInMonth(2100, 2) == 28, "2100 is not a leap year");
+        check(daysInMonth(2000, 2) == 29, "2000 is a leap year");
+        check(daysInMonth(2024, 4) == 30, "April has 30 days");
+
+        check(clampDate(Date{31, 2, 2023}, years) == Date{28, 2, 2023}, "day fits its month");
+        check(clampDate(Date{0, 0, 1900}, years) == Date{1, 1, 2000}, "an unset date is clamped");
+
+        check(stepDatePart(Date{31, 12, 2024}, DatePart::Day, 1, years) == Date{1, 12, 2024},
+            "the day wraps within its month");
+        check(stepDatePart(Date{1, 3, 2024}, DatePart::Day, -1, years) == Date{31, 3, 2024},
+            "the day wraps back to the month's last");
+        check(stepDatePart(Date{31, 1, 2023}, DatePart::Month, 1, years) == Date{28, 2, 2023},
+            "a new month shrinks the day");
+        check(stepDatePart(Date{15, 12, 2023}, DatePart::Month, 1, years) == Date{15, 1, 2023},
+            "the month wraps");
+        check(stepDatePart(Date{29, 2, 2024}, DatePart::Year, 1, years) == Date{28, 2, 2025},
+            "leaving a leap year shrinks the day");
+        check(stepDatePart(Date{1, 1, 2099}, DatePart::Year, 1, years) == Date{1, 1, 2000},
+            "the year wraps in its range");
+
+        check(stepDay(Date{28, 2, 2024}, 1, years) == Date{29, 2, 2024}, "a leap day");
+        check(stepDay(Date{31, 12, 2023}, 1, years) == Date{1, 1, 2024}, "into the next year");
+        check(stepDay(Date{1, 3, 2023}, -1, years) == Date{28, 2, 2023}, "back into February");
+        check(stepDay(Date{31, 12, 2099}, 1, years) == Date{31, 12, 2099}, "stops at the end");
+        check(stepDay(Date{1, 1, 2000}, -1, years) == Date{1, 1, 2000}, "stops at the start");
+    }
+
     void testParseNumber()
     {
         unsigned int value = 0;
@@ -354,6 +386,7 @@ int main()
     testWrappedSteps();
     testChoices();
     testParseNumber();
+    testDates();
     testSaveCache();
 
     if (failures != 0)

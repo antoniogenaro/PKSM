@@ -2045,4 +2045,116 @@ namespace pksm::switchui
         widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}});
         endModal();
     }
+
+    void SwitchUi::drawDatePicker(DatePickerView& view)
+    {
+        // A dialog like the option picker's: a title row, then a column for each part with its
+        // header, the value Up would pick, the value, and the value Down would pick.
+        constexpr float width     = 720.0f;
+        constexpr float titleRow  = 44.0f;
+        constexpr float gap       = 14.0f;
+        constexpr float headerRow = 24.0f;
+        constexpr float besideRow = 44.0f;
+        constexpr float valueRow  = 64.0f;
+        constexpr float rowGap    = 6.0f;
+        constexpr float columnGap = 12.0f;
+        const float columnsHeight = headerRow + besideRow * 2.0f + valueRow + rowGap * 3.0f;
+        const float height        = MODAL_PADDING * 2.0f + titleRow + gap + columnsHeight;
+
+        beginModal(width, height);
+        ImFont* bold         = theme::boldFont();
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const ImVec2 origin  = ImGui::GetCursorScreenPos();
+        const float inner    = width - MODAL_PADDING * 2.0f;
+        const auto size      = [bold](float px, const std::string& text)
+        { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        const auto centred = [&](const std::string& text, float px, const ImVec2& min,
+                                 const ImVec2& max, unsigned color)
+        {
+            const ImVec2 textSize = size(px, text);
+            const float textWidth = std::min(textSize.x, max.x - min.x - 16.0f);
+            widgets::drawTextEllipsis(drawList, bold, px,
+                ImVec2(std::round(min.x + (max.x - min.x - textWidth) * 0.5f),
+                    std::round(min.y + (max.y - min.y - textSize.y) * 0.5f)),
+                theme::rgb(color), text.c_str(), textWidth);
+        };
+
+        // The title, and on the right the date before picking.
+        drawList->AddText(bold, 26.0f,
+            ImVec2(origin.x, origin.y + (titleRow - size(26.0f, view.title).y) * 0.5f),
+            theme::rgb(theme::TEXT), view.title.c_str());
+        if (!view.current.empty())
+        {
+            const std::string label = tr(Text::PickerCurrent);
+            const float valueWidth  = std::min(size(22.0f, view.current).x, inner * 0.45f);
+            const float valueX      = origin.x + inner - valueWidth;
+            widgets::drawTextEllipsis(drawList, bold, 22.0f,
+                ImVec2(valueX, origin.y + (titleRow - size(22.0f, view.current).y) * 0.5f),
+                theme::rgb(theme::TEXT), view.current.c_str(), valueWidth);
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
+                    origin.y + (titleRow - size(theme::FONT_SMALL, label).y) * 0.5f),
+                theme::rgb(theme::TEXT_MUTED), label.c_str());
+        }
+
+        // The columns share the width equally.
+        const size_t count = view.columns.size();
+        const float top    = origin.y + titleRow + gap;
+        const float columnWidth =
+            count == 0 ? inner
+                       : (inner - columnGap * static_cast<float>(count - 1)) / static_cast<float>(count);
+        for (size_t i = 0; i < count; ++i)
+        {
+            const DatePickerView::Column& column = view.columns[i];
+            const bool selected                  = i == view.column;
+            const float left = origin.x + static_cast<float>(i) * (columnWidth + columnGap);
+            centred(column.header, theme::FONT_SMALL, ImVec2(left, top),
+                ImVec2(left + columnWidth, top + headerRow), selected ? theme::TEXT : theme::TEXT_MUTED);
+
+            // Up, the value, and down; touching one beside the value picks it.
+            const float upTop    = top + headerRow + rowGap;
+            const float valueTop = upTop + besideRow + rowGap;
+            const float downTop  = valueTop + valueRow + rowGap;
+            struct Row
+            {
+                float top;
+                float height;
+                int step;
+            };
+            const Row rows[] = {{upTop, besideRow, 1}, {valueTop, valueRow, 0}, {downTop, besideRow, -1}};
+            for (const Row& row : rows)
+            {
+                const ImVec2 min(left, row.top);
+                const ImVec2 max(left + columnWidth, row.top + row.height);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i * 3) + row.step + 1);
+                if (ImGui::InvisibleButton("date", ImVec2(columnWidth, row.height)))
+                {
+                    view.column      = i;
+                    view.stepRequest = row.step;
+                }
+                ImGui::PopID();
+                if (row.step == 0)
+                {
+                    drawList->AddRectFilled(min, max, theme::rgb(selected ? PILL : theme::CARD), 12.0f);
+                    if (selected)
+                    {
+                        widgets::drawSelectionOutline(drawList, min, max, 12.0f);
+                    }
+                    centred(column.value, 28.0f, min, max, theme::TEXT);
+                }
+                else
+                {
+                    centred(row.step > 0 ? column.up : column.down, theme::FONT_ROW_TITLE, min, max,
+                        selected ? theme::TEXT_SOFT : theme::TEXT_MUTED);
+                }
+            }
+        }
+
+        widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)},
+            {"\xE2\x86\x91 / \xE2\x86\x93", tr(Text::HintChange)},
+            // Roboto has no left and right arrows.
+            {"< / >", tr(Text::HintDatePart)}});
+        endModal();
+    }
 }

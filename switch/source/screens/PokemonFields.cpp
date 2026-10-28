@@ -25,9 +25,6 @@ namespace pksm::switchui
             Text::StatDefense, Text::StatSpAttack, Text::StatSpDefense, Text::StatSpeed};
         constexpr std::array<Text, 3> genderNames = {
             Text::GenderMale, Text::GenderFemale, Text::GenderNone};
-        constexpr std::array<Text, 12> monthNames = {Text::January, Text::February, Text::March,
-            Text::April, Text::May, Text::June, Text::July, Text::August, Text::September,
-            Text::October, Text::November, Text::December};
 
         Field display(std::string label, std::string value, bool checkbox = false,
             bool checked = false)
@@ -93,44 +90,13 @@ namespace pksm::switchui
             return true;
         }
 
-        // Day, month or year of a date, picked from a list.
-        EditableField dateField(const std::string& label, unsigned int min, unsigned int max,
-            std::function<unsigned int()> get, std::function<void(unsigned int)> set)
+        // The met or egg date. The year is stored as years after 2000 in one byte; the games
+        // show up to 2099.
+        EditableField pokemonDateField(
+            Text label, std::function<Date()> get, std::function<void(const Date&)> set)
         {
-            Field shown         = display(label, numericValue(get()));
-            EditableField field =
-                numberField(std::move(shown), label, min, max, std::move(get), std::move(set));
-            field.input = EditableField::NumberInput::List;
-            return field;
-        }
-
-        // The day, month and year rows of the met or egg date.
-        void addDateFields(std::vector<EditableField>& fields, Text dayLabel, Text monthLabel,
-            Text yearLabel, std::function<Date()> get, std::function<void(const Date&)> set)
-        {
-            fields.push_back(dateField(tr(dayLabel), 1, 31, [get] { return get().day(); },
-                [get, set](unsigned int value)
-                {
-                    Date date = get();
-                    date.day(static_cast<u8>(value));
-                    set(date);
-                }));
-            EditableField month = dateField(tr(monthLabel), 1, 12, [get] { return get().month(); },
-                [get, set](unsigned int value)
-                {
-                    Date date = get();
-                    date.month(static_cast<u8>(value));
-                    set(date);
-                });
-            month.label = [](unsigned int value) { return std::string(tr(monthNames[value - 1])); };
-            fields.push_back(std::move(month));
-            fields.push_back(dateField(tr(yearLabel), 0, 9999, [get] { return get().year(); },
-                [get, set](unsigned int value)
-                {
-                    Date date = get();
-                    date.year(value);
-                    set(date);
-                }));
+            return dateField(tr(label), tr(label), YearRange{2000, 2099}, std::move(get),
+                std::move(set));
         }
 
         // An unsigned byte-sized counter edited with the keyboard.
@@ -398,9 +364,13 @@ namespace pksm::switchui
         more.push_back(counterField(tr(Text::FieldMetLevel), tr(Text::FieldMetLevel), 100,
             [&pokemon] { return static_cast<unsigned int>(pokemon.metLevel()); },
             [&pokemon](unsigned int value) { pokemon.metLevel(static_cast<u8>(value)); }));
-        addDateFields(more, Text::FieldMetDay, Text::FieldMetMonth, Text::FieldMetYear,
-            [&pokemon] { return pokemon.metDate(); },
-            [&pokemon](const Date& date) { pokemon.metDate(date); });
+        // The games before generation IV keep no dates.
+        if (generation >= pksm::Generation::FOUR)
+        {
+            more.push_back(pokemonDateField(Text::FieldMetDate,
+                [&pokemon] { return pokemon.metDate(); },
+                [&pokemon](const Date& date) { pokemon.metDate(date); }));
+        }
         more.push_back(numberField(
             display(tr(Text::FieldMetLocation),
                 tr(Text::LocationValue, {numericValue(pokemon.metLocation())})),
@@ -410,9 +380,9 @@ namespace pksm::switchui
 
         if (generation >= pksm::Generation::FOUR)
         {
-            addDateFields(more, Text::FieldEggDay, Text::FieldEggMonth, Text::FieldEggYear,
+            more.push_back(pokemonDateField(Text::FieldEggDate,
                 [&pokemon] { return pokemon.eggDate(); },
-                [&pokemon](const Date& date) { pokemon.eggDate(date); });
+                [&pokemon](const Date& date) { pokemon.eggDate(date); }));
             more.push_back(numberField(
                 display(tr(Text::FieldEggLocation),
                     tr(Text::LocationValue, {numericValue(pokemon.eggLocation())})),
