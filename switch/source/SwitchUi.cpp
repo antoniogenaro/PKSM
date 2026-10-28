@@ -1937,7 +1937,7 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawNaturePicker(
-        const std::vector<std::string>& natures, size_t& row, size_t& column)
+        const std::vector<std::string>& natures, size_t current, size_t& row, size_t& column)
     {
         // Rows raise a stat and columns lower one, in this order; the diagonal is neutral.
         static constexpr Text stats[] = {Text::StatShortAttack, Text::StatShortDefense,
@@ -1954,7 +1954,7 @@ namespace pksm::switchui
         const auto size  = [bold](float px, const std::string& text)
         { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
         const std::string key = tr(Text::NatureKey);
-        const float titleHeight = size(26.0f, "N").y;
+        constexpr float titleHeight = 44.0f; // The title row of the other pickers.
         const float gridHeight  = cell * 6.0f + cellGap * 5.0f;
         const float height      = MODAL_PADDING * 2.0f + titleHeight + gap + gridHeight + gap +
                              size(theme::FONT_SMALL, key).y;
@@ -1972,30 +1972,24 @@ namespace pksm::switchui
             lowered[i] = std::string("\xE2\x88\x92") + tr(stats[i]);
         }
 
-        // The title, and what the selected nature does.
+        // The title, and on the right the Pokémon's nature before picking, as in the other pickers.
         const std::string title = tr(Text::FieldNature);
-        drawList->AddText(bold, 26.0f, origin, theme::rgb(theme::TEXT), title.c_str());
-        if (natures.size() == 25)
+        drawList->AddText(bold, 26.0f,
+            ImVec2(origin.x, origin.y + (titleHeight - size(26.0f, title).y) * 0.5f),
+            theme::rgb(theme::TEXT), title.c_str());
+        if (natures.size() == 25 && current < 25)
         {
-            const std::string name = natures[row * 5 + column] + ": ";
-            const bool neutral     = row == column;
-            const std::string effects[] = {neutral ? std::string(tr(Text::NatureNeutralShort)) : raised[row],
-                neutral ? std::string{} : " \xC2\xB7 ", neutral ? std::string{} : lowered[column]};
-            const unsigned colors[] = {neutral ? NEUTRAL_TEXT : RAISED, theme::TEXT_SOFT, LOWERED};
-            float total = size(15.0f, name).x;
-            for (const std::string& part : effects)
-            {
-                total += size(15.0f, part).x;
-            }
-            float x       = origin.x + inner - total;
-            const float y = origin.y + titleHeight - size(15.0f, name).y - 2.0f;
-            drawList->AddText(bold, 15.0f, ImVec2(x, y), theme::rgb(theme::TEXT_SOFT), name.c_str());
-            x += size(15.0f, name).x;
-            for (size_t i = 0; i < 3; ++i)
-            {
-                drawList->AddText(bold, 15.0f, ImVec2(x, y), theme::rgb(colors[i]), effects[i].c_str());
-                x += size(15.0f, effects[i]).x;
-            }
+            const std::string& name = natures[current];
+            const std::string label = tr(Text::PickerCurrent);
+            const float valueWidth  = std::min(size(22.0f, name).x, inner * 0.45f);
+            const float valueX      = origin.x + inner - valueWidth;
+            widgets::drawTextEllipsis(drawList, bold, 22.0f,
+                ImVec2(valueX, origin.y + (titleHeight - size(22.0f, name).y) * 0.5f),
+                theme::rgb(theme::TEXT), name.c_str(), valueWidth);
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
+                    origin.y + (titleHeight - size(theme::FONT_SMALL, label).y) * 0.5f),
+                theme::rgb(theme::TEXT_MUTED), label.c_str());
         }
 
         // The grid: the neutral corner, the lowered stats along the top, the raised ones down

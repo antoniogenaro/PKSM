@@ -82,7 +82,7 @@ namespace pksm::switchui
 
     NaturePickerScreen::NaturePickerScreen(
         std::vector<std::string> natures, size_t current, PickHandler onPick)
-        : natures_(std::move(natures)), onPick_(std::move(onPick))
+        : natures_(std::move(natures)), current_(current), onPick_(std::move(onPick))
     {
         if (current < 25)
         {
@@ -127,6 +127,6 @@ namespace pksm::switchui
 
     void NaturePickerScreen::draw(SwitchUi& ui)
     {
-        ui.drawNaturePicker(natures_, row_, column_);
+        ui.drawNaturePicker(natures_, current_, row_, column_);
     }
 }
