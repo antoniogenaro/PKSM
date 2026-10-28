@@ -185,6 +185,28 @@ namespace pksm::switchui
         int pageRequest = 0;
     };
 
+    // What the date picker draws: a column for each part of the date, in the order shown, with
+    // the values one step up and one step down beside the current one.
+    struct DatePickerView
+    {
+        struct Column
+        {
+            std::string header; // "Día"
+            std::string value;
+            std::string up;   // The value Up would pick.
+            std::string down; // The value Down would pick.
+        };
+
+        std::string title;
+        // The date before picking, shown in the title row.
+        std::string current;
+        std::vector<Column> columns;
+        size_t column = 0;
+        // Set by drawDatePicker() when a value beside the current one is touched: 1 for the one
+        // above, -1 for the one below.
+        int stepRequest = 0;
+    };
+
     class SwitchUi
     {
     public:
@@ -230,6 +252,8 @@ namespace pksm::switchui
         // the Pokémon's nature, shown in the header.
         void drawNaturePicker(
             const std::vector<std::string>& natures, size_t current, size_t& row, size_t& column);
+        // A date a part at a time. Touching a column selects it.
+        void drawDatePicker(DatePickerView& view);
 
         // Shows the system keyboard and waits for it. Returns false when cancelled or empty.
         bool editText(const std::string& title, const std::string& initial, std::string& result,

@@ -2,7 +2,9 @@
 
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
+#include "ui/Text.hpp"
 #include <algorithm>
+#include <iterator>
 
 namespace pksm::switchui
 {
@@ -128,5 +130,90 @@ namespace pksm::switchui
     void NaturePickerScreen::draw(SwitchUi& ui)
     {
         ui.drawNaturePicker(natures_, current_, row_, column_);
+    }
+
+    DatePickerScreen::DatePickerScreen(std::string title, const Date& current, YearRange years,
+        std::function<void(const Date&)> onPick)
+        : title_(std::move(title)),
+          current_(formatDate(current)),
+          years_(years),
+          date_(clampDate(current, years)),
+          onPick_(std::move(onPick))
+    {
+    }
+
+    void DatePickerScreen::step(int direction)
+    {
+        date_ = stepDatePart(date_, PARTS[column_], direction, years_);
+    }
+
+    void DatePickerScreen::update(App& app, Action action)
+    {
+        constexpr size_t last = std::size(PARTS) - 1;
+        switch (action)
+        {
+            case Action::Confirm:
+            {
+                const Date picked = date_;
+                app.pop();
+                onPick_(picked);
+                break;
+            }
+            case Action::Back:
+            case Action::Quit:
+                app.pop();
+                break;
+            case Action::Left:
+                column_ = column_ > 0 ? column_ - 1 : column_;
+                break;
+            case Action::Right:
+                column_ = std::min(last, column_ + 1);
+                break;
+            case Action::Up:
+                step(1);
+                break;
+            case Action::Down:
+                step(-1);
+                break;
+            default:
+                break;
+        }
+    }
+
+    void DatePickerScreen::draw(SwitchUi& ui)
+    {
+        const auto shown = [](DatePart part, const Date& date)
+        {
+            switch (part)
+            {
+                case DatePart::Day:
+                    return std::to_string(date.day());
+                case DatePart::Month:
+                    return monthName(date.month());
+                case DatePart::Year:
+                    return std::to_string(date.year());
+            }
+            return std::string{};
+        };
+        constexpr Text headers[] = {Text::DateDay, Text::DateMonth, Text::DateYear};
+
+        DatePickerView view;
+        view.title   = title_;
+        view.current = current_;
+        view.column  = column_;
+        for (size_t i = 0; i < std::size(PARTS); ++i)
+        {
+            view.columns.push_back({tr(headers[i]), shown(PARTS[i], date_),
+                shown(PARTS[i], stepDatePart(date_, PARTS[i], 1, years_)),
+                shown(PARTS[i], stepDatePart(date_, PARTS[i], -1, years_))});
+        }
+        ui.drawDatePicker(view);
+
+        // A touch selects a column, and on a value beside the current one also picks it.
+        column_ = std::min(view.column, std::size(PARTS) - 1);
+        if (view.stepRequest != 0)
+        {
+            step(view.stepRequest);
+        }
     }
 }

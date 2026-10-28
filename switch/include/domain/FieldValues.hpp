@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/DateTime.hpp"
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -64,4 +65,39 @@ namespace pksm::switchui
     // larger than `maximum`. On failure `error` says why.
     bool parsePlayTime(
         const std::string& text, unsigned int maximum, unsigned int& minutes, std::string& error);
+
+    // Dates are edited a part at a time, within a range of years: the games store the year as
+    // an offset from 2000 in one byte.
+    enum class DatePart
+    {
+        Day,
+        Month,
+        Year
+    };
+
+    struct YearRange
+    {
+        unsigned int min = 2000;
+        unsigned int max = 2099;
+    };
+
+    // Days in `month` (1 to 12) of `year`, counting leap years.
+    unsigned int daysInMonth(unsigned int year, unsigned int month);
+
+    // `date` with its year in `years`, its month in 1..12 and its day in that month.
+    Date clampDate(const Date& date, YearRange years);
+
+    // One `part` of `date` one step forward (direction > 0) or back, wrapping within that
+    // part's range; the day then shrinks to fit the month. The result is clamped first.
+    Date stepDatePart(const Date& date, DatePart part, int direction, YearRange years);
+
+    // `date` moved by one day forward (direction > 0) or back, across months and years. It
+    // stops at the first and last day of `years`. The result is clamped first.
+    Date stepDay(const Date& date, int direction, YearRange years);
+
+    // The name of `month` (1 to 12) in the current language.
+    std::string monthName(unsigned int month);
+
+    // `date` as the current language writes it, such as "28 de Octubre de 2026".
+    std::string formatDate(const Date& date);
 }

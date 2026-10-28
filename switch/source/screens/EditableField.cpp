@@ -104,6 +104,19 @@ namespace pksm::switchui
         return field;
     }
 
+    EditableField dateField(std::string label, std::string title, YearRange years,
+        std::function<::Date()> get, std::function<void(const ::Date&)> set)
+    {
+        EditableField field;
+        field.display = Field{std::move(label), formatDate(get())};
+        field.kind    = EditableField::Kind::Date;
+        field.title   = std::move(title);
+        field.years   = years;
+        field.getDate = std::move(get);
+        field.setDate = std::move(set);
+        return field;
+    }
+
     bool stepField(const EditableField& field, int direction)
     {
         switch (field.kind)
@@ -140,6 +153,17 @@ namespace pksm::switchui
                     return false;
                 }
                 field.set(next);
+                return true;
+            }
+            case EditableField::Kind::Date:
+            {
+                const ::Date current = field.getDate();
+                const ::Date next    = stepDay(current, direction, field.years);
+                if (next == current)
+                {
+                    return false;
+                }
+                field.setDate(next);
                 return true;
             }
         }
@@ -245,6 +269,20 @@ namespace pksm::switchui
                 }
                 pickValue(field, app, std::move(values), std::move(options), std::move(sprites),
                     std::move(onChanged));
+                return;
+            }
+            case EditableField::Kind::Date:
+            {
+                const ::Date current = field.getDate();
+                app.push(std::make_unique<DatePickerScreen>(field.title, current, field.years,
+                    [current, set = field.setDate, onChanged](const ::Date& picked)
+                    {
+                        if (picked != current)
+                        {
+                            set(picked);
+                            onChanged();
+                        }
+                    }));
                 return;
             }
         }

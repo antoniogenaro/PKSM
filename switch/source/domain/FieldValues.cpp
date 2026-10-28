@@ -144,4 +144,93 @@ namespace pksm::switchui
         minutes = hours * 60 + rest;
         return true;
     }
+
+    unsigned int daysInMonth(unsigned int year, unsigned int month)
+    {
+        constexpr unsigned int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        if (month < 1 || month > 12)
+        {
+            return 31;
+        }
+        const bool leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        return month == 2 && leap ? 29 : days[month - 1];
+    }
+
+    Date clampDate(const Date& date, YearRange years)
+    {
+        const unsigned int year  = std::clamp<unsigned int>(date.year(), years.min, years.max);
+        const unsigned int month = std::clamp<unsigned int>(date.month(), 1, 12);
+        const unsigned int day   = std::clamp<unsigned int>(date.day(), 1, daysInMonth(year, month));
+        return Date{static_cast<u8>(day), static_cast<u8>(month), year};
+    }
+
+    Date stepDatePart(const Date& date, DatePart part, int direction, YearRange years)
+    {
+        Date next = clampDate(date, years);
+        switch (part)
+        {
+            case DatePart::Day:
+                next.day(static_cast<u8>(stepNumber(
+                    {1, daysInMonth(next.year(), next.month()), 1, true}, next.day(), direction)));
+                return next;
+            case DatePart::Month:
+                next.month(static_cast<u8>(stepNumber({1, 12, 1, true}, next.month(), direction)));
+                break;
+            case DatePart::Year:
+                next.year(stepNumber({years.min, years.max, 1, true}, next.year(), direction));
+                break;
+        }
+        return clampDate(next, years);
+    }
+
+    Date stepDay(const Date& date, int direction, YearRange years)
+    {
+        Date next = clampDate(date, years);
+        if (direction > 0)
+        {
+            if (next.day() < daysInMonth(next.year(), next.month()))
+            {
+                next.day(next.day() + 1);
+            }
+            else if (next.month() < 12)
+            {
+                next = Date{1, static_cast<u8>(next.month() + 1), next.year()};
+            }
+            else if (next.year() < years.max)
+            {
+                next = Date{1, 1, next.year() + 1};
+            }
+        }
+        else if (direction < 0)
+        {
+            if (next.day() > 1)
+            {
+                next.day(next.day() - 1);
+            }
+            else if (next.month() > 1)
+            {
+                const u8 month = static_cast<u8>(next.month() - 1);
+                next = Date{static_cast<u8>(daysInMonth(next.year(), month)), month, next.year()};
+            }
+            else if (next.year() > years.min)
+            {
+                next = Date{31, 12, next.year() - 1};
+            }
+        }
+        return next;
+    }
+
+    std::string monthName(unsigned int month)
+    {
+        constexpr Text names[] = {Text::January, Text::February, Text::March, Text::April,
+            Text::May, Text::June, Text::July, Text::August, Text::September, Text::October,
+            Text::November, Text::December};
+        return month >= 1 && month <= 12 ? tr(names[month - 1]) : std::to_string(month);
+    }
+
+    std::string formatDate(const Date& date)
+    {
+        return tr(Text::DateValue, {std::to_string(date.day()), monthName(date.month()),
+                                       std::to_string(date.year())});
+    }
 }

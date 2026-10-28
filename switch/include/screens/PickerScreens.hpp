@@ -2,6 +2,7 @@
 
 #include "SwitchUi.hpp"
 #include "app/Screen.hpp"
+#include "domain/FieldValues.hpp"
 #include <cstddef>
 #include <functional>
 #include <string>
@@ -54,5 +55,31 @@ namespace pksm::switchui
         size_t row_    = 0;
         size_t column_ = 0;
         PickHandler onPick_;
+    };
+
+    // A date in a dialog over the screen below, as day, month and year columns. Left/Right pick
+    // the column and Up/Down change it; the day always fits the month and the year stays in
+    // `years`. `onPick` gets the date after the picker has closed itself, only on A.
+    class DatePickerScreen : public Screen
+    {
+    public:
+        DatePickerScreen(std::string title, const Date& current, YearRange years,
+            std::function<void(const Date&)> onPick);
+
+        void update(App& app, Action action) override;
+        void draw(SwitchUi& ui) override;
+        bool isOverlay() const override { return true; }
+
+    private:
+        static constexpr DatePart PARTS[] = {DatePart::Day, DatePart::Month, DatePart::Year};
+
+        void step(int direction);
+
+        std::string title_;
+        std::string current_;
+        YearRange years_;
+        Date date_;
+        size_t column_ = 0;
+        std::function<void(const Date&)> onPick_;
     };
 }

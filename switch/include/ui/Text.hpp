@@ -165,13 +165,9 @@
     X(FieldEgg)                                                                                    \
     X(FieldFatefulEncounter)                                                                       \
     X(FieldMetLevel)                                                                               \
-    X(FieldMetDay)                                                                                 \
-    X(FieldMetMonth)                                                                               \
-    X(FieldMetYear)                                                                                \
+    X(FieldMetDate)                                                                                \
     X(FieldMetLocation)                                                                            \
-    X(FieldEggDay)                                                                                 \
-    X(FieldEggMonth)                                                                               \
-    X(FieldEggYear)                                                                                \
+    X(FieldEggDate)                                                                                \
     X(FieldEggLocation)                                                                            \
     X(LocationValue)                                                                               \
     X(FieldEnjoyment)                                                                              \
@@ -186,7 +182,6 @@
     X(StatSpeed)                                                                                   \
     X(FieldMove)                                                                                   \
     X(FieldRelearnMove)                                                                            \
-    X(RelearnUnavailable)                                                                          \
     X(January)                                                                                     \
     X(February)                                                                                    \
     X(March)                                                                                       \
@@ -230,6 +225,11 @@
     X(NatureNeutralShort)                                                                          \
     X(NatureKey)                                                                                   \
     X(PickerCurrent)                                                                               \
+    X(DateValue)                                                                                   \
+    X(DateDay)                                                                                     \
+    X(DateMonth)                                                                                   \
+    X(DateYear)                                                                                    \
+    X(HintDatePart)                                                                                \
     X(EnterNumber)                                                                                 \
     X(NumberOutOfRange)
 
