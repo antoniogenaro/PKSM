@@ -1811,14 +1811,22 @@ namespace pksm::switchui
 
     void SwitchUi::drawBag(BagView& view)
     {
-        constexpr float pouchRowHeight = 54.0f;
-        constexpr float pouchGap       = 8.0f;
-        constexpr float pouchPadding   = 16.0f;
-        constexpr float markerWidth    = 4.0f;
-        constexpr float cardGap        = 12.0f;
-        constexpr float cardPadding    = 16.0f;
-        constexpr float nameSize       = 18.0f;
+        // The canvas bag: 44 pixel pouch rows with a 30 pixel icon box, and the items two to a
+        // row in 48 pixel cards under a title row with the L and R chips.
+        constexpr float pouchRowHeight = 44.0f;
+        constexpr float pouchGap       = 6.0f;
+        constexpr float pouchIconBox   = 30.0f;
+        constexpr int pouchIconSize    = 18;
+        constexpr float rowRadius      = 12.0f;
+        constexpr float titleRow       = 36.0f;
+        constexpr float titleGap       = 10.0f;
+        constexpr float cardHeight     = 48.0f;
+        constexpr float cardGap        = 8.0f;
+        constexpr float itemArt        = 32.0f;
+        constexpr float stepButton     = 26.0f;
+        constexpr float countBoxHeight = 30.0f;
         constexpr float scrollbar      = 18.0f; // Room on the right for the scroll bar.
+        constexpr unsigned ART         = 0x3A4360; // The item's picture behind the selection.
         constexpr ImGuiWindowFlags fixed =
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -1827,19 +1835,26 @@ namespace pksm::switchui
         sectionGap();
 
         ImFont* bold             = theme::boldFont();
-        ImFont* regular          = ImGui::GetFont();
         const float contentWidth = ImGui::GetContentRegionAvail().x;
-        const auto size          = [](ImFont* font, float px, const std::string& text)
-        { return font->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        const auto size          = [bold](float px, const std::string& text)
+        { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        // `text` vertically centred between `top` and `top + height`, from `x`.
+        const auto centredText = [bold, &size](ImDrawList* drawList, float px, float x, float top,
+                                     float height, unsigned color, const std::string& text)
+        {
+            drawList->AddText(bold, px, ImVec2(x, std::round(top + (height - size(px, text).y) * 0.5f)),
+                theme::rgb(color), text.c_str());
+        };
 
-        // The pouches, the shown one marked in the accent colour. Rows shrink to fit them all.
+        // The pouches, the shown one on a lighter row with its icon in the accent colour.
         widgets::beginPanel("bag-pouches", ImVec2(theme::SIDE_PANEL_WIDTH, -SCREEN_BOTTOM_SPACE),
-            view.group.c_str(), fixed);
+            view.caption.c_str(), fixed);
         {
             ImDrawList* drawList   = ImGui::GetWindowDrawList();
             const ImVec2 origin    = ImGui::GetCursorScreenPos();
             const ImVec2 available = ImGui::GetContentRegionAvail();
             const float count      = static_cast<float>(std::max<size_t>(view.pouches.size(), 1));
+            // Rows shrink when a game has more pouches than fit.
             const float rowHeight =
                 std::min(pouchRowHeight, (available.y - pouchGap * (count - 1.0f)) / count);
             for (size_t i = 0; i < view.pouches.size(); ++i)
@@ -1855,45 +1870,69 @@ namespace pksm::switchui
                     view.pouch = i;
                 }
                 ImGui::PopID();
-                drawList->AddRectFilled(min, max,
-                    theme::rgb(shown ? theme::CARD_SELECTED : theme::CARD), theme::CARD_RADIUS);
                 if (shown)
                 {
-                    const float inset = rowHeight * 0.25f;
-                    drawList->AddRectFilled(ImVec2(min.x, min.y + inset),
-                        ImVec2(min.x + markerWidth, max.y - inset), theme::rgb(theme::ACCENT),
-                        markerWidth * 0.5f);
+                    drawList->AddRectFilled(min, max, theme::rgb(theme::CARD_SELECTED), rowRadius);
                 }
-                const ImVec2 countSize = size(regular, theme::FONT_SMALL, pouch.count);
-                const float countX     = max.x - pouchPadding - countSize.x;
-                drawList->AddText(regular, theme::FONT_SMALL,
-                    ImVec2(countX, min.y + (rowHeight - countSize.y) * 0.5f),
-                    theme::rgb(theme::TEXT_MUTED), pouch.count.c_str());
-                const float nameLeft = min.x + pouchPadding;
+                const ImVec2 boxMin(min.x + 7.0f, min.y + (rowHeight - pouchIconBox) * 0.5f);
+                drawList->AddRectFilled(boxMin,
+                    ImVec2(boxMin.x + pouchIconBox, boxMin.y + pouchIconBox),
+                    theme::rgb(shown ? theme::ACCENT : theme::BORDER), 8.0f);
+                const float iconInset = (pouchIconBox - static_cast<float>(pouchIconSize)) * 0.5f;
+                icons::drawSized(drawList, pouch.icon,
+                    ImVec2(boxMin.x + iconInset, boxMin.y + iconInset), pouchIconSize,
+                    theme::rgb(shown ? theme::BACKGROUND : theme::TEXT));
+
+                const float countWidth = size(theme::FONT_SMALL, pouch.count).x;
+                const float countX     = max.x - 14.0f - countWidth;
+                centredText(drawList, theme::FONT_SMALL, countX, min.y, rowHeight,
+                    shown ? theme::TEXT_SOFT : theme::TEXT_MUTED, pouch.count);
+                const float nameLeft = boxMin.x + pouchIconBox + 12.0f;
                 widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
                     ImVec2(nameLeft,
-                        min.y + (rowHeight - size(bold, theme::FONT_BODY, pouch.name).y) * 0.5f),
-                    theme::rgb(shown ? theme::ACCENT : theme::TEXT), pouch.name.c_str(),
-                    countX - 12.0f - nameLeft);
+                        std::round(min.y + (rowHeight - size(theme::FONT_BODY, pouch.name).y) * 0.5f)),
+                    theme::rgb(theme::TEXT), pouch.name.c_str(), countX - 12.0f - nameLeft);
             }
         }
         widgets::endPanel();
 
-        // The items of the shown pouch, ROWS rows at a time.
         ImGui::SameLine(0.0f, theme::PANEL_GAP);
         widgets::beginPanel("bag-items", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
         {
             ImDrawList* drawList   = ImGui::GetWindowDrawList();
             const ImVec2 origin    = ImGui::GetCursorScreenPos();
             const ImVec2 available = ImGui::GetContentRegionAvail();
+
+            // The title row: the pouch between its L and R chips, and how many items it holds.
+            const auto chip = [&](float x, const char* letter)
+            {
+                const float width = size(theme::FONT_SMALL, letter).x + 18.0f;
+                const ImVec2 min(x, origin.y + (titleRow - 26.0f) * 0.5f);
+                drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + 26.0f),
+                    theme::rgb(theme::BUTTON_FACE), 7.0f);
+                centredText(drawList, theme::FONT_SMALL, min.x + 9.0f, min.y, 26.0f,
+                    theme::BACKGROUND, letter);
+                return width;
+            };
+            const std::string pouchName =
+                view.pouch < view.pouches.size() ? view.pouches[view.pouch].name : std::string{};
+            float x = origin.x + 4.0f;
+            x += chip(x, "L") + 12.0f;
+            centredText(drawList, 20.0f, x, origin.y, titleRow, theme::TEXT, pouchName);
+            x += size(20.0f, pouchName).x + 12.0f;
+            chip(x, "R");
+            const float countWidth = size(theme::FONT_SMALL, view.itemCount).x;
+            centredText(drawList, theme::FONT_SMALL, origin.x + available.x - 4.0f - countWidth,
+                origin.y, titleRow, theme::TEXT_MUTED, view.itemCount);
+
+            // The items, ROWS rows at a time.
+            const float top        = origin.y + titleRow + titleGap;
             const size_t rows      = (view.items.size() + BagView::COLUMNS - 1) / BagView::COLUMNS;
             const bool scrolls     = rows > BagView::ROWS;
             const float columns    = static_cast<float>(BagView::COLUMNS);
-            const float shownRows  = static_cast<float>(BagView::ROWS);
             const float listWidth  = available.x - (scrolls ? scrollbar : 0.0f);
-            const ImVec2 cardSize((listWidth - cardGap * (columns - 1.0f)) / columns,
-                (available.y - cardGap * (shownRows - 1.0f)) / shownRows);
-            const size_t first = view.firstRow * BagView::COLUMNS;
+            const float cardWidth  = (listWidth - cardGap * (columns - 1.0f)) / columns;
+            const size_t first     = view.firstRow * BagView::COLUMNS;
             const size_t last =
                 std::min(view.items.size(), first + BagView::COLUMNS * BagView::ROWS);
             for (size_t i = first; i < last; ++i)
@@ -1901,48 +1940,98 @@ namespace pksm::switchui
                 const BagView::Item& item = view.items[i];
                 const size_t slot         = i - first;
                 const ImVec2 min(
-                    origin.x + static_cast<float>(slot % BagView::COLUMNS) * (cardSize.x + cardGap),
-                    origin.y + static_cast<float>(slot / BagView::COLUMNS) * (cardSize.y + cardGap));
-                const ImVec2 max(min.x + cardSize.x, min.y + cardSize.y);
+                    origin.x + static_cast<float>(slot % BagView::COLUMNS) * (cardWidth + cardGap),
+                    top + static_cast<float>(slot / BagView::COLUMNS) * (cardHeight + cardGap));
+                const ImVec2 max(min.x + cardWidth, min.y + cardHeight);
                 const bool selected = i == view.selected;
                 ImGui::SetCursorScreenPos(min);
                 ImGui::PushID(static_cast<int>(i));
                 if (item.name.empty())
                 {
                     // The slot after the last item: a dashed button that adds one.
-                    if (widgets::drawDashedButton("add", tr(Text::BagAddItem), cardSize, false,
-                            theme::ROW_RADIUS))
+                    if (widgets::drawDashedButton("add", tr(Text::BagAddItem),
+                            ImVec2(cardWidth, cardHeight), false, rowRadius))
                     {
                         view.selected = i;
                     }
                 }
                 else
                 {
-                    if (ImGui::InvisibleButton("item", cardSize))
+                    if (ImGui::InvisibleButton("item", ImVec2(cardWidth, cardHeight)))
                     {
                         view.selected = i;
                     }
                     drawList->AddRectFilled(min, max,
-                        theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), theme::ROW_RADIUS);
-                    float nameRight = max.x - cardPadding;
-                    if (!item.count.empty())
+                        theme::rgb(selected ? theme::CARD_SELECTED : theme::CARD), rowRadius);
+                    // Where the item's picture goes; there are no item sprites yet.
+                    const ImVec2 artMin(min.x + 8.0f, min.y + (cardHeight - itemArt) * 0.5f);
+                    drawList->AddRectFilled(artMin, ImVec2(artMin.x + itemArt, artMin.y + itemArt),
+                        theme::rgb(selected ? ART : theme::BORDER), 8.0f);
+
+                    float nameRight = max.x - 14.0f;
+                    if (!item.count.empty() && selected && view.carried == BagView::NONE)
                     {
-                        const ImVec2 countSize = size(bold, theme::FONT_BODY, item.count);
-                        nameRight              = max.x - cardPadding - countSize.x - 12.0f;
-                        drawList->AddText(bold, theme::FONT_BODY,
-                            ImVec2(max.x - cardPadding - countSize.x,
-                                min.y + (cardSize.y - countSize.y) * 0.5f),
-                            theme::rgb(theme::TEXT_SOFT), item.count.c_str());
+                        // The selected item's quantity as a stepper: −, the number with a pencil
+                        // for the keyboard, and +.
+                        const float numberWidth = std::max(30.0f, size(theme::FONT_BODY, item.count).x);
+                        const float boxWidth    = 10.0f + numberWidth + 6.0f + 14.0f + 8.0f;
+                        const float centerY     = min.y + cardHeight * 0.5f;
+                        float right             = max.x - 8.0f;
+                        const auto stepper      = [&](float left, const char* sign)
+                        {
+                            const ImVec2 bMin(left, centerY - stepButton * 0.5f);
+                            drawList->AddRectFilled(bMin,
+                                ImVec2(bMin.x + stepButton, bMin.y + stepButton),
+                                theme::rgb(theme::CARD), 8.0f);
+                            const ImVec2 signSize = size(18.0f, sign);
+                            drawList->AddText(bold, 18.0f,
+                                ImVec2(std::round(bMin.x + (stepButton - signSize.x) * 0.5f),
+                                    std::round(bMin.y + (stepButton - signSize.y) * 0.5f)),
+                                theme::rgb(theme::ACCENT), sign);
+                        };
+                        right -= stepButton;
+                        stepper(right, "+");
+                        right -= 6.0f + boxWidth;
+                        const ImVec2 boxMin(right, centerY - countBoxHeight * 0.5f);
+                        const ImVec2 boxMax(right + boxWidth, centerY + countBoxHeight * 0.5f);
+                        drawList->AddRectFilled(boxMin, boxMax, theme::rgb(theme::BACKGROUND), 8.0f);
+                        drawList->AddRect(boxMin, boxMax, theme::rgb(theme::DASHED), 8.0f,
+                            ImDrawFlags_None, 2.0f);
+                        const float numberRight = boxMin.x + 10.0f + numberWidth;
+                        centredText(drawList, theme::FONT_BODY,
+                            numberRight - size(theme::FONT_BODY, item.count).x, boxMin.y,
+                            countBoxHeight, theme::TEXT, item.count);
+                        icons::drawSized(drawList, icons::Icon::Edit,
+                            ImVec2(numberRight + 6.0f, centerY - 7.0f), 14,
+                            theme::rgb(theme::TEXT_MUTED));
+                        right -= 6.0f + stepButton;
+                        stepper(right, "−");
+                        nameRight = right - 12.0f;
                     }
-                    widgets::drawTextEllipsis(drawList, bold, nameSize,
-                        ImVec2(min.x + cardPadding,
-                            min.y + (cardSize.y - size(bold, nameSize, item.name).y) * 0.5f),
-                        theme::rgb(theme::TEXT), item.name.c_str(), nameRight - min.x - cardPadding);
+                    else if (!item.count.empty())
+                    {
+                        const std::string count = tr(Text::BagItemCount, {item.count});
+                        const float width       = size(15.0f, count).x;
+                        centredText(drawList, 15.0f, max.x - 14.0f - width, min.y, cardHeight,
+                            theme::TEXT_SOFT, count);
+                        nameRight = max.x - 14.0f - width - 12.0f;
+                    }
+                    const float nameLeft = artMin.x + itemArt + 12.0f;
+                    widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                        ImVec2(nameLeft,
+                            std::round(min.y + (cardHeight - size(theme::FONT_BODY, item.name).y) * 0.5f)),
+                        theme::rgb(theme::TEXT), item.name.c_str(), nameRight - nameLeft);
                 }
                 ImGui::PopID();
+                if (i == view.carried && !selected)
+                {
+                    // The item picked up to move: a thin accent outline where it waits.
+                    drawList->AddRect(min, max, theme::rgb(theme::ACCENT), rowRadius,
+                        ImDrawFlags_None, 2.0f);
+                }
                 if (selected)
                 {
-                    widgets::drawSelectionOutline(drawList, min, max, theme::ROW_RADIUS);
+                    widgets::drawSelectionOutline(drawList, min, max, rowRadius);
                 }
             }
 
@@ -1950,23 +2039,26 @@ namespace pksm::switchui
             // and where.
             if (scrolls)
             {
-                const float height = available.y;
-                const ImVec2 trackMin(origin.x + available.x - 6.0f, origin.y);
-                drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, origin.y + height),
+                const float height = static_cast<float>(BagView::ROWS) * (cardHeight + cardGap) - cardGap;
+                const ImVec2 trackMin(origin.x + available.x - 6.0f, top);
+                drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, top + height),
                     theme::rgb(theme::CARD), 3.0f);
-                const float shown = shownRows / static_cast<float>(rows);
+                const float shown = static_cast<float>(BagView::ROWS) / static_cast<float>(rows);
                 const float start = static_cast<float>(view.firstRow) / static_cast<float>(rows);
-                drawList->AddRectFilled(ImVec2(trackMin.x, origin.y + height * start),
-                    ImVec2(trackMin.x + 6.0f, origin.y + height * (start + shown)),
+                drawList->AddRectFilled(ImVec2(trackMin.x, top + height * start),
+                    ImVec2(trackMin.x + 6.0f, top + height * (start + shown)),
                     theme::rgb(theme::BORDER), 3.0f);
             }
         }
         widgets::endPanel();
 
-        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
-            {"L / R", tr(Text::HintQuantity)}, {"−", tr(Text::HintTypeQuantity)},
-            {"ZL / ZR", tr(Text::HintPouch)}, {"Y", tr(Text::HintExport)},
-            {"B", tr(Text::HintBack)}});
+        // Y moves items here and X takes them out; the game menu exports and discards.
+        const float legend = view.carried != BagView::NONE
+            ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)}, {"B", tr(Text::HintCancel)}})
+            : widgets::drawButtonLegend({{"A", tr(Text::HintChangeItem)},
+                  {"ZL / ZR", tr(Text::HintQuantity)}, {"−", tr(Text::HintTypeQuantity)},
+                  {"L / R", tr(Text::HintPouch)}, {"Y", tr(Text::HintMove)},
+                  {"X", tr(Text::HintRemove)}, {"B", tr(Text::HintBack)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();

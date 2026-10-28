@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <switch.h>
 #include "imgui.h"
+#include "ui/Icons.hpp"
 #include <cstddef>
 #include <initializer_list>
 #include <string>
@@ -209,32 +210,37 @@ namespace pksm::switchui
         int stepRequest = 0;
     };
 
-    // Everything the bag screen draws: the pouches on the left and the selected pouch's items
-    // as a grid of COLUMNS cards, ROWS rows at a time from `firstRow`.
+    // Everything the bag screen draws: the pouches on the left and the shown pouch's items as a
+    // grid of COLUMNS cards, ROWS rows at a time from `firstRow`.
     struct BagView
     {
-        static constexpr size_t COLUMNS = 3;
+        static constexpr size_t COLUMNS = 2;
         static constexpr size_t ROWS    = 8;
+        static constexpr size_t NONE    = static_cast<size_t>(-1);
 
         struct Pouch
         {
             std::string name;
-            std::string count; // "12 / 60"
+            std::string count; // How many items it holds.
+            icons::Icon icon = icons::Icon::Bag;
         };
         struct Item
         {
             // Empty for the slot after the last item, which adds one.
             std::string name;
-            std::string count; // "× 5", or empty when the item has no quantity to show.
+            // The quantity, or empty for items that do not stack.
+            std::string count;
         };
 
-        // The game's group, as the caption of the pouch list.
-        std::string group;
+        std::string caption; // "BOLSILLOS · ESPADA"
         std::vector<Pouch> pouches;
         size_t pouch = 0;
+        std::string itemCount; // "16 objetos"
         std::vector<Item> items;
         size_t firstRow = 0;
         size_t selected = 0;
+        // The item picked up with Y, or NONE.
+        size_t carried = NONE;
         std::string message;
     };
 

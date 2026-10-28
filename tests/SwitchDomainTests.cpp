@@ -295,7 +295,7 @@ namespace
         check(loadTexts(TextLanguage::English, SWITCH_STRINGS), "English loads");
         check(std::string(tr(Text::Yes)) == "Yes", "English text");
         check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exported to sdmc:/a", "one value");
-        check(tr(Text::BagPouchCount, {"12", "60"}) == "12 / 60", "values go in order");
+        check(tr(Text::SlotCount, {"12", "30"}) == "12 / 30", "values go in order");
         check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
         check(tr(Text::Yes, {"ignored"}) == "Yes", "extra values are ignored");
 

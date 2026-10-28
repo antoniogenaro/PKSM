@@ -23,6 +23,16 @@ namespace pksm::switchui::icons
         Male,    // ♂
         Female,  // ♀
         Shiny,   // A four-pointed star.
+        // Bag pouches.
+        PouchMedicine,    // A medicine bottle.
+        PouchBalls,       // A Poké Ball.
+        PouchBattle,      // A shield.
+        PouchBerries,     // A berry.
+        PouchTms,         // A disc.
+        PouchTreasures,   // A gem.
+        PouchIngredients, // A bowl.
+        PouchKey,         // A key.
+        PouchPc,          // A computer screen.
         Count
     };
 
