@@ -50,6 +50,7 @@ namespace pksm::switchui
 
     private:
         std::vector<std::string> natures_;
+        size_t current_;
         size_t row_    = 0;
         size_t column_ = 0;
         PickHandler onPick_;

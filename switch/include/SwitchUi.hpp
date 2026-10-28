@@ -226,8 +226,10 @@ namespace pksm::switchui
         void drawOptionPicker(const std::string& title, const std::string& current,
             const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
             size_t firstRow, size_t& index);
-        // `natures` holds the 25 natures in their usual order: row * 5 + column.
-        void drawNaturePicker(const std::vector<std::string>& natures, size_t& row, size_t& column);
+        // `natures` holds the 25 natures in their usual order: row * 5 + column. `current` is
+        // the Pokémon's nature, shown in the header.
+        void drawNaturePicker(
+            const std::vector<std::string>& natures, size_t current, size_t& row, size_t& column);
 
         // Shows the system keyboard and waits for it. Returns false when cancelled or empty.
         bool editText(const std::string& title, const std::string& initial, std::string& result,
