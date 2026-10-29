@@ -18,6 +18,7 @@
     X(PendingChanges)                                                                              \
     X(ExportedTo)                                                                                  \
     X(SavedToConsole)                                                                              \
+    X(SavedToConsoleWithBank)                                                                      \
     X(UnsavedBeforeQuit)                                                                           \
     X(UnsavedBeforeBack)                                                                           \
     /* Games */                                                                                    \
@@ -118,6 +119,7 @@
     X(EditorReset)                                                                                 \
     X(EditorUnsaved)                                                                               \
     X(EditorUnsavedBack)                                                                           \
+    X(EditorReadOnly)                                                                              \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
@@ -154,6 +156,29 @@
     X(PokemonReadFailed)                                                                           \
     X(PokemonCarrying)                                                                             \
     X(PartyNeedsPokemon)                                                                           \
+    /* Bank */                                                                                     \
+    X(BankTitle)                                                                                   \
+    X(BankBankLabel)                                                                               \
+    X(BankGameLabel)                                                                               \
+    X(BankFromBank)                                                                                \
+    X(BankFromGame)                                                                                \
+    X(BankSlotWhere)                                                                               \
+    X(BankBoxName)                                                                                 \
+    X(BankOpenFailed)                                                                              \
+    X(BankCorrupt)                                                                                 \
+    X(BankNewerVersion)                                                                            \
+    X(BankWriteFailed)                                                                             \
+    X(BankSaved)                                                                                   \
+    X(ExportedWithBank)                                                                            \
+    X(BankSlotUnreadable)                                                                          \
+    X(TransferNoPath)                                                                              \
+    X(TransferBadMove)                                                                             \
+    X(TransferBadSpecies)                                                                          \
+    X(TransferBadForm)                                                                             \
+    X(TransferBadAbility)                                                                          \
+    X(TransferBadItem)                                                                             \
+    X(TransferBadBall)                                                                             \
+    X(TransferConfirm)                                                                             \
     /* Pokémon editor */                                                                          \
     X(FieldSpecies)                                                                                \
     X(FieldNickname)                                                                               \
