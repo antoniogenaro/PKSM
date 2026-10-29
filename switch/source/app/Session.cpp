@@ -8,22 +8,20 @@
 
 namespace pksm::switchui
 {
-    Session::Session(std::unique_ptr<pksm::Sav> save, const GameProfile& profile, std::string path)
-        : save_(std::move(save)), profile_(&profile), sourcePath_(std::move(path))
+    Session::Session(std::unique_ptr<pksm::Sav> save, const GameProfile& profile, std::string path,
+        std::optional<console::SaveLocation> console)
+        : save_(std::move(save)),
+          profile_(&profile),
+          sourcePath_(std::move(path)),
+          console_(std::move(console))
     {
     }
 
     Session::~Session() = default;
 
-    std::unique_ptr<Session> Session::open(const std::string& path, std::string& error)
+    std::unique_ptr<Session> Session::parse(std::shared_ptr<u8[]> data, size_t size,
+        std::string path, std::optional<console::SaveLocation> console, std::string& error)
     {
-        std::shared_ptr<u8[]> data;
-        size_t size = 0;
-        if (!storage::readSaveFile(path, data, size, error))
-        {
-            return nullptr;
-        }
-
         std::unique_ptr<pksm::Sav> save;
         try
         {
@@ -42,7 +40,31 @@ namespace pksm::switchui
         }
 
         save->beginEditing();
-        return std::unique_ptr<Session>(new Session(std::move(save), *profile, path));
+        return std::unique_ptr<Session>(
+            new Session(std::move(save), *profile, std::move(path), std::move(console)));
+    }
+
+    std::unique_ptr<Session> Session::open(const std::string& path, std::string& error)
+    {
+        std::shared_ptr<u8[]> data;
+        size_t size = 0;
+        if (!storage::readSaveFile(path, data, size, error))
+        {
+            return nullptr;
+        }
+        return parse(std::move(data), size, path, std::nullopt, error);
+    }
+
+    std::unique_ptr<Session> Session::openConsole(
+        const console::SaveLocation& location, std::string& error)
+    {
+        std::shared_ptr<u8[]> data;
+        size_t size = 0;
+        if (!console::readSave(location, data, size, error))
+        {
+            return nullptr;
+        }
+        return parse(std::move(data), size, std::string{}, location, error);
     }
 
     std::optional<pksm::GameVersion> Session::identify(const std::string& path)
@@ -69,6 +91,19 @@ namespace pksm::switchui
 
     bool Session::exportChanges(std::string& outputPath, std::string& error)
     {
+        if (console_)
+        {
+            save_->finishEditing();
+            const bool written = console::writeSave(*console_, save_->rawData().get(),
+                save_->getEntireLengthIncludingFooter(), outputPath, error);
+            save_->beginEditing();
+            if (written)
+            {
+                dirty_ = false;
+            }
+            return written;
+        }
+
         storage::ExportFile output;
         if (!storage::createExportFile(sourcePath_, output, error))
         {
@@ -94,7 +129,8 @@ namespace pksm::switchui
         {
             return false;
         }
-        message = tr(Text::ExportedTo, {outputPath});
+        message = console_ ? tr(Text::SavedToConsole, {outputPath})
+                           : tr(Text::ExportedTo, {outputPath});
         return true;
     }
 }

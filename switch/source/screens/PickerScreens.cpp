@@ -132,6 +132,55 @@ namespace pksm::switchui
         ui.drawNaturePicker(natures_, current_, row_, column_);
     }
 
+    UserPickerScreen::UserPickerScreen(
+        std::vector<std::string> users, size_t current, PickHandler onPick)
+        : users_(std::move(users)),
+          current_(users_.empty() ? 0 : std::min(current, users_.size() - 1)),
+          index_(current_),
+          onPick_(std::move(onPick))
+    {
+    }
+
+    void UserPickerScreen::update(App& app, Action action)
+    {
+        if (users_.empty())
+        {
+            app.pop();
+            return;
+        }
+        const size_t last = users_.size() - 1;
+        switch (action)
+        {
+            case Action::Confirm:
+                app.pop();
+                onPick_(index_);
+                break;
+            case Action::Back:
+            case Action::Quit:
+                app.pop();
+                break;
+            case Action::Left:
+                index_ = index_ > 0 ? index_ - 1 : last;
+                break;
+            case Action::Right:
+                index_ = index_ < last ? index_ + 1 : 0;
+                break;
+            case Action::Up:
+                index_ = index_ >= COLUMNS ? index_ - COLUMNS : index_;
+                break;
+            case Action::Down:
+                index_ = index_ + COLUMNS <= last ? index_ + COLUMNS : index_;
+                break;
+            default:
+                break;
+        }
+    }
+
+    void UserPickerScreen::draw(SwitchUi& ui)
+    {
+        ui.drawUserPicker(users_, current_, index_);
+    }
+
     DatePickerScreen::DatePickerScreen(std::string title, const Date& current, YearRange years,
         std::function<void(const Date&)> onPick)
         : title_(std::move(title)),

@@ -25,6 +25,14 @@ namespace pksm::switchui
         size_t trainerNameLengthJapanese;
         // The background of the game's art on its card, as 0xRRGGBB.
         unsigned artColor;
+        // The game's title on the Switch, whose saves are kept on the console, and the save
+        // file inside them. 0 for games that are not Switch games.
+        uint64_t consoleTitleId     = 0;
+        const char* consoleSaveFile = "";
+        // The SD folder that gets a backup of a console save before it is replaced.
+        const char* backupFolder = "";
+
+        bool hasConsoleSaves() const { return consoleTitleId != 0; }
 
         size_t trainerNameLengthFor(pksm::Language language) const
         {

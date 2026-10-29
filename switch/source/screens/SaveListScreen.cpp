@@ -4,6 +4,7 @@
 #include "app/SaveLibrary.hpp"
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
+#include "platform/ConsoleSaves.hpp"
 #include "platform/SaveStorage.hpp"
 #include "screens/GameMenuScreen.hpp"
 #include "ui/Text.hpp"
@@ -12,30 +13,77 @@
 
 namespace pksm::switchui
 {
-    SaveListScreen::SaveListScreen(size_t game, std::vector<std::string> files)
-        : game_(game), files_(std::move(files))
+    SaveListScreen::SaveListScreen(size_t game, std::vector<std::string> files,
+        std::optional<ConsoleUser> user, bool consoleSave)
+        : game_(game), user_(std::move(user)), files_(std::move(files))
     {
         const GameProfile& profile = gameProfiles()[game_];
-        card_   = GameCard{tr(profile.name), profile.mascotSpecies, files_.size(), profile.artColor};
-        group_  = tr(profile.group);
+        card_  = GameCard{tr(profile.name), profile.mascotSpecies, files_.size(), profile.artColor,
+             consoleSave && user_.has_value()};
+        group_ = tr(profile.group);
+    }
+
+    size_t SaveListScreen::rowCount() const
+    {
+        return files_.size() + (card_.consoleSave ? 1 : 0);
     }
 
     void SaveListScreen::onResume()
     {
-        const std::string current = selected_ < files_.size() ? files_[selected_] : std::string{};
-        SaveLibrary library       = SaveLibrary::scan();
-        storageError_             = std::move(library.error);
-        files_                    = std::move(library.filesByGame[game_]);
-        card_.saveCount           = files_.size();
-        // Keep the same file selected when it is still there.
-        const auto found = std::find(files_.begin(), files_.end(), current);
-        if (found != files_.end())
+        const size_t firstFile    = card_.consoleSave ? 1 : 0;
+        const bool onConsole      = card_.consoleSave && selected_ == 0;
+        const std::string current = !onConsole && selected_ - firstFile < files_.size()
+                                        ? files_[selected_ - firstFile]
+                                        : std::string{};
+        SaveLibrary library = SaveLibrary::scan(user_ ? &*user_ : nullptr);
+        storageError_       = std::move(library.error);
+        files_              = std::move(library.filesByGame[game_]);
+        card_.saveCount     = files_.size();
+        card_.consoleSave   = library.consoleSaveByGame[game_] && user_.has_value();
+
+        // Keep the same save selected when it is still there.
+        const size_t first = card_.consoleSave ? 1 : 0;
+        const auto found   = std::find(files_.begin(), files_.end(), current);
+        if (onConsole && card_.consoleSave)
         {
-            selected_ = static_cast<size_t>(found - files_.begin());
+            selected_ = 0;
         }
-        else if (selected_ >= files_.size())
+        else if (!current.empty() && found != files_.end())
         {
-            selected_ = files_.empty() ? 0 : files_.size() - 1;
+            selected_ = first + static_cast<size_t>(found - files_.begin());
+        }
+        else if (selected_ >= rowCount())
+        {
+            selected_ = rowCount() == 0 ? 0 : rowCount() - 1;
+        }
+    }
+
+    void SaveListScreen::open(App& app)
+    {
+        const GameProfile& profile = gameProfiles()[game_];
+        if (card_.consoleSave && selected_ == 0)
+        {
+            const console::SaveLocation location{
+                profile.consoleTitleId, profile.consoleSaveFile, *user_, profile.backupFolder};
+            if (auto session = Session::openConsole(location, loadError_))
+            {
+                app.push(std::make_unique<GameMenuScreen>(std::move(session), std::string{}));
+            }
+            else
+            {
+                showingLoadError_ = true;
+            }
+            return;
+        }
+
+        const std::string& file = files_[selected_ - (card_.consoleSave ? 1 : 0)];
+        if (auto session = Session::open(storage::savePath(file), loadError_))
+        {
+            app.push(std::make_unique<GameMenuScreen>(std::move(session), file));
+        }
+        else
+        {
+            showingLoadError_ = true;
         }
     }
 
@@ -59,36 +107,29 @@ namespace pksm::switchui
             app.pop();
             return;
         }
-        if (files_.empty())
+        const size_t rows = rowCount();
+        if (rows == 0)
         {
             return;
         }
 
         if (action == Action::Down)
         {
-            selected_ = (selected_ + 1) % files_.size();
+            selected_ = (selected_ + 1) % rows;
         }
         else if (action == Action::Up)
         {
-            selected_ = selected_ == 0 ? files_.size() - 1 : selected_ - 1;
+            selected_ = selected_ == 0 ? rows - 1 : selected_ - 1;
         }
-        else if (action == Action::Confirm)
+        else if (action == Action::Confirm && selected_ < rows)
         {
-            auto session = Session::open(storage::savePath(files_[selected_]), loadError_);
-            if (session)
-            {
-                app.push(std::make_unique<GameMenuScreen>(std::move(session), files_[selected_]));
-            }
-            else
-            {
-                showingLoadError_ = true;
-            }
+            open(app);
         }
     }
 
     void SaveListScreen::draw(SwitchUi& ui)
     {
-        ui.drawSaveList(
-            card_, group_, files_, selected_, showingLoadError_ ? loadError_ : storageError_);
+        ui.drawSaveList(card_, group_, user_ ? user_->name : std::string{}, files_, selected_,
+            showingLoadError_ ? loadError_ : storageError_);
     }
 }

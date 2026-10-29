@@ -25,12 +25,14 @@
 
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
+#include "platform/ConsoleUsers.hpp"
 #include "platform/SystemLanguage.hpp"
 #include "screens/GameListScreen.hpp"
 #include "utils/i18n.hpp"
 #include <switch.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -67,7 +69,14 @@ int main(int argc, char* argv[])
     }
 
     pksm::switchui::App app(ui);
-    app.push(std::make_unique<pksm::switchui::GameListScreen>());
+    // Console saves are always those of the selected user; X on the game list picks another.
+    std::vector<pksm::switchui::ConsoleUser> users = pksm::switchui::listConsoleUsers();
+    const size_t user = pksm::switchui::startingUserIndex(users);
+    if (user < users.size())
+    {
+        ui.setUserName(users[user].name);
+    }
+    app.push(std::make_unique<pksm::switchui::GameListScreen>(std::move(users), user));
     app.run();
     return 0;
 }

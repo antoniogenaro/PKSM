@@ -17,6 +17,7 @@
     X(WithId)                                                                                      \
     X(PendingChanges)                                                                              \
     X(ExportedTo)                                                                                  \
+    X(SavedToConsole)                                                                              \
     X(UnsavedBeforeQuit)                                                                           \
     X(UnsavedBeforeBack)                                                                           \
     /* Games */                                                                                    \
@@ -66,6 +67,10 @@
     X(ExportEmptyNotRemoved)                                                                       \
     X(ExportPartialRemoved)                                                                        \
     X(ExportPartialKept)                                                                           \
+    X(ConsoleSaveOpenFailed)                                                                       \
+    X(ConsoleSaveReadFailed)                                                                       \
+    X(ConsoleSaveWriteFailed)                                                                      \
+    X(ConsoleBackupFailed)                                                                         \
     /* Game list */                                                                                \
     X(HintOpen)                                                                                    \
     X(GameListPrompt)                                                                              \
@@ -84,6 +89,7 @@
     X(HintSaveChanges)                                                                             \
     X(HintSelect)                                                                                  \
     X(HintChangePage)                                                                              \
+    X(HintSwitchUser)                                                                              \
     /* Boxes */                                                                                    \
     X(PartyTitle)                                                                                  \
     X(SlotCount)                                                                                   \
@@ -115,10 +121,17 @@
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
     X(SaveCountMany)                                                                               \
+    X(ConsoleSaveStatus)                                                                           \
     /* Save list */                                                                                \
     X(SaveListTitle)                                                                               \
     X(NoSavesFound)                                                                                \
     X(NoSavesHint)                                                                                 \
+    X(ConsoleSaveTitle)                                                                            \
+    X(ConsoleSaveOf)                                                                               \
+    X(ConsoleSaveDetail)                                                                           \
+    X(UserPickerTitle)                                                                             \
+    X(UserPickerHint)                                                                              \
+    X(UserCurrent)                                                                                 \
     /* Game menu */                                                                                \
     X(TrainerSummary)                                                                              \
     X(MenuStorage)                                                                                 \

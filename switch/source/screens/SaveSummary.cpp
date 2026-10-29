@@ -28,7 +28,15 @@ namespace pksm::switchui
         summary.details   = tr(Text::TrainerSummary,
               {save.otName(), padDigits(save.displayTID(), padded ? 6 : 0),
                   padDigits(save.displaySID(), padded ? 4 : 0)});
-        summary.path    = std::string(storage::SAVE_DIRECTORY) + "/" + path;
+        if (const auto& console = session.consoleLocation())
+        {
+            summary.file = tr(Text::ConsoleSaveTitle);
+            summary.path = tr(Text::ConsoleSaveOf, {console->user.name});
+        }
+        else
+        {
+            summary.path = std::string(storage::SAVE_DIRECTORY) + "/" + path;
+        }
         return summary;
     }
 
