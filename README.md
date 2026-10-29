@@ -143,13 +143,17 @@ License, are packaged into the NRO at build time. The SDL2 interface can edit
 trainer information, the bag, and Pokémon in boxes or the party. The Pokémon editor
 covers species, nickname and original trainer, level, nature, ability, item,
 shiny status, gender, friendship, Poké Ball, form, IVs, EVs, moves, encounter
-details, and generation-eight enjoyment/fullness. Saving writes the changes
-over the save file that was opened. In the Pokémon selector, use Up/Down to choose a slot and L/R to
-change boxes or open the party. In the editors, use ZL/ZR to change values, L/R to turn pages,
-A to enter text or numeric IDs, Y to save, B to return, and X to discard
-changes. The bag screen lists every pouch: L/R change pouch, A picks the
-item in a slot, ZL/ZR change its quantity and − types it, X takes it out and Y
-picks it up to swap it with another item. This remains an early controller-driven proof of concept, not the
+details, and generation-eight enjoyment/fullness. On every screen with a save
+open except the bag, + saves it, writing the changes over the save file that
+was opened. In the Pokémon selector, use Up/Down to choose a slot, L/R to change
+boxes or open the party and Y to move a Pokémon. Leaving the boxes or the bank
+with unsaved changes asks whether to save or discard them. In the editors, use ZL/ZR to
+change values, L/R to turn pages, A to enter text or numeric IDs, B to return,
+and X to discard changes. B in the Pokémon editor keeps the edit without saving
+the game. B on the game list quits. The bag screen lists every
+pouch: L/R change pouch, X picks the item in a slot, ZL/ZR change its quantity,
+A types it and − takes the item out; items are not moved, and the bag neither
+saves nor discards. This remains an early controller-driven proof of concept, not the
 full 3DS interface or a tool for accessing active game saves.
 
 ## Credits

@@ -21,6 +21,9 @@
     X(SavedToConsoleWithBank)                                                                      \
     X(UnsavedBeforeQuit)                                                                           \
     X(UnsavedBeforeBack)                                                                           \
+    X(LeaveTitle)                                                                                  \
+    X(LeaveSave)                                                                                   \
+    X(LeaveDiscard)                                                                                \
     /* Games */                                                                                    \
     X(GameSword)                                                                                   \
     X(GameShield)                                                                                  \
@@ -85,7 +88,6 @@
     X(HintCancel)                                                                                  \
     X(HintPage)                                                                                    \
     X(HintReset)                                                                                   \
-    X(HintSaveChanges)                                                                             \
     X(HintSelect)                                                                                  \
     X(HintChangePage)                                                                              \
     X(HintSwitchUser)                                                                              \
@@ -116,7 +118,6 @@
     X(EditorSaved)                                                                                 \
     X(EditorReset)                                                                                 \
     X(EditorUnsaved)                                                                               \
-    X(EditorUnsavedBack)                                                                           \
     X(EditorReadOnly)                                                                              \
     X(SaveCountNone)                                                                               \
     X(SaveCountOne)                                                                                \
@@ -279,7 +280,6 @@
     X(BagPouchesCaption)                                                                           \
     X(BagItemsOne)                                                                                 \
     X(BagItemsMany)                                                                                \
-    X(BagCarrying)                                                                                 \
     X(HintChangeItem)                                                                              \
     X(HintRemove)                                                                                  \
     /* Pickers and keyboard */                                                                     \

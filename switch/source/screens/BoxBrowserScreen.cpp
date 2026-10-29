@@ -113,15 +113,19 @@ namespace pksm::switchui
                     message_.clear();
                     break;
                 }
-                // The game menu below keeps the save open and warns about unsaved changes.
-                app.pop();
+                leaveAsking(app, session_, message_);
                 break;
             case Action::Discard:
                 app.closeSession();
                 break;
-            case Action::Save:
-                // Y moves Pokémon here; the game menu saves.
+            case Action::Move:
                 pickUpOrDrop();
+                break;
+            case Action::Save:
+                if (session_.dirty())
+                {
+                    session_.saveWithMessage(message_);
+                }
                 break;
             case Action::Confirm:
                 if (!carried_.active)

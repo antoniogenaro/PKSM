@@ -146,8 +146,7 @@ namespace pksm::switchui
                     message_.clear();
                     break;
                 }
-                // The game menu below keeps the save and the bank open and saves both.
-                app.pop();
+                leaveAsking(app, session_, message_);
                 break;
             case Action::Confirm:
                 if (!carried_.active)
@@ -155,8 +154,14 @@ namespace pksm::switchui
                     openSelected(app);
                 }
                 break;
-            case Action::Save:
+            case Action::Move:
                 pickUpOrDrop();
+                break;
+            case Action::Save:
+                if (session_.dirty())
+                {
+                    session_.saveWithMessage(message_);
+                }
                 break;
             default:
                 break;

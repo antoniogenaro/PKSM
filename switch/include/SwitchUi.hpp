@@ -29,9 +29,13 @@ namespace pksm::switchui
         Confirm,
         Back,
         Discard,
+        // Y: picks up or drops a Pokémon or an item.
+        Move,
+        // +: writes the open save, on every screen that has one.
         Save,
         // The − button: a second way to edit the selection, such as typing an item's quantity.
         Alternate,
+        // The system asked the app to close.
         Quit
     };
 
@@ -255,7 +259,6 @@ namespace pksm::switchui
     {
         static constexpr size_t COLUMNS = 2;
         static constexpr size_t ROWS    = 8;
-        static constexpr size_t NONE    = static_cast<size_t>(-1);
 
         struct Pouch
         {
@@ -278,8 +281,6 @@ namespace pksm::switchui
         std::vector<Item> items;
         size_t firstRow = 0;
         size_t selected = 0;
-        // The item picked up with Y, or NONE.
-        size_t carried = NONE;
         std::string message;
     };
 

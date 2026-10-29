@@ -759,7 +759,7 @@ namespace pksm::switchui
         }
         if (buttons & HidNpadButton_Y)
         {
-            return Action::Save;
+            return Action::Move;
         }
         if (buttons & HidNpadButton_ZL)
         {
@@ -775,7 +775,7 @@ namespace pksm::switchui
         }
         if (buttons & HidNpadButton_Plus)
         {
-            return Action::Quit;
+            return Action::Save;
         }
 
         return Action::None;
@@ -1052,12 +1052,11 @@ namespace pksm::switchui
         // Without saves there is nothing to open.
         if (!hasSaves(game))
         {
-            widgets::drawButtonLegend({{"B", tr(Text::HintBack)}, {"+", tr(Text::HintQuit)}});
+            widgets::drawButtonLegend({{"B", tr(Text::HintBack)}});
         }
         else
         {
-            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)},
-                {"+", tr(Text::HintQuit)}});
+            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)}});
         }
         endFrame();
     }
@@ -1122,7 +1121,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)},
-            {"Y", tr(Text::HintSave)}, {"X", tr(Text::HintDiscard)}, {"+", tr(Text::HintQuit)}});
+            {"X", tr(Text::HintDiscard)}, {"+", tr(Text::HintSave)}});
         endFrame();
     }
 
@@ -1532,13 +1531,12 @@ namespace pksm::switchui
         drawPokemonDetail(view.detail);
         widgets::endPanel();
 
-        // Y moves Pokémon here; the game menu saves.
         const float legend = view.carrying
             ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
                   {"L / R", tr(Text::HintChangeBox)}, {"X", tr(Text::HintDiscard)},
-                  {"B", tr(Text::HintBack)}});
+                  {"B", tr(Text::HintBack)}, {"+", tr(Text::HintSave)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
@@ -1762,7 +1760,8 @@ namespace pksm::switchui
             ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
-                  {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintBack)}});
+                  {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintBack)},
+                  {"+", tr(Text::HintSave)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
@@ -2081,7 +2080,7 @@ namespace pksm::switchui
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
                   {"ZL / ZR", tr(Text::HintChange)}, {"L / R", tr(Text::HintPage)},
                   {"X", tr(Text::HintReset)}, {"B", tr(Text::HintBack)},
-                  {"+", tr(Text::HintSaveChanges)}});
+                  {"+", tr(Text::HintSave)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
@@ -2124,7 +2123,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"ZL / ZR", tr(Text::HintChange)},
-            {"Y", tr(Text::HintSave)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
+            {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}, {"+", tr(Text::HintSave)}});
         endFrame();
     }
 
@@ -2288,7 +2287,7 @@ namespace pksm::switchui
                         theme::rgb(selected ? ART : theme::BORDER), 8.0f);
 
                     float nameRight = max.x - 14.0f;
-                    if (!item.count.empty() && selected && view.carried == BagView::NONE)
+                    if (!item.count.empty() && selected)
                     {
                         // The selected item's quantity as a stepper: −, the number with a pencil
                         // for the keyboard, and +.
@@ -2342,12 +2341,6 @@ namespace pksm::switchui
                         theme::rgb(theme::TEXT), item.name.c_str(), nameRight - nameLeft);
                 }
                 ImGui::PopID();
-                if (i == view.carried && !selected)
-                {
-                    // The item picked up to move: a thin accent outline where it waits.
-                    drawList->AddRect(min, max, theme::rgb(theme::ACCENT), rowRadius,
-                        ImDrawFlags_None, 2.0f);
-                }
                 if (selected)
                 {
                     widgets::drawSelectionOutline(drawList, min, max, rowRadius);
@@ -2371,13 +2364,11 @@ namespace pksm::switchui
         }
         widgets::endPanel();
 
-        // Y moves items here and X takes them out; the game menu saves and discards.
-        const float legend = view.carried != BagView::NONE
-            ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)}, {"B", tr(Text::HintCancel)}})
-            : widgets::drawButtonLegend({{"A", tr(Text::HintChangeItem)},
-                  {"ZL / ZR", tr(Text::HintQuantity)}, {"−", tr(Text::HintTypeQuantity)},
-                  {"L / R", tr(Text::HintPouch)}, {"Y", tr(Text::HintMove)},
-                  {"X", tr(Text::HintRemove)}, {"B", tr(Text::HintBack)}});
+        // Nothing is saved, discarded or moved here.
+        const float legend = widgets::drawButtonLegend({{"A", tr(Text::HintTypeQuantity)},
+            {"ZL / ZR", tr(Text::HintQuantity)}, {"X", tr(Text::HintChangeItem)},
+            {"−", tr(Text::HintRemove)}, {"L / R", tr(Text::HintPouch)},
+            {"B", tr(Text::HintBack)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();

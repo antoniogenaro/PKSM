@@ -62,6 +62,11 @@ namespace pksm::switchui
         // Same, leaving in `message` what to show: what was written, or the error.
         bool saveWithMessage(std::string& message);
 
+        // Drops every change to the save and the bank by reading the save again from where it
+        // came from. On failure nothing changes and `error` says why. Screens that hold parts
+        // of the old save must close.
+        bool discardChanges(std::string& error);
+
     private:
         Session(std::unique_ptr<pksm::Sav> save, const GameProfile& profile, std::string path,
             std::optional<console::SaveLocation> console);

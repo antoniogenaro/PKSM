@@ -161,7 +161,7 @@ namespace pksm::switchui
 
     size_t BagScreen::shownSlots() const
     {
-        return carried_ ? slots_.size() : std::min(slots_.size() + 1, capacity());
+        return std::min(slots_.size() + 1, capacity());
     }
 
     void BagScreen::refresh()
@@ -246,48 +246,7 @@ namespace pksm::switchui
     {
         session_.markDirty();
         refresh();
-        clearMessage();
-    }
-
-    void BagScreen::clearMessage()
-    {
-        if (carried_ && *carried_ < slots_.size())
-        {
-            message_ = tr(Text::BagCarrying, {itemName(session_.save(), slots_[*carried_].id)});
-        }
-        else
-        {
-            message_.clear();
-        }
-    }
-
-    void BagScreen::pickUpOrDrop()
-    {
-        const size_t slot = selected_[pouch_];
-        if (slot >= slots_.size())
-        {
-            return;
-        }
-        if (!carried_)
-        {
-            carried_ = slot;
-            clearMessage();
-            return;
-        }
-        const size_t from = *carried_;
-        carried_.reset();
-        if (from == slot || from >= slots_.size())
-        {
-            clearMessage();
-            return;
-        }
-        // Swap the two slots as they are in the save, so nothing else of either item changes.
-        pksm::Sav& save   = session_.save();
-        const auto first  = save.item(pouch(), static_cast<u16>(from));
-        const auto second = save.item(pouch(), static_cast<u16>(slot));
-        save.item(*second, pouch(), static_cast<u16>(from));
-        save.item(*first, pouch(), static_cast<u16>(slot));
-        changed();
+        message_.clear();
     }
 
     void BagScreen::pickItem(App& app)
@@ -443,13 +402,6 @@ namespace pksm::switchui
                 message_ = tr(Text::UnsavedBeforeQuit);
                 break;
             case Action::Back:
-                if (carried_)
-                {
-                    // Nothing was written yet, so cancelling only puts it down.
-                    carried_.reset();
-                    clearMessage();
-                    break;
-                }
                 // The game menu below keeps the save open and warns about unsaved changes.
                 app.pop();
                 break;
@@ -458,46 +410,26 @@ namespace pksm::switchui
             case Action::Left:
             case Action::Right:
                 move(action);
-                clearMessage();
+                message_.clear();
                 break;
             case Action::PreviousPage:
             case Action::NextPage:
-                // The carried item stays in its pouch.
-                if (!carried_)
-                {
-                    changePouch(action == Action::NextPage ? 1 : -1);
-                }
+                changePouch(action == Action::NextPage ? 1 : -1);
                 break;
             case Action::PreviousTab:
             case Action::NextTab:
-                if (!carried_)
-                {
-                    stepCount(action == Action::NextTab ? 1 : -1);
-                }
+                stepCount(action == Action::NextTab ? 1 : -1);
                 break;
             case Action::Confirm:
-                if (!carried_)
-                {
-                    pickItem(app);
-                }
-                break;
-            case Action::Alternate:
-                if (!carried_)
-                {
-                    typeCount(app);
-                }
+                typeCount(app);
                 break;
             case Action::Discard:
-                // X takes the item out here; the game menu discards the save's changes.
-                if (!carried_)
-                {
-                    removeItem(selected_[pouch_]);
-                }
+                pickItem(app);
                 break;
-            case Action::Save:
-                // Y moves items here; the game menu saves.
-                pickUpOrDrop();
+            case Action::Alternate:
+                removeItem(selected_[pouch_]);
                 break;
+            // Neither saving nor discarding happens here, and items are not moved.
             default:
                 break;
         }
@@ -528,7 +460,7 @@ namespace pksm::switchui
             view.items.push_back(
                 {itemName(save, slot.id), counted ? std::to_string(slot.count) : std::string{}});
         }
-        if (!carried_ && slots_.size() < capacity())
+        if (slots_.size() < capacity())
         {
             view.items.push_back({});
         }
@@ -538,12 +470,11 @@ namespace pksm::switchui
             firstShownRow(firstRow_[pouch_], selected_[pouch_] / COLUMNS, ROWS, rows);
         view.firstRow = firstRow_[pouch_];
         view.selected = selected_[pouch_];
-        view.carried  = carried_ ? *carried_ : BagView::NONE;
         view.message  = sessionMessage(session_, message_);
         ui.drawBag(view);
 
         // A touch on a pouch or an item.
-        if (view.pouch != pouch_ && view.pouch < pouches_.size() && !carried_)
+        if (view.pouch != pouch_ && view.pouch < pouches_.size())
         {
             pouch_ = view.pouch;
             message_.clear();

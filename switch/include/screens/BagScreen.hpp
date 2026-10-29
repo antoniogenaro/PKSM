@@ -3,7 +3,6 @@
 #include "app/Screen.hpp"
 #include "sav/Sav.hpp"
 #include <cstddef>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,9 +11,9 @@ namespace pksm::switchui
 {
     class Session;
 
-    // The bag: every pouch of the save and the items in it. L/R change pouch, A picks the item in
-    // a slot, ZL/ZR step its quantity and − types it, X takes it out and Y picks it up to swap it
-    // with another. Changes go straight to the save; the game menu below saves them.
+    // The bag: every pouch of the save and the items in it. L/R change pouch, X picks the item in
+    // a slot, ZL/ZR step its quantity, A types it and − takes the item out. Changes go straight
+    // to the save; nothing is saved or discarded here.
     class BagScreen : public Screen
     {
     public:
@@ -34,7 +33,7 @@ namespace pksm::switchui
         pksm::Sav::Pouch pouch() const { return pouches_[pouch_].first; }
         size_t capacity() const { return static_cast<size_t>(pouches_[pouch_].second); }
         // The slots the selection can reach: the items, then one empty slot to add another while
-        // there is room. Carrying an item, only the items.
+        // there is room.
         size_t shownSlots() const;
 
         // Reads the shown pouch again, and how many items every pouch holds.
@@ -48,13 +47,9 @@ namespace pksm::switchui
         void stepCount(int direction);
         void typeCount(App& app);
         void setCount(size_t slot, unsigned int count);
-        // Y: picks the selected item up, or swaps the carried one with the selected item.
-        void pickUpOrDrop();
 
         unsigned int maxCount() const;
         void changed();
-        // The footer while nothing else is said: what is being carried, if anything.
-        void clearMessage();
 
         Session& session_;
         std::string path_;
@@ -66,8 +61,6 @@ namespace pksm::switchui
         // The selection and first row shown of each pouch, kept while another pouch is shown.
         std::vector<size_t> selected_;
         std::vector<size_t> firstRow_;
-        // The slot of the item picked up with Y, in the shown pouch.
-        std::optional<size_t> carried_;
         std::string message_;
     };
 }
