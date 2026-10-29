@@ -3,6 +3,7 @@
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
 #include "domain/SaveCache.hpp"
+#include "platform/ConsoleSaves.hpp"
 #include "platform/SaveStorage.hpp"
 #include <cstdint>
 #include <optional>
@@ -37,11 +38,22 @@ namespace pksm::switchui
         }
     }
 
-    SaveLibrary SaveLibrary::scan()
+    SaveLibrary SaveLibrary::scan(const ConsoleUser* user)
     {
         SaveLibrary library;
         const auto profiles = gameProfiles();
         library.filesByGame.resize(profiles.size());
+        library.consoleSaveByGame.assign(profiles.size(), false);
+        if (user)
+        {
+            std::vector<uint64_t> titles;
+            titles.reserve(profiles.size());
+            for (const auto& profile : profiles)
+            {
+                titles.push_back(profile.consoleTitleId);
+            }
+            library.consoleSaveByGame = console::savesPresent(titles, *user);
+        }
 
         const std::vector<std::string> files = storage::prepareSaveDirectory(library.error)
                                                    ? storage::listSaveFiles(library.error)

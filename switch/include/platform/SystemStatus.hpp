@@ -2,6 +2,7 @@
 
 #include <ctime>
 #include <string>
+#include <utility>
 
 namespace pksm::switchui
 {
@@ -14,8 +15,8 @@ namespace pksm::switchui
         bool charging = false;
     };
 
-    // Asks the console for the header's status. The user is read once; the time and battery
-    // are read again at most once a second.
+    // Asks the console for the header's time and battery, at most once a second. The user is
+    // the one the app works with, set with setUser().
     class SystemStatus
     {
     public:
@@ -24,6 +25,7 @@ namespace pksm::switchui
         SystemStatus(const SystemStatus&)            = delete;
         SystemStatus& operator=(const SystemStatus&) = delete;
 
+        void setUser(std::string name) { status_.user = std::move(name); }
         const HeaderStatus& current();
 
     private:

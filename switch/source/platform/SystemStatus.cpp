@@ -2,46 +2,12 @@
 
 #include <switch.h>
 #include <cstdio>
-#include <cstring>
 
 namespace pksm::switchui
 {
-    namespace
-    {
-        // The nickname of the user the app was started for, or of the last one who played.
-        std::string consoleUserName()
-        {
-            if (R_FAILED(accountInitialize(AccountServiceType_Application)) &&
-                R_FAILED(accountInitialize(AccountServiceType_System)))
-            {
-                return {};
-            }
-            std::string name;
-            AccountUid uid{};
-            bool found = R_SUCCEEDED(accountGetPreselectedUser(&uid)) && accountUidIsValid(&uid);
-            if (!found)
-            {
-                found = R_SUCCEEDED(accountGetLastOpenedUser(&uid)) && accountUidIsValid(&uid);
-            }
-            AccountProfile profile;
-            if (found && R_SUCCEEDED(accountGetProfile(&profile, uid)))
-            {
-                AccountProfileBase base{};
-                if (R_SUCCEEDED(accountProfileGet(&profile, nullptr, &base)))
-                {
-                    name.assign(base.nickname, strnlen(base.nickname, sizeof(base.nickname)));
-                }
-                accountProfileClose(&profile);
-            }
-            accountExit();
-            return name;
-        }
-    }
-
     SystemStatus::SystemStatus()
     {
-        status_.user = consoleUserName();
-        power_       = R_SUCCEEDED(psmInitialize());
+        power_ = R_SUCCEEDED(psmInitialize());
     }
 
     SystemStatus::~SystemStatus()

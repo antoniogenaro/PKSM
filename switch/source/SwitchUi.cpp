@@ -152,6 +152,25 @@ namespace pksm::switchui
                               : tr(Text::SaveCountMany, {std::to_string(count)});
         }
 
+        // What a game card says about its saves: the console save first, then the backups.
+        std::string saveStatusText(const GameCard& game)
+        {
+            if (!game.consoleSave)
+            {
+                return saveCountText(game.saveCount);
+            }
+            if (game.saveCount == 0)
+            {
+                return tr(Text::ConsoleSaveStatus);
+            }
+            return std::string(tr(Text::ConsoleSaveStatus)) + " · " + saveCountText(game.saveCount);
+        }
+
+        bool hasSaves(const GameCard& game)
+        {
+            return game.consoleSave || game.saveCount > 0;
+        }
+
         bool readU16(const std::vector<u8>& data, size_t offset, u16& result)
         {
             if (offset > data.size() || data.size() - offset < 2)
@@ -867,9 +886,11 @@ namespace pksm::switchui
             ImVec2(min.x + infoPadding, artBottom + infoPadding), theme::rgb(theme::TEXT),
             game.name.c_str(), nullptr, width - infoPadding * 2.0f, &clip);
 
-        widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f),
-            saveCountText(game.saveCount).c_str(),
-            game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL, game.saveCount > 0);
+        // The tile is too narrow for both, so a console save hides the backup count.
+        const std::string status = game.consoleSave ? std::string(tr(Text::ConsoleSaveStatus))
+                                                    : saveCountText(game.saveCount);
+        widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f), status.c_str(),
+            hasSaves(game) ? theme::POSITIVE : theme::NEUTRAL, hasSaves(game));
 
         if (selected)
         {
@@ -879,7 +900,7 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
-        size_t& selected, const std::string& error)
+        size_t& selected, const std::string& error, bool canSwitchUser)
     {
         beginFrame();
         widgets::drawHeader(tr(Text::GameListPrompt), status_.current());
@@ -937,20 +958,30 @@ namespace pksm::switchui
             ImGui::PopID();
         }
 
-        widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)}});
+        if (canSwitchUser)
+        {
+            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)},
+                {"X", tr(Text::HintSwitchUser)}});
+        }
+        else
+        {
+            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)}});
+        }
         endFrame();
     }
 
     void SwitchUi::drawSaveList(const GameCard& game, const std::string& group,
-        const std::vector<std::string>& files, size_t& selected, const std::string& error)
+        const std::string& consoleUser, const std::vector<std::string>& files, size_t& selected,
+        const std::string& error)
     {
         beginFrame();
         widgets::drawHeader(tr(Text::SaveListTitle), status_.current());
         sectionGap();
 
         drawGamePanel(game, group,
-            {{saveCountText(game.saveCount), theme::FONT_CAPTION, theme::TEXT_MUTED, false,
-                game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL}});
+            {{saveStatusText(game), theme::FONT_CAPTION, theme::TEXT_MUTED, false,
+                hasSaves(game) ? theme::POSITIVE : theme::NEUTRAL}});
+        const size_t firstFile = game.consoleSave ? 1 : 0;
 
         ImGui::SameLine(0.0f, theme::PANEL_GAP);
         widgets::beginPanel("save-files", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE));
@@ -960,23 +991,43 @@ namespace pksm::switchui
             ImGui::TextWrapped("%s", error.c_str());
             ImGui::PopStyleColor();
         }
-        if (files.empty())
+        if (!hasSaves(game))
         {
             widgets::text(tr(Text::NoSavesFound), theme::FONT_ROW_TITLE, theme::TEXT, true);
             ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(theme::TEXT_MUTED));
             ImGui::TextWrapped("%s", tr(Text::NoSavesHint));
             ImGui::PopStyleColor();
         }
-        for (size_t i = 0; i < files.size(); ++i)
+        if (game.consoleSave)
         {
+            // The user's save on the console, above the backups on the SD card.
+            const std::string user = tr(Text::ConsoleSaveOf, {consoleUser});
+            ImGui::PushID("console");
+            if (widgets::drawListRow("save",
+                    {tr(Text::ConsoleSaveTitle), user.c_str(), tr(Text::ConsoleSaveDetail),
+                        icons::Icon::Trainer},
+                    selected == 0))
+            {
+                selected = 0;
+            }
+            if (selected == 0)
+            {
+                ImGui::SetScrollHereY();
+            }
+            ImGui::PopID();
+        }
+        for (size_t file = 0; file < files.size(); ++file)
+        {
+            const size_t i = file + firstFile;
             // The file name; the folder it is in, which names the trainer and the date of the
             // backup; and the full path.
-            const size_t slash     = files[i].find_last_of('/');
+            const std::string& relative = files[file];
+            const size_t slash          = relative.find_last_of('/');
             const std::string name =
-                slash == std::string::npos ? files[i] : files[i].substr(slash + 1);
+                slash == std::string::npos ? relative : relative.substr(slash + 1);
             const std::string folder =
-                slash == std::string::npos ? std::string{} : backupLabel(files[i].substr(0, slash));
-            const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + files[i];
+                slash == std::string::npos ? std::string{} : backupLabel(relative.substr(0, slash));
+            const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + relative;
             ImGui::PushID(static_cast<int>(i));
             if (widgets::drawListRow("save",
                     {name.c_str(), folder.c_str(), path.c_str(), icons::Icon::Backup},
@@ -993,7 +1044,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         // Without saves there is nothing to open.
-        if (files.empty())
+        if (!hasSaves(game))
         {
             widgets::drawButtonLegend({{"B", tr(Text::HintBack)}, {"+", tr(Text::HintQuit)}});
         }
@@ -2310,6 +2361,139 @@ namespace pksm::switchui
             theme::rgb(theme::TEXT_MUTED), key.c_str());
 
         widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}});
+        endModal();
+    }
+
+    void SwitchUi::drawUserPicker(
+        const std::vector<std::string>& users, size_t current, size_t& selected)
+    {
+        // The canvas "Cambiar usuario" dialog: 760 wide, a red title bar, and a row of 150 pixel
+        // cards for up to four users; more users take more rows.
+        constexpr float width       = 760.0f;
+        constexpr float sidePadding = 28.0f;
+        constexpr float barHeight   = 56.0f;
+        constexpr float barEdge     = 4.0f;
+        constexpr float border      = 3.0f;
+        constexpr float bodyTop     = 24.0f;
+        constexpr float hintGap     = 22.0f;
+        constexpr float cardWidth   = 150.0f;
+        constexpr float cardGap     = 20.0f;
+        constexpr float cardRadius  = 18.0f;
+        constexpr float avatarSize  = 96.0f;
+        constexpr float avatarTop   = 18.0f;
+        constexpr float nameGap     = 10.0f;
+        constexpr float nameSize    = 17.0f;
+        constexpr float badgeHeight = 22.0f;
+        constexpr float cardBottom  = 16.0f;
+        constexpr size_t perRow     = 4;
+        // The canvas avatar colours, then more for consoles with up to eight users.
+        static constexpr unsigned AVATARS[] = {0x5B8BD6, 0xE0A030, 0x4CAF50, 0x8A4FD0, 0xD6405A,
+            0x22B8A8, 0xE0502E, 0x6F7A8C};
+
+        ImFont* bold    = theme::boldFont();
+        ImFont* regular = ImGui::GetFont();
+        const char* hint = tr(Text::UserPickerHint);
+        const float inner = width - sidePadding * 2.0f;
+        const float hintHeight =
+            regular->CalcTextSizeA(theme::FONT_BODY, FLT_MAX, inner, hint).y;
+        const float nameHeight = bold->CalcTextSizeA(nameSize, FLT_MAX, 0.0f, "Ag").y;
+        const float cardHeight =
+            avatarTop + avatarSize + nameGap + nameHeight + nameGap + badgeHeight + cardBottom;
+        const size_t rows   = std::max<size_t>(1, (users.size() + perRow - 1) / perRow);
+        const float cardsHeight =
+            static_cast<float>(rows) * cardHeight + static_cast<float>(rows - 1) * cardGap;
+        const float contentBottom =
+            barHeight + barEdge + bodyTop + hintHeight + hintGap + cardsHeight + 8.0f;
+
+        beginModal(width, contentBottom + MODAL_PADDING);
+        const ImVec2 min  = ImGui::GetWindowPos();
+        const ImVec2 size = ImGui::GetWindowSize();
+        const ImVec2 max(min.x + size.x, min.y + size.y);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        // The canvas dialog is the screen background with a black outline and a red bar.
+        drawList->AddRectFilled(min, max, theme::rgb(theme::BACKGROUND), MODAL_RADIUS);
+        drawList->AddRectFilled(min, ImVec2(max.x, min.y + barHeight), theme::rgb(theme::HEADER),
+            MODAL_RADIUS, ImDrawFlags_RoundCornersTop);
+        drawList->AddRectFilled(ImVec2(min.x, min.y + barHeight),
+            ImVec2(max.x, min.y + barHeight + barEdge), theme::rgb(theme::HEADER_EDGE));
+
+        constexpr int titleIcon = 22;
+        const char* title       = tr(Text::UserPickerTitle);
+        const float barCenter   = min.y + barHeight * 0.5f;
+        icons::drawSized(drawList, icons::Icon::Trainer,
+            ImVec2(min.x + sidePadding, std::round(barCenter - titleIcon * 0.5f)), titleIcon,
+            theme::rgb(theme::ON_DARK));
+        const ImVec2 titleSize = bold->CalcTextSizeA(theme::FONT_HEADING, FLT_MAX, 0.0f, title);
+        drawList->AddText(bold, theme::FONT_HEADING,
+            ImVec2(min.x + sidePadding + titleIcon + 12.0f, std::round(barCenter - titleSize.y * 0.5f)),
+            theme::rgb(theme::ON_DARK), title);
+
+        const float hintTop = min.y + barHeight + barEdge + bodyTop;
+        drawList->AddText(regular, theme::FONT_BODY, ImVec2(min.x + sidePadding, hintTop),
+            theme::rgb(theme::TEXT_MUTED), hint, nullptr, inner);
+
+        const float cardsTop = hintTop + hintHeight + hintGap;
+        for (size_t i = 0; i < users.size(); ++i)
+        {
+            const size_t row     = i / perRow;
+            const size_t inRow   = std::min(perRow, users.size() - row * perRow);
+            const float rowWidth = static_cast<float>(inRow) * cardWidth +
+                                   static_cast<float>(inRow - 1) * cardGap;
+            const ImVec2 cardMin(
+                std::round(min.x + (width - rowWidth) * 0.5f +
+                           static_cast<float>(i % perRow) * (cardWidth + cardGap)),
+                cardsTop + static_cast<float>(row) * (cardHeight + cardGap));
+            const ImVec2 cardMax(cardMin.x + cardWidth, cardMin.y + cardHeight);
+
+            ImGui::SetCursorScreenPos(cardMin);
+            ImGui::PushID(static_cast<int>(i));
+            if (ImGui::InvisibleButton("user", ImVec2(cardWidth, cardHeight)))
+            {
+                selected = i;
+            }
+            ImGui::PopID();
+
+            drawList->AddRectFilled(cardMin, cardMax, theme::rgb(theme::PANEL), cardRadius);
+            const ImVec2 avatar(cardMin.x + cardWidth * 0.5f, cardMin.y + avatarTop + avatarSize * 0.5f);
+            drawList->AddCircleFilled(
+                avatar, avatarSize * 0.5f, theme::rgb(AVATARS[i % std::size(AVATARS)]), 48);
+            constexpr int avatarIcon = 48;
+            icons::drawSized(drawList, icons::Icon::Trainer,
+                ImVec2(std::round(avatar.x - avatarIcon * 0.5f), std::round(avatar.y - avatarIcon * 0.5f)),
+                avatarIcon, theme::rgb(theme::ON_DARK));
+
+            const float nameTop  = cardMin.y + avatarTop + avatarSize + nameGap;
+            const float maxName  = cardWidth - 16.0f;
+            const float nameWide = std::min(
+                maxName, bold->CalcTextSizeA(nameSize, FLT_MAX, 0.0f, users[i].c_str()).x);
+            widgets::drawTextEllipsis(drawList, bold, nameSize,
+                ImVec2(std::round(cardMin.x + (cardWidth - nameWide) * 0.5f), nameTop),
+                theme::rgb(theme::TEXT), users[i].c_str(), maxName);
+
+            if (i == current)
+            {
+                const char* badge     = tr(Text::UserCurrent);
+                const ImVec2 textSize = bold->CalcTextSizeA(12.0f, FLT_MAX, 0.0f, badge);
+                const float badgeWidth = textSize.x + 20.0f;
+                const ImVec2 badgeMin(std::round(cardMin.x + (cardWidth - badgeWidth) * 0.5f),
+                    nameTop + nameHeight + nameGap);
+                drawList->AddRectFilled(badgeMin,
+                    ImVec2(badgeMin.x + badgeWidth, badgeMin.y + badgeHeight),
+                    theme::rgb(theme::ACCENT), badgeHeight * 0.5f);
+                drawList->AddText(bold, 12.0f,
+                    ImVec2(badgeMin.x + 10.0f, std::round(badgeMin.y + (badgeHeight - textSize.y) * 0.5f)),
+                    theme::rgb(theme::ON_DARK), badge);
+            }
+            if (i == selected)
+            {
+                widgets::drawSelectionOutline(drawList, cardMin, cardMax, cardRadius);
+            }
+        }
+
+        drawList->AddRect(min, max, theme::rgb(theme::HEADER_EDGE), MODAL_RADIUS, ImDrawFlags_None,
+            border);
+        widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintCancel)}});
         endModal();
     }
 

@@ -13,9 +13,9 @@ namespace pksm::switchui
             {pksm::GameVersion::LG, Text::GameLeafGreen, Text::GroupGen3Gba, 3, false, 999999, 7,
                 5, 0x4CAF50},
             {pksm::GameVersion::SW, Text::GameSword, Text::GroupGen8SwordShield, 888, true,
-                9999999, 12, 12, 0x2FA7E0},
+                9999999, 12, 12, 0x2FA7E0, 0x0100ABF008968000, "/main", "Sword"},
             {pksm::GameVersion::SH, Text::GameShield, Text::GroupGen8SwordShield, 889, true,
-                9999999, 12, 12, 0xD6405A},
+                9999999, 12, 12, 0xD6405A, 0x01008DB008C2C000, "/main", "Shield"},
         }};
     }
 

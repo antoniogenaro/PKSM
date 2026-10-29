@@ -81,6 +81,8 @@ namespace pksm::switchui
         size_t mascotSpecies = 0;
         size_t saveCount = 0;
         unsigned artColor = 0; // 0xRRGGBB, from the game's profile.
+        // Whether the selected user has a save of the game on the console.
+        bool consoleSave = false;
     };
 
     // The open save, as the side panel of the game menu and the editors shows it.
@@ -259,13 +261,21 @@ namespace pksm::switchui
         // above it, which then show on top of it.
         void beginScreens();
         void endScreens();
+        // The console user the header shows.
+        void setUserName(std::string name) { status_.setUser(std::move(name)); }
         // Every supported game, laid out by `grid`; `games` follows the grid's numbering.
-        // A touch on a game moves the selection, so it is passed by reference.
+        // A touch on a game moves the selection, so it is passed by reference. With
+        // `canSwitchUser` the legend offers X to choose another console user.
         void drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
-            size_t& selected, const std::string& error);
-        // The saves of one game, as paths relative to the save folder.
+            size_t& selected, const std::string& error, bool canSwitchUser);
+        // The saves of one game: first `consoleUser`'s console save when the game card says
+        // there is one, then `files`, as paths relative to the save folder. `selected` counts
+        // the console save as the first row.
         void drawSaveList(const GameCard& game, const std::string& group,
-            const std::vector<std::string>& files, size_t& selected, const std::string& error);
+            const std::string& consoleUser, const std::vector<std::string>& files,
+            size_t& selected, const std::string& error);
+        // The console users as cards with their names; `current` is the one in use.
+        void drawUserPicker(const std::vector<std::string>& users, size_t current, size_t& selected);
         // The actions for an open save. `message` is shown under the game card.
         void drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message);
         // The boxes and party with the selected Pokémon's detail. Touching a slot selects it.
