@@ -11,22 +11,22 @@ namespace pksm::switchui
 {
     class App;
 
-    // One editable row of an editor: what it shows and how L/R and A change it. Editors build
+    // One editable row of an editor: what it shows and how ZL/ZR and A change it. Editors build
     // their rows with the helpers below and hand them to stepField() and openField().
     struct EditableField
     {
         enum class Kind
         {
             ReadOnly,
-            // Any of L/R/A flips it.
+            // Any of ZL/ZR/A flips it.
             Toggle,
             // A opens the system keyboard.
             Text,
-            // L/R step between min and max; A opens `input`.
+            // ZL/ZR step between min and max; A opens `input`.
             Number,
-            // L/R cycle through choices(); A opens a picker.
+            // ZL/ZR cycle through choices(); A opens a picker.
             Choice,
-            // L/R move one day; A opens the date picker.
+            // ZL/ZR move one day; A opens the date picker.
             Date
         };
 
@@ -97,7 +97,7 @@ namespace pksm::switchui
     EditableField dateField(std::string label, std::string title, YearRange years,
         std::function<::Date()> get, std::function<void(const ::Date&)> set);
 
-    // Applies L (-1) or R (1). Returns whether the value changed.
+    // Applies ZL (-1) or ZR (1). Returns whether the value changed.
     bool stepField(const EditableField& field, int direction);
 
     // Applies A. The keyboard answers at once; a picker answers later, from its own screen.

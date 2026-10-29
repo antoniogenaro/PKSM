@@ -201,7 +201,7 @@ namespace pksm::switchui
             warnedBack_ = false;
         }
         if (readOnly_ && (action == Action::Quit || action == Action::Discard ||
-                             action == Action::PreviousPage || action == Action::NextPage ||
+                             action == Action::PreviousTab || action == Action::NextTab ||
                              action == Action::Confirm))
         {
             // Nothing can change: the selection still moves and the pages still turn.
@@ -246,20 +246,20 @@ namespace pksm::switchui
                     message_.clear();
                 }
                 break;
-            case Action::PreviousTab:
-            case Action::NextTab:
-                page_ = (page_ + (action == Action::NextTab ? 1 : PAGES - 1)) % PAGES;
+            case Action::PreviousPage:
+            case Action::NextPage:
+                page_ = (page_ + (action == Action::NextPage ? 1 : PAGES - 1)) % PAGES;
                 if (area_ == Area::Fields)
                 {
                     const size_t count = (page_ == 0 ? fields.main : fields.more).size();
                     selected_          = std::min(selected_, count == 0 ? 0 : count - 1);
                 }
                 break;
-            case Action::PreviousPage:
-            case Action::NextPage:
+            case Action::PreviousTab:
+            case Action::NextTab:
                 if (const EditableField* field = selectedField(fields))
                 {
-                    if (stepField(*field, action == Action::NextPage ? 1 : -1))
+                    if (stepField(*field, action == Action::NextTab ? 1 : -1))
                     {
                         onChanged();
                     }

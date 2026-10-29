@@ -15,7 +15,7 @@ namespace pksm::switchui
 {
     namespace
     {
-        // A number stepped with L/R by `step` and typed with the keyboard on A. `shown` is how
+        // A number stepped with ZL/ZR by `step` and typed with the keyboard on A. `shown` is how
         // the card shows the value; plain digits without it.
         EditableField counter(Text key, unsigned int max, unsigned int step,
             std::function<unsigned int()> get, std::function<void(unsigned int)> set,
@@ -248,9 +248,9 @@ namespace pksm::switchui
             case Action::Confirm:
                 openField(rows[selected_], app, message_, onChanged);
                 break;
-            case Action::PreviousPage:
-            case Action::NextPage:
-                if (stepField(rows[selected_], action == Action::NextPage ? 1 : -1))
+            case Action::PreviousTab:
+            case Action::NextTab:
+                if (stepField(rows[selected_], action == Action::NextTab ? 1 : -1))
                 {
                     onChanged();
                 }
