@@ -2077,9 +2077,9 @@ namespace pksm::switchui
         ImGui::EndGroup();
 
         const float legend = view.readOnly
-            ? widgets::drawButtonLegend({{"ZL / ZR", tr(Text::HintPage)}, {"B", tr(Text::HintBack)}})
+            ? widgets::drawButtonLegend({{"L / R", tr(Text::HintPage)}, {"B", tr(Text::HintBack)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)},
-                  {"L / R", tr(Text::HintChange)}, {"ZL / ZR", tr(Text::HintPage)},
+                  {"ZL / ZR", tr(Text::HintChange)}, {"L / R", tr(Text::HintPage)},
                   {"X", tr(Text::HintReset)}, {"B", tr(Text::HintBack)},
                   {"+", tr(Text::HintSaveChanges)}});
         widgets::drawFooterMessage(
@@ -2123,7 +2123,7 @@ namespace pksm::switchui
         }
         widgets::endPanel();
 
-        widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"L / R", tr(Text::HintChange)},
+        widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"ZL / ZR", tr(Text::HintChange)},
             {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
         endFrame();
     }

@@ -146,7 +146,7 @@ shiny status, gender, friendship, Poké Ball, form, IVs, EVs, moves, encounter
 details, and generation-eight enjoyment/fullness. It then exports a new
 `.pksm-edited` file alongside the source; it never overwrites the imported
 backup. In the Pokémon selector, use Up/Down to choose a slot and L/R to
-change boxes or open the party. In the editor, use Left/Right to cycle values,
+change boxes or open the party. In the editors, use ZL/ZR to change values, L/R to turn pages,
 A to enter text or numeric IDs, Y to export, B to return, and X to discard
 changes. The bag screen lists every pouch: L/R change pouch, A picks the
 item in a slot, ZL/ZR change its quantity and − types it, X takes it out and Y

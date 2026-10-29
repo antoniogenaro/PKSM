@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-// How editor values move with L/R and how typed numbers are read. Pure functions, so they
+// How editor values move with ZL/ZR and how typed numbers are read. Pure functions, so they
 // can be tested on a PC.
 namespace pksm::switchui
 {
@@ -19,7 +19,7 @@ namespace pksm::switchui
         bool wrap = false;
     };
 
-    // The value after one press of L (direction < 0) or R (direction > 0). Without wrap, a
+    // The value after one press of ZL (direction < 0) or ZR (direction > 0). Without wrap, a
     // value outside min..max moves to the nearest end.
     unsigned int stepNumber(const StepRule& rule, unsigned int value, int direction);
 
