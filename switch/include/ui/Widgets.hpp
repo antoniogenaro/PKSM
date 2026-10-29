@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "platform/SystemStatus.hpp"
 #include "ui/Icons.hpp"
 
 #include <initializer_list>
@@ -20,11 +21,10 @@ namespace pksm::switchui::widgets
     void drawTextEllipsis(ImDrawList* drawList, ImFont* font, float size, const ImVec2& position,
         ImU32 color, const char* text, float maxWidth);
 
-    // A Poké Ball of `radius` centred on `center`.
-    void drawPokeBall(ImDrawList* drawList, const ImVec2& center, float radius);
-
-    // "PKSM" between two Poké Balls, centred, with `subtitle` under it. Uses the full width.
-    void drawHeader(const char* subtitle);
+    // The red bar across the top of the screen: a Poké Ball, "PKSM" and `title` on the left,
+    // and `status` (the user, the time and the battery) on the right, over a black strip. It
+    // ignores the window padding and leaves the cursor under the strip.
+    void drawHeader(const char* title, const HeaderStatus& status);
 
     // One button of the legend: the button's name, such as "A", "L / R" or "+", and what it does.
     struct ButtonHint
@@ -77,7 +77,8 @@ namespace pksm::switchui::widgets
         float rounding = 16.0f);
 
     // A small dot of `dotColor` (0xRRGGBB) and `text` after it, as in "● Has saves", with its
-    // bottom left corner at `bottomLeft`. It does not move the cursor.
-    void drawStatus(
-        ImDrawList* drawList, const ImVec2& bottomLeft, const char* text, unsigned dotColor);
+    // bottom left corner at `bottomLeft`. Without `filled`, the dot is a ring, as in "○ No saves".
+    // It does not move the cursor.
+    void drawStatus(ImDrawList* drawList, const ImVec2& bottomLeft, const char* text,
+        unsigned dotColor, bool filled = true);
 }

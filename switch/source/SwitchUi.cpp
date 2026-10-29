@@ -38,15 +38,15 @@ namespace pksm::switchui
         constexpr size_t BALL_SPRITE_BASE = 144;
         constexpr size_t MAX_BALL_SPRITE = 25;
 
-        // Box screen colours from the canvas, as 0xRRGGBB.
-        constexpr unsigned EMPTY_SLOT = 0x1A1E2B;
-        constexpr unsigned DETAIL_ART = 0x3A4160;
-        constexpr unsigned PILL       = 0x2A3047;
-        constexpr unsigned MALE       = 0x8FB8FF;
-        constexpr unsigned FEMALE     = 0xFF8FB8;
-        constexpr unsigned SHINY      = 0xFFD84D;
-        constexpr unsigned RAISED     = 0xFF7A6B;
-        constexpr unsigned LOWERED    = 0x7DB2FF;
+        // Box and editor colours from the canvas, as 0xRRGGBB.
+        constexpr unsigned EMPTY_SLOT = theme::EMPTY_SLOT;
+        constexpr unsigned DETAIL_ART = theme::ART;
+        constexpr unsigned PILL       = theme::CONTROL;
+        constexpr unsigned MALE       = 0x2F6FD6;
+        constexpr unsigned FEMALE     = 0xD6407A;
+        constexpr unsigned SHINY      = theme::GOLD;
+        constexpr unsigned RAISED     = theme::RAISED;
+        constexpr unsigned LOWERED    = theme::LOWERED;
 
         // The usual colour of each type, in the order of pksm::Type.
         constexpr unsigned TYPE_COLORS[] = {0xA8A77A, 0xC22E28, 0xA98FF3, 0xA33EA1, 0xE2BF65,
@@ -85,7 +85,7 @@ namespace pksm::switchui
                 drawList->AddCircleFilled(dot, 7.0f, theme::rgb(typeColor(type)), 24);
                 drawList->AddText(bold, theme::FONT_SMALL,
                     ImVec2(x + 36.0f, origin.y + (height - text.y) * 0.5f),
-                    theme::rgb(theme::BUTTON_FACE), name.c_str());
+                    theme::rgb(theme::TEXT_SOFT), name.c_str());
                 x += width + 8.0f;
             }
         }
@@ -93,6 +93,7 @@ namespace pksm::switchui
         // The canvas dialogs over a dimmed screen.
         constexpr float MODAL_RADIUS  = 24.0f;
         constexpr float MODAL_PADDING = 20.0f;
+        constexpr float MODAL_LEGEND_GAP = 14.0f; // Between a dialog's content and its legend.
 
         // The space under the content panels: the button legend and the gap above it.
         constexpr float SCREEN_BOTTOM_SPACE = theme::LEGEND_HEIGHT + theme::SECTION_GAP;
@@ -627,32 +628,19 @@ namespace pksm::switchui
         const ImGuiIO& io = ImGui::GetIO();
         ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
         ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
-        // The screen margins, so the dialog's button legend sits where every screen's does.
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-            ImVec2(theme::SCREEN_PADDING_X, theme::SCREEN_PADDING_Y));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin("PKSM Modal", nullptr,
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
                 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
                 ImGuiWindowFlags_NoBackground);
         ImGui::PopStyleVar();
-        // The canvas dim: rgba(10, 12, 18, .8) over the screen.
-        constexpr unsigned dim[] = {10, 12, 18};
-        constexpr unsigned dimAlpha = 204;
+        // The canvas dim: black at 55% over the whole screen, its legend included.
         ImDrawList* drawList = ImGui::GetWindowDrawList();
-        drawList->AddRectFilled(
-            ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(dim[0], dim[1], dim[2], dimAlpha));
-        // The legend row is covered outright, so the dialog's own legend does not mix with the
-        // screen's below. Its colour is the dim over the bare background, so it does not show.
-        const auto dimmed = [](unsigned over, unsigned under)
-        { return (over * dimAlpha + under * (255 - dimAlpha) + 127) / 255; };
-        const float legendTop =
-            io.DisplaySize.y - theme::SCREEN_PADDING_Y - theme::LEGEND_HEIGHT - theme::SECTION_GAP * 0.5f;
-        drawList->AddRectFilled(ImVec2(0.0f, legendTop), io.DisplaySize,
-            IM_COL32(dimmed(dim[0], (theme::BACKGROUND >> 16) & 0xFF),
-                dimmed(dim[1], (theme::BACKGROUND >> 8) & 0xFF),
-                dimmed(dim[2], theme::BACKGROUND & 0xFF), 255));
+        drawList->AddRectFilled(ImVec2(0.0f, 0.0f), io.DisplaySize, IM_COL32(0, 0, 0, 140));
 
+        // The dialog's own button legend sits along its bottom, under the content.
+        height += MODAL_LEGEND_GAP + theme::LEGEND_HEIGHT;
         const ImVec2 min(std::round((io.DisplaySize.x - width) * 0.5f),
             std::round((io.DisplaySize.y - height) * 0.5f));
         const ImVec2 max(min.x + width, min.y + height);
@@ -666,11 +654,20 @@ namespace pksm::switchui
         }
         drawList->AddRectFilled(min, max, theme::rgb(theme::PANEL), MODAL_RADIUS);
         drawList->AddRect(min, max, theme::rgb(theme::BORDER), MODAL_RADIUS);
-        ImGui::SetCursorScreenPos(ImVec2(min.x + MODAL_PADDING, min.y + MODAL_PADDING));
+
+        // A window the size of the dialog, so the legend lands in its bottom right corner.
+        ImGui::SetCursorScreenPos(min);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(MODAL_PADDING, MODAL_PADDING));
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+        ImGui::BeginChild("dialog", ImVec2(width, height), ImGuiChildFlags_AlwaysUseWindowPadding,
+            ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::PopStyleVar(2);
     }
 
     void SwitchUi::endModal()
     {
+        ImGui::EndChild();
         ImGui::End();
     }
 
@@ -821,8 +818,17 @@ namespace pksm::switchui
             float x           = left;
             if (line.dotColor != 0)
             {
-                drawList->AddCircleFilled(ImVec2(x + dotSize * 0.5f, y + size.y * 0.5f),
-                    dotSize * 0.5f, theme::rgb(line.dotColor), 12);
+                // "No saves" is a ring, as on the game grid; other dots are filled.
+                const ImVec2 center(x + dotSize * 0.5f, y + size.y * 0.5f);
+                if (line.dotColor == theme::NEUTRAL)
+                {
+                    drawList->AddCircle(
+                        center, dotSize * 0.5f - 1.0f, theme::rgb(line.dotColor), 12, 2.0f);
+                }
+                else
+                {
+                    drawList->AddCircleFilled(center, dotSize * 0.5f, theme::rgb(line.dotColor), 12);
+                }
                 x += dotSize + dotGap;
             }
             widgets::drawTextEllipsis(drawList,
@@ -863,7 +869,7 @@ namespace pksm::switchui
 
         widgets::drawStatus(drawList, ImVec2(min.x + infoPadding, max.y - 12.0f),
             saveCountText(game.saveCount).c_str(),
-            game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL);
+            game.saveCount > 0 ? theme::POSITIVE : theme::NEUTRAL, game.saveCount > 0);
 
         if (selected)
         {
@@ -876,7 +882,7 @@ namespace pksm::switchui
         size_t& selected, const std::string& error)
     {
         beginFrame();
-        widgets::drawHeader(tr(Text::GameListPrompt));
+        widgets::drawHeader(tr(Text::GameListPrompt), status_.current());
         if (!error.empty())
         {
             ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
@@ -892,7 +898,9 @@ namespace pksm::switchui
             (ImGui::GetContentRegionAvail().x - cardGap * (columns - 1.0f)) / columns;
         const float tileWidth = (cardWidth - theme::PANEL_PADDING * 2.0f - tileGap) / 2.0f;
         const auto& cards     = grid.cards();
+        // The canvas leaves 24 pixels above the grid, 8 more than the usual section gap.
         sectionGap();
+        ImGui::Dummy(ImVec2(0.0f, 8.0f - ImGui::GetStyle().ItemSpacing.y));
         for (size_t c = 0; c < cards.size(); ++c)
         {
             if (c % GameGrid::COLUMNS != 0)
@@ -937,7 +945,7 @@ namespace pksm::switchui
         const std::vector<std::string>& files, size_t& selected, const std::string& error)
     {
         beginFrame();
-        widgets::drawHeader(tr(Text::SaveListTitle));
+        widgets::drawHeader(tr(Text::SaveListTitle), status_.current());
         sectionGap();
 
         drawGamePanel(game, group,
@@ -1000,7 +1008,7 @@ namespace pksm::switchui
     void SwitchUi::drawSavePanel(const SaveSummary& save, const std::string& message)
     {
         drawGamePanel(save.game, save.group,
-            {{save.file, 15.0f, theme::BUTTON_FACE, true, 0},
+            {{save.file, 15.0f, theme::TEXT_SOFT, true, 0},
                 {save.details, theme::FONT_SMALL, theme::TEXT_MUTED, false, 0},
                 {save.path, theme::FONT_PATH, theme::TEXT_PATH, false, 0}},
             message, theme::ACCENT);
@@ -1027,7 +1035,7 @@ namespace pksm::switchui
         constexpr size_t dividerAfter = 2;
 
         beginFrame();
-        widgets::drawHeader(tr(Text::ChooseAction));
+        widgets::drawHeader(tr(Text::ChooseAction), status_.current());
         sectionGap();
 
         drawSavePanel(save, message);
@@ -1194,7 +1202,7 @@ namespace pksm::switchui
             drawList->AddText(bold, theme::FONT_SMALL,
                 ImVec2(pillX + 36.0f,
                     y + (pillHeight - height(bold, theme::FONT_SMALL, name)) * 0.5f),
-                theme::rgb(theme::BUTTON_FACE), name.c_str());
+                theme::rgb(theme::TEXT_SOFT), name.c_str());
             pillX += pillWidth + 8.0f;
         }
 
@@ -1258,7 +1266,7 @@ namespace pksm::switchui
             const std::string& move = detail.moves[i];
             widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
                 ImVec2(min.x + 8.0f, min.y + (moveHeight - height(bold, theme::FONT_SMALL, move)) * 0.5f),
-                theme::rgb(theme::BUTTON_FACE), move.c_str(), moveWidth - 16.0f);
+                theme::rgb(theme::TEXT_SOFT), move.c_str(), moveWidth - 16.0f);
         }
     }
 
@@ -1275,7 +1283,7 @@ namespace pksm::switchui
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
         beginFrame();
-        widgets::drawHeader(tr(Text::MenuPokemonEditor));
+        widgets::drawHeader(tr(Text::MenuPokemonEditor), status_.current());
         sectionGap();
 
         ImFont* bold         = theme::boldFont();
@@ -1322,7 +1330,7 @@ namespace pksm::switchui
             const ImVec2 center(min.x + size * 0.5f, min.y + size * 0.5f - lift);
             ImGui::GetWindowDrawList()->AddCircleFilled(
                 ImVec2(min.x + size * 0.5f, min.y + size * 0.82f), size * 0.22f,
-                theme::rgb(theme::BACKGROUND, 140), 24);
+                IM_COL32(0, 0, 0, 40), 24);
             drawPokemonSprite(view.carried.species,
                 {static_cast<int>(center.x - sprite * 0.5f), static_cast<int>(center.y - sprite * 0.5f),
                     static_cast<int>(sprite), static_cast<int>(sprite)},
@@ -1587,10 +1595,10 @@ namespace pksm::switchui
                     trailing = 44.0f;
                     const ImVec2 switchMin(max.x - 14.0f - 44.0f, centerY - 13.0f);
                     drawList->AddRectFilled(switchMin, ImVec2(switchMin.x + 44.0f, switchMin.y + 26.0f),
-                        theme::rgb(field.checked ? SHINY : theme::BORDER), 13.0f);
+                        theme::rgb(field.checked ? SHINY : theme::DASHED), 13.0f);
                     drawList->AddCircleFilled(
                         ImVec2(field.checked ? switchMin.x + 31.0f : switchMin.x + 13.0f, centerY),
-                        10.0f, theme::rgb(field.checked ? theme::BACKGROUND : theme::TEXT_MUTED), 20);
+                        10.0f, theme::rgb(theme::ON_DARK), 20);
                 }
                 else if (field.genderMark != 0)
                 {
@@ -1746,7 +1754,7 @@ namespace pksm::switchui
                 const float ppWidth = move.pp.empty() ? 0.0f : size(bold, theme::FONT_SMALL, move.pp).x;
                 widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
                     ImVec2(min.x + 48.0f, min.y + (moveRow - size(bold, theme::FONT_BODY, move.name).y) * 0.5f),
-                    theme::rgb(theme::BUTTON_FACE), move.name.c_str(), width - 48.0f - 14.0f - ppWidth - 10.0f);
+                    theme::rgb(theme::TEXT_SOFT), move.name.c_str(), width - 48.0f - 14.0f - ppWidth - 10.0f);
                 if (!move.pp.empty())
                 {
                     drawList->AddText(bold, theme::FONT_SMALL,
@@ -1776,7 +1784,7 @@ namespace pksm::switchui
         constexpr float cardGap      = 12.0f;
 
         beginFrame();
-        widgets::drawHeader(tr(Text::MenuTrainerEditor));
+        widgets::drawHeader(tr(Text::MenuTrainerEditor), status_.current());
         sectionGap();
 
         drawSavePanel(save, message);
@@ -1826,12 +1834,12 @@ namespace pksm::switchui
         constexpr float stepButton     = 26.0f;
         constexpr float countBoxHeight = 30.0f;
         constexpr float scrollbar      = 18.0f; // Room on the right for the scroll bar.
-        constexpr unsigned ART         = 0x3A4360; // The item's picture behind the selection.
+        constexpr unsigned ART         = theme::ART; // The item's picture behind the selection.
         constexpr ImGuiWindowFlags fixed =
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
         beginFrame();
-        widgets::drawHeader(tr(Text::MenuBag));
+        widgets::drawHeader(tr(Text::MenuBag), status_.current());
         sectionGap();
 
         ImFont* bold             = theme::boldFont();
@@ -1881,7 +1889,7 @@ namespace pksm::switchui
                 const float iconInset = (pouchIconBox - static_cast<float>(pouchIconSize)) * 0.5f;
                 icons::drawSized(drawList, pouch.icon,
                     ImVec2(boxMin.x + iconInset, boxMin.y + iconInset), pouchIconSize,
-                    theme::rgb(shown ? theme::BACKGROUND : theme::TEXT));
+                    theme::rgb(shown ? theme::ON_DARK : theme::TEXT));
 
                 const float countWidth = size(theme::FONT_SMALL, pouch.count).x;
                 const float countX     = max.x - 14.0f - countWidth;
@@ -1911,7 +1919,7 @@ namespace pksm::switchui
                 drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + 26.0f),
                     theme::rgb(theme::BUTTON_FACE), 7.0f);
                 centredText(drawList, theme::FONT_SMALL, min.x + 9.0f, min.y, 26.0f,
-                    theme::BACKGROUND, letter);
+                    theme::ON_DARK, letter);
                 return width;
             };
             const std::string pouchName =
@@ -1994,7 +2002,7 @@ namespace pksm::switchui
                         right -= 6.0f + boxWidth;
                         const ImVec2 boxMin(right, centerY - countBoxHeight * 0.5f);
                         const ImVec2 boxMax(right + boxWidth, centerY + countBoxHeight * 0.5f);
-                        drawList->AddRectFilled(boxMin, boxMax, theme::rgb(theme::BACKGROUND), 8.0f);
+                        drawList->AddRectFilled(boxMin, boxMax, theme::rgb(theme::PANEL), 8.0f);
                         drawList->AddRect(boxMin, boxMax, theme::rgb(theme::DASHED), 8.0f,
                             ImDrawFlags_None, 2.0f);
                         const float numberRight = boxMin.x + 10.0f + numberWidth;
@@ -2042,12 +2050,12 @@ namespace pksm::switchui
                 const float height = static_cast<float>(BagView::ROWS) * (cardHeight + cardGap) - cardGap;
                 const ImVec2 trackMin(origin.x + available.x - 6.0f, top);
                 drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, top + height),
-                    theme::rgb(theme::CARD), 3.0f);
+                    theme::rgb(theme::BORDER), 3.0f);
                 const float shown = static_cast<float>(BagView::ROWS) / static_cast<float>(rows);
                 const float start = static_cast<float>(view.firstRow) / static_cast<float>(rows);
                 drawList->AddRectFilled(ImVec2(trackMin.x, top + height * start),
                     ImVec2(trackMin.x + 6.0f, top + height * (start + shown)),
-                    theme::rgb(theme::BORDER), 3.0f);
+                    theme::rgb(theme::TEXT_MUTED), 3.0f);
             }
         }
         widgets::endPanel();
@@ -2151,7 +2159,7 @@ namespace pksm::switchui
             }
             ImGui::PopID();
             const bool selected = i == index;
-            drawList->AddRectFilled(min, max, theme::rgb(selected ? PILL : theme::CARD), 10.0f);
+            drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), 10.0f);
             if (selected)
             {
                 widgets::drawSelectionOutline(drawList, min, max, 10.0f);
@@ -2174,12 +2182,12 @@ namespace pksm::switchui
         {
             const ImVec2 trackMin(origin.x + inner - 6.0f, top);
             drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, top + listHeight),
-                theme::rgb(theme::CARD), 3.0f);
+                theme::rgb(theme::BORDER), 3.0f);
             const float shown = static_cast<float>(PICKER_ROWS) / static_cast<float>(rows);
             const float start = static_cast<float>(firstRow) / static_cast<float>(rows);
             drawList->AddRectFilled(ImVec2(trackMin.x, top + listHeight * start),
                 ImVec2(trackMin.x + 6.0f, top + listHeight * (start + shown)),
-                theme::rgb(theme::BORDER), 3.0f);
+                theme::rgb(theme::TEXT_MUTED), 3.0f);
         }
 
         // L/R only page through lists longer than one page.
@@ -2395,7 +2403,7 @@ namespace pksm::switchui
                 ImGui::PopID();
                 if (row.step == 0)
                 {
-                    drawList->AddRectFilled(min, max, theme::rgb(selected ? PILL : theme::CARD), 12.0f);
+                    drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), 12.0f);
                     if (selected)
                     {
                         widgets::drawSelectionOutline(drawList, min, max, 12.0f);
