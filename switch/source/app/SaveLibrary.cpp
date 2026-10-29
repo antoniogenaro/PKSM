@@ -55,9 +55,22 @@ namespace pksm::switchui
             library.consoleSaveByGame = console::savesPresent(titles, *user);
         }
 
-        const std::vector<std::string> files = storage::prepareSaveDirectory(library.error)
-                                                   ? storage::listSaveFiles(library.error)
-                                                   : std::vector<std::string>{};
+        std::vector<std::string> files = storage::prepareSaveDirectory(library.error)
+                                             ? storage::listSaveFiles(library.error)
+                                             : std::vector<std::string>{};
+        // Then the backups that JKSV and Checkpoint made of the Switch games.
+        std::vector<storage::ManagedTitle> titles;
+        for (const auto& profile : profiles)
+        {
+            if (profile.hasConsoleSaves())
+            {
+                titles.push_back({profile.consoleTitleId, profile.consoleSaveFile});
+            }
+        }
+        for (auto& file : storage::listManagerSaveFiles(titles))
+        {
+            files.push_back(std::move(file));
+        }
         SaveCache cache = SaveCache::parse(storage::readSaveCache());
         for (const auto& file : files)
         {

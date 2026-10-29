@@ -20,6 +20,22 @@ namespace pksm::switchui::storage
     // Main save files under SAVE_DIRECTORY, relative to it and sorted.
     std::vector<std::string> listSaveFiles(std::string& error);
 
+    // A Switch game whose backups made by save managers are looked for.
+    struct ManagedTitle
+    {
+        uint64_t titleId;
+        // The save file inside a backup, such as "main".
+        std::string saveFile;
+    };
+
+    // The save files of `titles` in the backups made by JKSV and Checkpoint, as full
+    // "sdmc:/" paths, sorted. Folders that do not exist are skipped.
+    std::vector<std::string> listManagerSaveFiles(const std::vector<ManagedTitle>& titles);
+
+    // The tool that made the backup at `path`, such as "JKSV", or empty for PKSM's own.
+    std::string backupTool(const std::string& path);
+
+    // The full path of a save listed by listSaveFiles() or listManagerSaveFiles().
     std::string savePath(const std::string& relativePath);
 
     // Size and modification time, used to tell whether a file changed since it was last seen.

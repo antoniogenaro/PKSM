@@ -35,7 +35,7 @@ namespace pksm::switchui
         }
         else
         {
-            summary.path = std::string(storage::SAVE_DIRECTORY) + "/" + path;
+            summary.path = storage::savePath(path);
         }
         return summary;
     }

@@ -13,7 +13,8 @@ namespace pksm::switchui
     struct SaveLibrary
     {
         // One list per entry of gameProfiles(), in the same order. Each holds the files of
-        // that game, relative to the save folder and sorted.
+        // that game: those in the save folder relative to it and sorted, then the backups of
+        // JKSV and Checkpoint as full paths (see storage::savePath).
         std::vector<std::vector<std::string>> filesByGame;
         // One flag per entry of gameProfiles(): whether the user has a console save of it.
         std::vector<bool> consoleSaveByGame;

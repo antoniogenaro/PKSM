@@ -1026,9 +1026,14 @@ namespace pksm::switchui
             const size_t slash          = relative.find_last_of('/');
             const std::string name =
                 slash == std::string::npos ? relative : relative.substr(slash + 1);
-            const std::string folder =
+            std::string folder =
                 slash == std::string::npos ? std::string{} : backupLabel(relative.substr(0, slash));
-            const std::string path = std::string(storage::SAVE_DIRECTORY) + "/" + relative;
+            // Backups made by other save managers say which one made them.
+            if (const std::string tool = storage::backupTool(relative); !tool.empty())
+            {
+                folder = tool + " · " + folder;
+            }
+            const std::string path = storage::savePath(relative);
             ImGui::PushID(static_cast<int>(i));
             if (widgets::drawListRow("save",
                     {name.c_str(), folder.c_str(), path.c_str(), icons::Icon::Backup},
