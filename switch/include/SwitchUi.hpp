@@ -162,6 +162,8 @@ namespace pksm::switchui
         PokemonStats stats;
         Area area       = Area::Fields;
         size_t selected = 0;
+        // Only shown, not edited: the legend leaves out the buttons that change it.
+        bool readOnly = false;
         std::string message;
     };
 
@@ -189,6 +191,40 @@ namespace pksm::switchui
         PokemonSlot carried;
         // Set by drawBoxes() when an arrow is touched: -1 for the box before, 1 for the next.
         int pageRequest = 0;
+    };
+
+    // Everything the bank screen draws: a box of the bank beside a box of the open save, and the
+    // selected Pokémon.
+    struct BankView
+    {
+        static constexpr size_t COLUMNS = 6;
+
+        struct Side
+        {
+            std::string source; // The bank's file, or the save's game.
+            std::string boxName;
+            size_t filled = 0;
+            std::vector<PokemonSlot> slots;
+        };
+
+        Side bank;
+        Side game;
+        // Which box the selection is in.
+        bool inGame     = false;
+        size_t selected = 0;
+        PokemonDetail detail;
+        std::string detailWhere; // "Caja 1 · Casilla 8"
+        std::string message;
+        // As in BoxView: a Pokémon picked up to move, and where it came from.
+        bool carrying      = false;
+        bool carriedShown  = false;
+        bool carriedInGame = false;
+        size_t carriedSlot = 0;
+        PokemonSlot carried;
+        // Set by drawBank() when an arrow is touched: -1 for the box before, 1 for the next, of
+        // the save when `pageInGame` and of the bank otherwise.
+        int pageRequest = 0;
+        bool pageInGame = false;
     };
 
     // What the date picker draws: a column for each part of the date, in the order shown, with
@@ -280,6 +316,9 @@ namespace pksm::switchui
         void drawGameMenu(const SaveSummary& save, size_t selected, const std::string& message);
         // The boxes and party with the selected Pokémon's detail. Touching a slot selects it.
         void drawBoxes(BoxView& view);
+        // The bank and a box of the save side by side, with the selected Pokémon's detail.
+        // Touching a slot selects it.
+        void drawBank(BankView& view);
         // The Pokémon editor: its header, a page of field cards, the stats table and the moves.
         // Touching a card or cell selects it.
         void drawPokemonEditor(EditorView& view);
@@ -354,8 +393,9 @@ namespace pksm::switchui
         void drawSavePanel(const SaveSummary& save, const std::string& message);
         // One box or party slot, `size` wide, at `min`.
         void drawSlotTile(const PokemonSlot& slot, const ImVec2& min, float size, bool selected);
-        // The detail panel of the box screen, filling the rest of the current panel.
-        void drawPokemonDetail(const PokemonDetail& detail);
+        // The detail panel of the box screen, filling the rest of the current panel. `compact`
+        // draws it smaller, for the narrower panel of the bank screen.
+        void drawPokemonDetail(const PokemonDetail& detail, bool compact = false);
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);

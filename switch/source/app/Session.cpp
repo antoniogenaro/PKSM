@@ -1,6 +1,7 @@
 #include "app/Session.hpp"
 
 #include "domain/GameProfile.hpp"
+#include "domain/PokemonBank.hpp"
 #include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
 #include "ui/Text.hpp"
@@ -89,48 +90,75 @@ namespace pksm::switchui
         return std::nullopt;
     }
 
+    PokemonBank* Session::bank(std::string& error)
+    {
+        if (!bank_)
+        {
+            bank_ = PokemonBank::open(error);
+        }
+        return bank_.get();
+    }
+
+    bool Session::dirty() const
+    {
+        return dirty_ || (bank_ && bank_->dirty());
+    }
+
     bool Session::exportChanges(std::string& outputPath, std::string& error)
     {
-        if (console_)
+        outputPath.clear();
+        if (dirty_)
         {
+            bool written = false;
             save_->finishEditing();
-            const bool written = console::writeSave(*console_, save_->rawData().get(),
-                save_->getEntireLengthIncludingFooter(), outputPath, error);
-            save_->beginEditing();
-            if (written)
+            if (console_)
             {
-                dirty_ = false;
+                written = console::writeSave(*console_, save_->rawData().get(),
+                    save_->getEntireLengthIncludingFooter(), outputPath, error);
             }
-            return written;
-        }
-
-        storage::ExportFile output;
-        if (!storage::createExportFile(sourcePath_, output, error))
-        {
-            return false;
-        }
-        outputPath = output.path;
-
-        save_->finishEditing();
-        const bool written = storage::writeExportFile(
-            output, save_->rawData().get(), save_->getEntireLengthIncludingFooter(), error);
-        save_->beginEditing();
-        if (written)
-        {
+            else
+            {
+                storage::ExportFile output;
+                if (storage::createExportFile(sourcePath_, output, error))
+                {
+                    written = storage::writeExportFile(output, save_->rawData().get(),
+                        save_->getEntireLengthIncludingFooter(), error);
+                    outputPath = output.path;
+                }
+            }
+            save_->beginEditing();
+            if (!written)
+            {
+                outputPath.clear();
+                return false;
+            }
             dirty_ = false;
         }
-        return written;
+        // Only after the save, so the bank never holds less than the saved game expects.
+        return !bank_ || !bank_->dirty() || bank_->save(error);
     }
 
     bool Session::exportWithMessage(std::string& message)
     {
+        const bool bankPending = bank_ && bank_->dirty();
         std::string outputPath;
         if (!exportChanges(outputPath, message))
         {
             return false;
         }
-        message = console_ ? tr(Text::SavedToConsole, {outputPath})
-                           : tr(Text::ExportedTo, {outputPath});
+        if (outputPath.empty())
+        {
+            message = tr(Text::BankSaved);
+        }
+        else if (console_)
+        {
+            message = tr(bankPending ? Text::SavedToConsoleWithBank : Text::SavedToConsole,
+                {outputPath});
+        }
+        else
+        {
+            message = tr(bankPending ? Text::ExportedWithBank : Text::ExportedTo, {outputPath});
+        }
         return true;
     }
 }

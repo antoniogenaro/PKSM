@@ -14,6 +14,7 @@ namespace pksm
 namespace pksm::switchui
 {
     struct GameProfile;
+    class PokemonBank;
 
     // An open save: the parsed data, where it came from (a file on the SD card or a user's
     // save on the console), its game and whether it has changes that were not saved yet.
@@ -43,15 +44,22 @@ namespace pksm::switchui
         // Where it was read from on the console; nothing for an SD file.
         const std::optional<console::SaveLocation>& consoleLocation() const { return console_; }
 
-        bool dirty() const { return dirty_; }
+        // The bank, read the first time it is asked for. Nothing, with a message in `error`,
+        // when it cannot be read. Its changes are written by exportChanges(), together with
+        // the save's, so a Pokémon moved between the two is never lost.
+        PokemonBank* bank(std::string& error);
+
+        // Changes to the save or the bank that were not written yet.
+        bool dirty() const;
         void markDirty() { dirty_ = true; }
 
-        // An SD file gets a copy next to it; the original is never replaced. A console save is
-        // replaced, after a backup of it is made on the SD card. `outputPath` is the copy or
-        // the backup. Clears the dirty flag on success.
+        // Writes the save, when it changed: an SD file gets a copy next to it and the original
+        // is never replaced; a console save is replaced, after a backup of it is made on the SD
+        // card. `outputPath` is the copy or the backup. Then writes the bank, when it changed;
+        // `outputPath` is empty when only the bank was written.
         bool exportChanges(std::string& outputPath, std::string& error);
 
-        // Same, leaving in `message` what to show: where it was saved, or the error.
+        // Same, leaving in `message` what to show: what was written, or the error.
         bool exportWithMessage(std::string& message);
 
     private:
@@ -65,6 +73,7 @@ namespace pksm::switchui
         const GameProfile* profile_;
         std::string sourcePath_;
         std::optional<console::SaveLocation> console_;
+        std::unique_ptr<PokemonBank> bank_;
         bool dirty_ = false;
     };
 }

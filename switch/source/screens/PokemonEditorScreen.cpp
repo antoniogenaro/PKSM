@@ -25,12 +25,28 @@ namespace pksm::switchui
         : session_(session),
           game_(std::move(game)),
           path_(std::move(path)),
-          pokemon_(std::move(pokemon)),
-          party_(party),
-          box_(box),
-          slot_(slot)
+          pokemon_(std::move(pokemon))
+    {
+        pksm::Sav& save = session.save();
+        slot_.read      = [&save, party, box, slot]
+        { return party ? save.pkm(slot) : save.pkm(box, slot); };
+        slot_.write = [&session, &save, party, box, slot](pksm::PKX& pokemon)
+        {
+            savePokemon(save, pokemon, party, box, slot);
+            session.markDirty();
+        };
+        i18n::init(pokemon_->language());
+    }
+
+    PokemonEditorScreen::PokemonEditorScreen(
+        Session& session, std::unique_ptr<pksm::PKX> pokemon, EditorSlot slot, bool readOnly)
+        : session_(session), pokemon_(std::move(pokemon)), slot_(std::move(slot)), readOnly_(readOnly)
     {
         i18n::init(pokemon_->language());
+        if (readOnly_)
+        {
+            message_ = tr(Text::EditorReadOnly);
+        }
     }
 
     PokemonEditorScreen::~PokemonEditorScreen() = default;
@@ -54,16 +70,15 @@ namespace pksm::switchui
 
     void PokemonEditorScreen::saveChanges()
     {
-        savePokemon(session_.save(), *pokemon_, party_, box_, slot_);
-        session_.markDirty();
+        // The slot marks what it wrote to as changed: the save, or the bank.
+        slot_.write(*pokemon_);
         unsaved_ = false;
         message_ = tr(Text::EditorSaved);
     }
 
     void PokemonEditorScreen::resetChanges()
     {
-        pksm::Sav& save = session_.save();
-        auto pokemon    = party_ ? save.pkm(slot_) : save.pkm(box_, slot_);
+        auto pokemon = slot_.read();
         if (!pokemon)
         {
             message_ = tr(Text::PokemonReadFailed);
@@ -185,6 +200,14 @@ namespace pksm::switchui
         {
             warnedBack_ = false;
         }
+        if (readOnly_ && (action == Action::Quit || action == Action::Discard ||
+                             action == Action::PreviousPage || action == Action::NextPage ||
+                             action == Action::Confirm))
+        {
+            // Nothing can change: the selection still moves and the pages still turn.
+            message_ = tr(Text::EditorReadOnly);
+            return;
+        }
         switch (action)
         {
             case Action::Quit:
@@ -218,7 +241,7 @@ namespace pksm::switchui
                 {
                     move(action, pageFields);
                 }
-                if (!unsaved_)
+                if (!unsaved_ && !readOnly_)
                 {
                     message_.clear();
                 }
@@ -259,11 +282,19 @@ namespace pksm::switchui
         EditorView view;
         view.header    = describePokemon(*pokemon_);
         view.fields    = displayFields(page_ == 0 ? fields.main : fields.more);
+        if (readOnly_)
+        {
+            for (Field& field : view.fields)
+            {
+                field.editable = false;
+            }
+        }
         view.page      = page_;
         view.pageCount = PAGES;
         view.stats     = pokemonStats(*pokemon_);
         view.area      = area_;
         view.selected  = selected_;
+        view.readOnly  = readOnly_;
         view.message   = !message_.empty() ? message_
                          : unsaved_        ? std::string(tr(Text::EditorUnsaved))
                                            : std::string{};

@@ -30,6 +30,9 @@ SOURCES		:=	source \
 				../external/imgui
 IMGUI_BACKEND_SOURCES := ../external/imgui/backends
 IMGUI_BACKEND_CPPFILES := imgui_impl_sdl2.cpp imgui_impl_sdlrenderer2.cpp
+# Only the bank file format is shared with the 3DS app; the rest of common/ needs libctru.
+COMMON_SOURCES := ../common/source
+COMMON_CPPFILES := BankFile.cpp
 INCLUDES	:=	include \
 				../core/include \
 				../core/include/enums \
@@ -42,7 +45,7 @@ INCLUDES	:=	include \
 				../core/pcg-cpp/include \
 				../external \
 				../external/imgui \
-				../external/imgui/backends
+				../external/imgui/backends 				../common/include
 
 ARCH		:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS		:=	-g -Wall -Wextra -Werror -Wno-unused-parameter \
@@ -72,11 +75,11 @@ export NROFLAGS	+=	--icon=$(TOPDIR)/icon.jpg \
 				--nacp=$(OUTPUT).nacp \
 				--romfsdir=$(ROMFS_PATH)
 export LD	:=	$(CXX)
-export VPATH	:=	$(foreach dir,$(SOURCES) $(IMGUI_BACKEND_SOURCES),$(CURDIR)/$(dir))
+export VPATH	:=	$(foreach dir,$(SOURCES) $(IMGUI_BACKEND_SOURCES) $(COMMON_SOURCES),$(CURDIR)/$(dir))
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp))) \
-				$(IMGUI_BACKEND_CPPFILES)
+				$(IMGUI_BACKEND_CPPFILES) $(COMMON_CPPFILES)
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 export OFILES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o)
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
