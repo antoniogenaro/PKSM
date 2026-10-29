@@ -1,9 +1,12 @@
 #include "platform/SaveStorage.hpp"
 
 #include "SwitchSaveFiles.hpp"
+#include "nlohmann/json.hpp"
 #include "ui/Text.hpp"
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
+#include <cinttypes>
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
@@ -17,6 +20,145 @@ namespace pksm::switchui::storage
         constexpr char CONFIG_DIRECTORY[]     = "sdmc:/config";
         constexpr char APP_CONFIG_DIRECTORY[] = "sdmc:/config/pksm-switch";
         constexpr char SAVE_CACHE_PATH[]      = "sdmc:/config/pksm-switch/saves.cache";
+
+        constexpr char SD_PREFIX[]         = "sdmc:/";
+        constexpr char JKSV_DEFAULT_ROOT[] = "sdmc:/JKSV";
+        constexpr char JKSV_DIR_FILE[]     = "sdmc:/switch/jksv_dir.txt";
+        constexpr char JKSV_CONFIG_FILE[]  = "sdmc:/config/JKSV/JKSV.json";
+        constexpr char CHECKPOINT_ROOT[]   = "sdmc:/switch/Checkpoint/saves";
+        constexpr char CHECKPOINT_MARKER[] = "/switch/Checkpoint/";
+
+        std::string readSmallTextFile(const char* path)
+        {
+            std::string text;
+            FILE* file = std::fopen(path, "rb");
+            if (!file)
+            {
+                return text;
+            }
+            char buffer[1024];
+            size_t read = 0;
+            while (text.size() < 64 * 1024 &&
+                   (read = std::fread(buffer, 1, sizeof(buffer), file)) > 0)
+            {
+                text.append(buffer, read);
+            }
+            std::fclose(file);
+            return text;
+        }
+
+        // "sdmc:/x/" or "/x" as "sdmc:/x"; empty when it is not a folder on the SD card.
+        std::string sdFolder(std::string path)
+        {
+            const size_t start = path.find_first_not_of(" \t\r\n");
+            const size_t end   = path.find_last_not_of(" \t\r\n");
+            path = start == std::string::npos ? std::string{} : path.substr(start, end - start + 1);
+            if (!path.empty() && path.front() == '/')
+            {
+                path = "sdmc:" + path;
+            }
+            if (path.rfind(SD_PREFIX, 0) != 0)
+            {
+                return {};
+            }
+            while (path.size() > sizeof(SD_PREFIX) - 1 && path.back() == '/')
+            {
+                path.pop_back();
+            }
+            return path;
+        }
+
+        // The folders JKSV may keep its backups in: its default one and the one set in its
+        // settings, by older versions in jksv_dir.txt and by newer ones in JKSV.json.
+        std::vector<std::string> jksvRoots()
+        {
+            std::vector<std::string> roots{JKSV_DEFAULT_ROOT};
+            auto add = [&roots](std::string folder)
+            {
+                folder = sdFolder(std::move(folder));
+                if (!folder.empty() &&
+                    std::find(roots.begin(), roots.end(), folder) == roots.end())
+                {
+                    roots.push_back(std::move(folder));
+                }
+            };
+            add(readSmallTextFile(JKSV_DIR_FILE));
+            const nlohmann::json config =
+                nlohmann::json::parse(readSmallTextFile(JKSV_CONFIG_FILE), nullptr, false);
+            if (config.is_object())
+            {
+                const auto found = config.find("WorkingDirectory");
+                if (found != config.end() && found->is_string())
+                {
+                    add(found->get<std::string>());
+                }
+            }
+            return roots;
+        }
+
+        // The names of the folders inside `path`; none when it cannot be read.
+        std::vector<std::string> subfolders(const std::string& path)
+        {
+            std::vector<std::string> names;
+            DIR* directory = opendir(path.c_str());
+            if (!directory)
+            {
+                return names;
+            }
+            while (dirent* entry = readdir(directory))
+            {
+                if (std::strcmp(entry->d_name, ".") == 0 || std::strcmp(entry->d_name, "..") == 0)
+                {
+                    continue;
+                }
+                struct stat info
+                {
+                };
+                const std::string child = path + "/" + entry->d_name;
+                if (stat(child.c_str(), &info) == 0 && S_ISDIR(info.st_mode))
+                {
+                    names.emplace_back(entry->d_name);
+                }
+            }
+            closedir(directory);
+            return names;
+        }
+
+        bool isFile(const std::string& path)
+        {
+            struct stat info
+            {
+            };
+            return stat(path.c_str(), &info) == 0 && S_ISREG(info.st_mode);
+        }
+
+        // Adds "<gameFolder>/<backup>/<save file>" for every backup that has the file.
+        void appendBackups(const std::string& gameFolder,
+            const std::vector<std::string>& saveFiles, std::vector<std::string>& files)
+        {
+            for (const auto& backup : subfolders(gameFolder))
+            {
+                for (const auto& saveFile : saveFiles)
+                {
+                    const std::string path = gameFolder + "/" + backup + "/" + saveFile;
+                    if (isFile(path))
+                    {
+                        files.push_back(path);
+                    }
+                }
+            }
+        }
+
+        bool startsWithNoCase(const std::string& text, const std::string& prefix)
+        {
+            return text.size() >= prefix.size() &&
+                   std::equal(prefix.begin(), prefix.end(), text.begin(),
+                       [](char a, char b)
+                       {
+                           return std::tolower(static_cast<unsigned char>(a)) ==
+                                  std::tolower(static_cast<unsigned char>(b));
+                       });
+        }
 
         bool appendSaveFiles(const std::string& directoryPath, const std::string& relativeDirectory,
             std::vector<std::string>& files, std::string& error, size_t depth)
@@ -116,8 +258,74 @@ namespace pksm::switchui::storage
         return files;
     }
 
+    std::vector<std::string> listManagerSaveFiles(const std::vector<ManagedTitle>& titles)
+    {
+        std::vector<std::string> saveFiles;
+        for (const auto& title : titles)
+        {
+            std::string name = title.saveFile;
+            while (!name.empty() && name.front() == '/')
+            {
+                name.erase(name.begin());
+            }
+            if (!name.empty() &&
+                std::find(saveFiles.begin(), saveFiles.end(), name) == saveFiles.end())
+            {
+                saveFiles.push_back(std::move(name));
+            }
+        }
+        std::vector<std::string> files;
+        if (saveFiles.empty())
+        {
+            return files;
+        }
+
+        // JKSV: <root>/<game name>/<user - date>/. The game folder is named after the game
+        // in the console language, so every game is looked at; files that are not a
+        // supported save are left out when they are identified.
+        for (const auto& root : jksvRoots())
+        {
+            for (const auto& game : subfolders(root))
+            {
+                appendBackups(root + "/" + game, saveFiles, files);
+            }
+        }
+
+        // Checkpoint: saves/0x<title ID> <game name>/<backup name>/.
+        for (const auto& game : subfolders(CHECKPOINT_ROOT))
+        {
+            for (const auto& title : titles)
+            {
+                char prefix[24];
+                std::snprintf(prefix, sizeof(prefix), "0x%016" PRIX64, title.titleId);
+                if (startsWithNoCase(game, prefix))
+                {
+                    appendBackups(std::string(CHECKPOINT_ROOT) + "/" + game, saveFiles, files);
+                    break;
+                }
+            }
+        }
+
+        std::sort(files.begin(), files.end());
+        files.erase(std::unique(files.begin(), files.end()), files.end());
+        return files;
+    }
+
+    std::string backupTool(const std::string& path)
+    {
+        if (path.rfind(SD_PREFIX, 0) != 0)
+        {
+            return {};
+        }
+        return path.find(CHECKPOINT_MARKER) != std::string::npos ? "Checkpoint" : "JKSV";
+    }
+
     std::string savePath(const std::string& relativePath)
     {
+        if (relativePath.rfind(SD_PREFIX, 0) == 0)
+        {
+            return relativePath;
+        }
         return std::string(SAVE_DIRECTORY) + "/" + relativePath;
     }
 
