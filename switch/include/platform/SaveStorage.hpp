@@ -49,16 +49,7 @@ namespace pksm::switchui::storage
     bool readSaveFile(
         const std::string& path, std::shared_ptr<u8[]>& data, size_t& size, std::string& error);
 
-    // A new "<source>.pksm-edited[-N]" file, opened for writing. It never replaces an
-    // existing file.
-    struct ExportFile
-    {
-        FILE* file = nullptr;
-        std::string path;
-    };
-
-    bool createExportFile(const std::string& sourcePath, ExportFile& output, std::string& error);
-
-    // Writes and closes the file. On failure the partial file is removed.
-    bool writeExportFile(ExportFile& output, const u8* data, size_t length, std::string& error);
+    // Replaces the save file at `path` with `data`. It is written to a file next to it first,
+    // so the save file is left as it was when the write fails.
+    bool writeSaveFile(const std::string& path, const u8* data, size_t length, std::string& error);
 }

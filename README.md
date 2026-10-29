@@ -143,11 +143,10 @@ License, are packaged into the NRO at build time. The SDL2 interface can edit
 trainer information, the bag, and Pokémon in boxes or the party. The Pokémon editor
 covers species, nickname and original trainer, level, nature, ability, item,
 shiny status, gender, friendship, Poké Ball, form, IVs, EVs, moves, encounter
-details, and generation-eight enjoyment/fullness. It then exports a new
-`.pksm-edited` file alongside the source; it never overwrites the imported
-backup. In the Pokémon selector, use Up/Down to choose a slot and L/R to
+details, and generation-eight enjoyment/fullness. Saving writes the changes
+over the save file that was opened. In the Pokémon selector, use Up/Down to choose a slot and L/R to
 change boxes or open the party. In the editors, use ZL/ZR to change values, L/R to turn pages,
-A to enter text or numeric IDs, Y to export, B to return, and X to discard
+A to enter text or numeric IDs, Y to save, B to return, and X to discard
 changes. The bag screen lists every pouch: L/R change pouch, A picks the
 item in a slot, ZL/ZR change its quantity and − types it, X takes it out and Y
 picks it up to swap it with another item. This remains an early controller-driven proof of concept, not the

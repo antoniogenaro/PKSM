@@ -450,7 +450,7 @@ namespace pksm::switchui
                     clearMessage();
                     break;
                 }
-                // The game menu below keeps the save open and warns about unexported changes.
+                // The game menu below keeps the save open and warns about unsaved changes.
                 app.pop();
                 break;
             case Action::Up:
@@ -495,7 +495,7 @@ namespace pksm::switchui
                 }
                 break;
             case Action::Save:
-                // Y moves items here; the game menu exports.
+                // Y moves items here; the game menu saves.
                 pickUpOrDrop();
                 break;
             default:

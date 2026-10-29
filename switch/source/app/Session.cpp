@@ -104,7 +104,7 @@ namespace pksm::switchui
         return dirty_ || (bank_ && bank_->dirty());
     }
 
-    bool Session::exportChanges(std::string& outputPath, std::string& error)
+    bool Session::saveChanges(std::string& outputPath, std::string& error)
     {
         outputPath.clear();
         if (dirty_)
@@ -118,13 +118,9 @@ namespace pksm::switchui
             }
             else
             {
-                storage::ExportFile output;
-                if (storage::createExportFile(sourcePath_, output, error))
-                {
-                    written = storage::writeExportFile(output, save_->rawData().get(),
-                        save_->getEntireLengthIncludingFooter(), error);
-                    outputPath = output.path;
-                }
+                written = storage::writeSaveFile(sourcePath_, save_->rawData().get(),
+                    save_->getEntireLengthIncludingFooter(), error);
+                outputPath = sourcePath_;
             }
             save_->beginEditing();
             if (!written)
@@ -138,11 +134,11 @@ namespace pksm::switchui
         return !bank_ || !bank_->dirty() || bank_->save(error);
     }
 
-    bool Session::exportWithMessage(std::string& message)
+    bool Session::saveWithMessage(std::string& message)
     {
         const bool bankPending = bank_ && bank_->dirty();
         std::string outputPath;
-        if (!exportChanges(outputPath, message))
+        if (!saveChanges(outputPath, message))
         {
             return false;
         }
@@ -157,7 +153,7 @@ namespace pksm::switchui
         }
         else
         {
-            message = tr(bankPending ? Text::ExportedWithBank : Text::ExportedTo, {outputPath});
+            message = tr(bankPending ? Text::SavedWithBank : Text::SavedTo, {outputPath});
         }
         return true;
     }

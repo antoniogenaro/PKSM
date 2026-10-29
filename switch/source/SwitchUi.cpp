@@ -1122,7 +1122,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintBack)},
-            {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"+", tr(Text::HintQuit)}});
+            {"Y", tr(Text::HintSave)}, {"X", tr(Text::HintDiscard)}, {"+", tr(Text::HintQuit)}});
         endFrame();
     }
 
@@ -1532,7 +1532,7 @@ namespace pksm::switchui
         drawPokemonDetail(view.detail);
         widgets::endPanel();
 
-        // Y moves Pokémon here; the game menu exports.
+        // Y moves Pokémon here; the game menu saves.
         const float legend = view.carrying
             ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
@@ -2124,7 +2124,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"ZL / ZR", tr(Text::HintChange)},
-            {"Y", tr(Text::HintExport)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
+            {"Y", tr(Text::HintSave)}, {"X", tr(Text::HintDiscard)}, {"B", tr(Text::HintBack)}});
         endFrame();
     }
 
@@ -2371,7 +2371,7 @@ namespace pksm::switchui
         }
         widgets::endPanel();
 
-        // Y moves items here and X takes them out; the game menu exports and discards.
+        // Y moves items here and X takes them out; the game menu saves and discards.
         const float legend = view.carried != BagView::NONE
             ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintChangeItem)},

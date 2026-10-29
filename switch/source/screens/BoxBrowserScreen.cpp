@@ -113,14 +113,14 @@ namespace pksm::switchui
                     message_.clear();
                     break;
                 }
-                // The game menu below keeps the save open and warns about unexported changes.
+                // The game menu below keeps the save open and warns about unsaved changes.
                 app.pop();
                 break;
             case Action::Discard:
                 app.closeSession();
                 break;
             case Action::Save:
-                // Y moves Pokémon here; the game menu exports.
+                // Y moves Pokémon here; the game menu saves.
                 pickUpOrDrop();
                 break;
             case Action::Confirm:

@@ -23,7 +23,7 @@ namespace pksm::switchui
 
         void update(App& app, Action action) override;
         void draw(SwitchUi& ui) override;
-        // Scans again, so a save exported from this game shows up.
+        // Scans again, so a save changed from this game shows up as it is now.
         void onResume() override;
 
     private:

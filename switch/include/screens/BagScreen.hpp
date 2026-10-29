@@ -14,7 +14,7 @@ namespace pksm::switchui
 
     // The bag: every pouch of the save and the items in it. L/R change pouch, A picks the item in
     // a slot, ZL/ZR step its quantity and − types it, X takes it out and Y picks it up to swap it
-    // with another. Changes go straight to the save; the game menu below exports them.
+    // with another. Changes go straight to the save; the game menu below saves them.
     class BagScreen : public Screen
     {
     public:

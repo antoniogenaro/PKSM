@@ -11,6 +11,6 @@ namespace pksm::switchui
     // folder.
     SaveSummary summarizeSave(Session& session, const std::string& path);
 
-    // `message` when there is one; otherwise a note about unexported changes, if any.
+    // `message` when there is one; otherwise a note about unsaved changes, if any.
     std::string sessionMessage(const Session& session, const std::string& message);
 }

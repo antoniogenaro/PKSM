@@ -9,7 +9,6 @@
 #include <cinttypes>
 #include <cstring>
 #include <dirent.h>
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -430,67 +429,51 @@ namespace pksm::switchui::storage
         return true;
     }
 
-    bool createExportFile(const std::string& sourcePath, ExportFile& output, std::string& error)
+    bool writeSaveFile(const std::string& path, const u8* data, size_t length, std::string& error)
     {
-        int descriptor = -1;
-        std::string path;
-        for (unsigned int suffix = 0; suffix < 1000; ++suffix)
-        {
-            path = sourcePath + ".pksm-edited";
-            if (suffix != 0)
-            {
-                path += "-" + std::to_string(suffix);
-            }
-            descriptor = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0666);
-            if (descriptor >= 0 || errno != EEXIST)
-            {
-                break;
-            }
-        }
-        if (descriptor < 0)
-        {
-            error = errno == EEXIST ? std::string(tr(Text::ExportNoFreeName))
-                                    : tr(Text::ExportCreateFailed, {std::strerror(errno)});
-            return false;
-        }
-
-        FILE* file = fdopen(descriptor, "wb");
+        // Written aside first, so a failed write never touches the save file.
+        const std::string temporary = path + ".pksm-new";
+        FILE* file                  = std::fopen(temporary.c_str(), "wb");
         if (!file)
         {
-            const int openError = errno;
-            close(descriptor);
-            const bool removed = std::remove(path.c_str()) == 0;
-            error = tr(Text::ExportOpenFailed, {std::strerror(openError)});
-            if (!removed)
-            {
-                error += tr(Text::ExportEmptyNotRemoved, {path});
-            }
+            error = tr(Text::SaveWriteFailed, {std::strerror(errno)});
+            return false;
+        }
+        const size_t written  = std::fwrite(data, 1, length, file);
+        const bool writeError = std::ferror(file) != 0;
+        const bool closeError = std::fclose(file) != 0;
+        if (written != length || writeError || closeError)
+        {
+            std::remove(temporary.c_str());
+            error = tr(Text::SaveWritePartial);
             return false;
         }
 
-        output.file = file;
-        output.path = std::move(path);
-        return true;
-    }
-
-    bool writeExportFile(ExportFile& output, const u8* data, size_t length, std::string& error)
-    {
-        const size_t written  = std::fwrite(data, 1, length, output.file);
-        const bool writeError = std::ferror(output.file) != 0;
-        const bool closeError = std::fclose(output.file) != 0;
-        output.file           = nullptr;
-        if (written != length || writeError || closeError)
+        // The SD card cannot rename over an existing file: the old save is moved away, the
+        // new one takes its name, and only then is the old one removed.
+        const std::string previous = path + ".pksm-old";
+        std::remove(previous.c_str());
+        if (std::rename(path.c_str(), previous.c_str()) != 0)
         {
-            if (std::remove(output.path.c_str()) == 0)
+            error = tr(Text::SaveReplaceFailed, {std::strerror(errno)});
+            std::remove(temporary.c_str());
+            return false;
+        }
+        if (std::rename(temporary.c_str(), path.c_str()) != 0)
+        {
+            const int renameError = errno;
+            if (std::rename(previous.c_str(), path.c_str()) == 0)
             {
-                error = tr(Text::ExportPartialRemoved);
+                std::remove(temporary.c_str());
+                error = tr(Text::SaveReplaceFailed, {std::strerror(renameError)});
             }
             else
             {
-                error = tr(Text::ExportPartialKept, {output.path});
+                error = tr(Text::SaveReplaceLost, {temporary, previous});
             }
             return false;
         }
+        std::remove(previous.c_str());
         return true;
     }
 }
