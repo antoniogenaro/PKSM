@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <switch.h>
 #include "imgui.h"
+#include "platform/SystemStatus.hpp"
 #include "ui/Icons.hpp"
 #include <cstddef>
 #include <initializer_list>
@@ -313,8 +314,9 @@ namespace pksm::switchui
         // Every screen draws inside the same full-screen window, between these two calls.
         void beginFrame();
         void endFrame();
-        // A dialog of `width` x `height` over the dimmed screen below, with the cursor at its
-        // top left inside the padding. Always call endModal() afterwards.
+        // A dialog over the dimmed screen below, `width` wide and `height` tall plus a row for
+        // its button legend, with the cursor at its top left inside the padding. Draw the legend
+        // with widgets::drawButtonLegend before endModal(), which must always follow.
         void beginModal(float width, float height);
         void endModal();
         void drawStatusLine(bool dirty, const std::string& error);
@@ -362,5 +364,6 @@ namespace pksm::switchui
         std::vector<PokemonSprite> pokemonSprites_;
         std::vector<PokemonSprite> ballSprites_;
         PadState pad_{};
+        SystemStatus status_;
     };
 }

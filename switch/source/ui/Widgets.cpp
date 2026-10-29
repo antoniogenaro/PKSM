@@ -141,56 +141,147 @@ namespace pksm::switchui::widgets
         ImGui::PopFont();
     }
 
-    void drawPokeBall(ImDrawList* drawList, const ImVec2& center, float radius)
+    namespace
     {
-        // Proportions of the 44 pixel ball on the canvas, whose radius is 20.
-        const ImU32 white = theme::rgb(theme::TEXT);
-        const ImU32 dark  = theme::rgb(theme::BACKGROUND);
-        drawList->AddCircleFilled(center, radius, white, 40);
-        drawList->PathArcTo(center, radius, PI, 2.0f * PI, 40);
-        drawList->PathFillConvex(theme::rgb(theme::POKEBALL_RED));
-        drawList->AddRectFilled(ImVec2(center.x - radius, center.y - radius * 0.1f),
-            ImVec2(center.x + radius, center.y + radius * 0.1f), dark);
-        drawList->AddCircle(center, radius, dark, 40, radius * 0.1f);
-        drawList->AddCircleFilled(center, radius * 0.35f, white, 24);
-        drawList->AddCircle(center, radius * 0.35f, dark, 24, radius * 0.2f);
+        // The top of `text`'s capitals at `size`, for a line whose capitals are centred on
+        // `centerY`: text lines leave room for descenders, so centring the line sits it high.
+        float capitalsTop(float size, float centerY)
+        {
+            const ImVec4 capitals = inkBounds(theme::boldFont(), size, "H");
+            return std::round(centerY - (capitals.y + capitals.w) * 0.5f);
+        }
+
+        // The canvas header ball: a white ball with a black outline and a ringed button,
+        // 34 pixels across, drawn from its 52 pixel source.
+        void drawHeaderBall(ImDrawList* drawList, const ImVec2& center)
+        {
+            constexpr float scale = 34.0f / 52.0f;
+            const ImU32 white     = theme::rgb(theme::ON_DARK);
+            const ImU32 black     = theme::rgb(theme::HEADER_EDGE);
+            drawList->AddCircleFilled(center, (22.0f + 3.0f) * scale, black, 40);
+            drawList->AddCircleFilled(center, (22.0f - 3.0f) * scale, white, 40);
+            drawList->AddCircleFilled(center, (9.0f + 1.5f) * scale, black, 24);
+            drawList->AddCircleFilled(center, (9.0f - 1.5f) * scale, white, 24);
+        }
+
+        // The canvas battery: a 30 x 16 outline with a nub, filled as far as `percent`.
+        void drawBattery(ImDrawList* drawList, const ImVec2& min, int percent)
+        {
+            const ImU32 white = theme::rgb(theme::ON_DARK);
+            drawList->AddRect(ImVec2(min.x + 1.0f, min.y + 1.0f), ImVec2(min.x + 26.0f, min.y + 15.0f),
+                white, 3.0f, ImDrawFlags_None, 2.0f);
+            drawList->AddRectFilled(ImVec2(min.x + 27.0f, min.y + 5.0f),
+                ImVec2(min.x + 29.5f, min.y + 11.0f), white, 1.0f);
+            const float fill = 19.0f * static_cast<float>(std::clamp(percent, 0, 100)) / 100.0f;
+            if (fill >= 1.0f)
+            {
+                drawList->AddRectFilled(ImVec2(min.x + 4.0f, min.y + 4.0f),
+                    ImVec2(min.x + 4.0f + fill, min.y + 12.0f), white, 1.0f);
+            }
+        }
     }
 
-    void drawHeader(const char* subtitle)
+    void drawHeader(const char* title, const HeaderStatus& status)
     {
-        constexpr float ballSize   = 44.0f;
-        constexpr float ballGap    = 20.0f;
-        constexpr float titleRow   = 56.0f;
-        // The canvas pulls the subtitle 10 pixels up into the gap below the title row.
-        constexpr float subtitleY  = titleRow + theme::SECTION_GAP - 10.0f;
-        constexpr float subtitleH  = 22.0f;
-        static constexpr char title[] = "PKSM";
+        constexpr float gap        = 16.0f; // Between the parts on the left.
+        constexpr float statusGap  = 24.0f; // Between the parts on the right.
+        constexpr float ballSize   = 34.0f;
+        constexpr float spacing    = 2.0f;  // Between the letters of "PKSM".
+        constexpr float avatarSize = 32.0f;
+        constexpr float avatarGap  = 10.0f;
+        constexpr int avatarIcon   = 18;
+        constexpr float batteryW   = 30.0f;
+        constexpr float batteryH   = 16.0f;
+        constexpr float batteryGap = 8.0f;
+        static constexpr char name[] = "PKSM";
 
+        const ImGuiWindow* window = ImGui::GetCurrentWindowRead();
+        const ImVec2 origin       = window->Pos;
+        const float width         = window->Size.x;
+        const float bandBottom    = origin.y + theme::HEADER_HEIGHT;
+        const float centerY       = origin.y + theme::HEADER_HEIGHT * 0.5f;
+        const ImU32 white         = theme::rgb(theme::ON_DARK);
+        ImFont* bold              = theme::boldFont();
+
+        // The bar spans the screen, over the window's padding.
         ImDrawList* drawList = ImGui::GetWindowDrawList();
-        const ImVec2 origin  = ImGui::GetCursorScreenPos();
-        const float width    = ImGui::GetContentRegionAvail().x;
+        drawList->PushClipRect(origin, ImVec2(origin.x + width, origin.y + window->Size.y), false);
+        drawList->AddRectFilled(origin, ImVec2(origin.x + width, bandBottom), theme::rgb(theme::HEADER));
+        drawList->AddRectFilled(ImVec2(origin.x, bandBottom),
+            ImVec2(origin.x + width, bandBottom + theme::HEADER_EDGE_SIZE),
+            theme::rgb(theme::HEADER_EDGE));
 
-        const ImVec2 titleSize = textSize(title, theme::FONT_TITLE, true);
-        const float rowWidth   = ballSize * 2.0f + ballGap * 2.0f + titleSize.x;
-        const float left       = origin.x + (width - rowWidth) * 0.5f;
-        const float centerY    = origin.y + titleRow * 0.5f;
-        drawPokeBall(drawList, ImVec2(left + ballSize * 0.5f, centerY), 20.0f);
-        const ImVec2 titlePosition(left + ballSize + ballGap, centerY - titleSize.y * 0.5f);
-        const ImU32 titleColor = theme::rgb(theme::TEXT);
-        drawText(drawList, titlePosition, theme::FONT_TITLE, titleColor, title, nullptr, true);
-        drawPokeBall(drawList,
-            ImVec2(left + ballSize + ballGap * 2.0f + titleSize.x + ballSize * 0.5f, centerY),
-            20.0f);
-
-        if (subtitle && subtitle[0] != '\0')
+        // Left: the ball, "PKSM", a divider and the screen's name.
+        float x = origin.x + theme::SCREEN_PADDING_X;
+        drawHeaderBall(drawList, ImVec2(x + ballSize * 0.5f, centerY));
+        x += ballSize + gap;
+        const float nameY = capitalsTop(theme::FONT_TITLE, centerY);
+        for (const char* letter = name; *letter != '\0'; ++letter)
         {
-            const ImVec2 size = textSize(subtitle, theme::FONT_SUBTITLE, true);
-            drawText(drawList,
-                ImVec2(origin.x + (width - size.x) * 0.5f,
-                    origin.y + subtitleY + (subtitleH - size.y) * 0.5f),
-                theme::FONT_SUBTITLE, theme::rgb(theme::TEXT_SOFT), subtitle, nullptr, true);
+            const char glyph[2] = {*letter, '\0'};
+            drawText(drawList, ImVec2(x, nameY), theme::FONT_TITLE, white, glyph, nullptr, true);
+            x += textSize(glyph, theme::FONT_TITLE, true).x + spacing;
         }
-        ImGui::Dummy(ImVec2(width, subtitleY + subtitleH));
+        x += gap - spacing;
+        drawList->AddRectFilled(ImVec2(x, centerY - 12.0f), ImVec2(x + 2.0f, centerY + 12.0f),
+            theme::rgb(theme::ON_DARK, 128));
+        x += 2.0f + gap;
+        const float titleLeft = x;
+
+        // Right, from the edge inwards: the battery, the time and the user.
+        float right       = origin.x + width - theme::SCREEN_PADDING_X;
+        const float textY = capitalsTop(theme::FONT_BODY, centerY);
+        if (status.battery >= 0)
+        {
+            const std::string percent = std::to_string(status.battery) + "%";
+            const float textWidth     = textSize(percent.c_str(), theme::FONT_BODY, true).x;
+            drawText(drawList, ImVec2(right - textWidth, textY), theme::FONT_BODY, white,
+                percent.c_str(), nullptr, true);
+            right -= textWidth + batteryGap + batteryW;
+            drawBattery(drawList, ImVec2(right, std::round(centerY - batteryH * 0.5f)),
+                status.battery);
+            right -= statusGap;
+        }
+        if (!status.time.empty())
+        {
+            const float textWidth = textSize(status.time.c_str(), theme::FONT_BODY, true).x;
+            right -= textWidth;
+            drawText(drawList, ImVec2(right, textY), theme::FONT_BODY, white, status.time.c_str(),
+                nullptr, true);
+            right -= statusGap;
+        }
+        if (!status.user.empty())
+        {
+            // The name gives way to the screen's name when both cannot fit.
+            constexpr float maxUser = 220.0f;
+            const float userWidth =
+                std::min(maxUser, textSize(status.user.c_str(), theme::FONT_BODY, true).x);
+            right -= userWidth;
+            drawTextEllipsis(drawList, bold, theme::FONT_BODY, ImVec2(right, textY), white,
+                status.user.c_str(), userWidth);
+            right -= avatarGap + avatarSize;
+            const ImVec2 avatarCenter(right + avatarSize * 0.5f, centerY);
+            drawList->AddCircleFilled(avatarCenter, avatarSize * 0.5f, theme::rgb(theme::HEADER_EDGE), 32);
+            drawList->AddCircleFilled(avatarCenter, avatarSize * 0.5f - 2.0f, white, 32);
+            icons::drawSized(drawList, icons::Icon::Trainer,
+                ImVec2(std::round(avatarCenter.x - avatarIcon * 0.5f),
+                    std::round(avatarCenter.y - avatarIcon * 0.5f)),
+                avatarIcon, theme::rgb(theme::TEXT));
+            right -= statusGap;
+        }
+
+        if (title && title[0] != '\0')
+        {
+            drawTextEllipsis(drawList, bold, theme::FONT_SUBTITLE,
+                ImVec2(titleLeft, capitalsTop(theme::FONT_SUBTITLE, centerY)), white, title,
+                right - titleLeft);
+        }
+        drawList->PopClipRect();
+
+        // Content starts under the strip, after the screen's own sectionGap().
+        ImGui::SetCursorScreenPos(
+            ImVec2(origin.x + window->WindowPadding.x, bandBottom + theme::HEADER_EDGE_SIZE));
+        ImGui::Dummy(ImVec2(0.0f, 0.0f));
     }
 
     float drawButtonLegend(std::initializer_list<ButtonHint> hints)
@@ -237,7 +328,7 @@ namespace pksm::switchui::widgets
                 theme::rgb(theme::BUTTON_FACE), faceSize * 0.5f);
             const ImVec2 buttonPosition(std::round(x + width * 0.5f - (ink.x + ink.z) * 0.5f),
                 std::round(centerY - (ink.y + ink.w) * 0.5f));
-            drawText(drawList, buttonPosition, theme::FONT_BODY, theme::rgb(theme::BACKGROUND),
+            drawText(drawList, buttonPosition, theme::FONT_BODY, theme::rgb(theme::ON_DARK),
                 hint.button, nullptr, true);
             x += width + faceGap;
             drawText(drawList, ImVec2(std::round(x), labelY), theme::FONT_BODY,
@@ -276,7 +367,7 @@ namespace pksm::switchui::widgets
         ImGui::PopStyleColor(2);
         if (caption && caption[0] != '\0')
         {
-            text(caption, theme::FONT_CAPTION, theme::TEXT_MUTED, true);
+            text(caption, theme::FONT_CAPTION, theme::CAPTION, true);
         }
         return open;
     }
@@ -373,7 +464,7 @@ namespace pksm::switchui::widgets
             ImVec2(iconMin.x + theme::ICON_BOX_SIZE, iconMin.y + theme::ICON_BOX_SIZE),
             theme::rgb(highlighted ? theme::ACCENT : theme::BORDER), theme::ICON_BOX_RADIUS);
         icons::draw(drawList, row.icon, iconMin, theme::ICON_BOX_SIZE,
-            theme::rgb(highlighted ? theme::BACKGROUND
+            theme::rgb(highlighted ? theme::ON_DARK
                                    : (row.enabled ? theme::TEXT : theme::TEXT_MUTED)));
 
         // The lines are centred together in the row and stop before the arrow.
@@ -464,13 +555,15 @@ namespace pksm::switchui::widgets
         const ImVec2 plusSize   = textSize("+", plusSizePx);
         const ImVec2 labelSize  = textSize(label, theme::FONT_BODY, true);
         const ImU32 textColor   = theme::rgb(theme::TEXT_SOFT);
+        // The game grid's "+" is in the accent; elsewhere it matches the label.
+        const ImU32 plusColor   = stacked ? theme::rgb(theme::ACCENT) : textColor;
         const float centerX     = (min.x + max.x) * 0.5f;
         const float centerY     = (min.y + max.y) * 0.5f;
         if (stacked)
         {
             const float gap    = 10.0f;
             const float top    = centerY - (plusSize.y + gap + labelSize.y) * 0.5f;
-            drawText(drawList, ImVec2(centerX - plusSize.x * 0.5f, top), plusSizePx, textColor, "+");
+            drawText(drawList, ImVec2(centerX - plusSize.x * 0.5f, top), plusSizePx, plusColor, "+");
             drawText(drawList, ImVec2(centerX - labelSize.x * 0.5f, top + plusSize.y + gap),
                 theme::FONT_BODY, textColor, label, nullptr, true);
         }
@@ -484,16 +577,24 @@ namespace pksm::switchui::widgets
         return touched;
     }
 
-    void drawStatus(
-        ImDrawList* drawList, const ImVec2& bottomLeft, const char* text, unsigned dotColor)
+    void drawStatus(ImDrawList* drawList, const ImVec2& bottomLeft, const char* text,
+        unsigned dotColor, bool filled)
     {
         constexpr float dotSize = 8.0f;
         constexpr float gap     = 6.0f;
         const ImVec2 size       = textSize(text, theme::FONT_PATH);
         const float height      = std::max(size.y, dotSize);
         const float top         = bottomLeft.y - height;
-        drawList->AddCircleFilled(ImVec2(bottomLeft.x + dotSize * 0.5f, top + height * 0.5f),
-            dotSize * 0.5f, theme::rgb(dotColor), 12);
+        const ImVec2 center(bottomLeft.x + dotSize * 0.5f, top + height * 0.5f);
+        if (filled)
+        {
+            drawList->AddCircleFilled(center, dotSize * 0.5f, theme::rgb(dotColor), 12);
+        }
+        else
+        {
+            // A 2 pixel ring inside the dot's 8 pixels.
+            drawList->AddCircle(center, dotSize * 0.5f - 1.0f, theme::rgb(dotColor), 12, 2.0f);
+        }
         drawText(drawList, ImVec2(bottomLeft.x + dotSize + gap, top + (height - size.y) * 0.5f),
             theme::FONT_PATH, theme::rgb(theme::TEXT_MUTED), text);
     }

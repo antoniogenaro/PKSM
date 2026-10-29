@@ -23,22 +23,32 @@ namespace pksm::switchui::theme
     }
 
     // Colours, as 0xRRGGBB.
-    inline constexpr unsigned BACKGROUND    = 0x12141C;
-    inline constexpr unsigned PANEL         = 0x181B26; // Panels that group cards or rows.
-    inline constexpr unsigned CARD          = 0x1E2230; // A card or row inside a panel.
-    inline constexpr unsigned CARD_SELECTED = 0x283048;
-    inline constexpr unsigned BORDER        = 0x2E3448; // Panel borders, dividers, icon boxes.
-    inline constexpr unsigned DASHED        = 0x4A5170; // The dashed outline of "import" buttons.
-    inline constexpr unsigned TEXT          = 0xF2F4F8;
-    inline constexpr unsigned TEXT_SOFT     = 0xC9CFE0; // Subtitles and the button legend.
-    inline constexpr unsigned TEXT_MUTED    = 0xA9B0C2; // Captions and secondary lines.
-    inline constexpr unsigned TEXT_PATH     = 0x98A1B8; // File paths.
-    inline constexpr unsigned BUTTON_FACE   = 0xE6E9F2; // The circles of the button legend.
-    inline constexpr unsigned ACCENT        = 0x00C3E3; // The selection.
-    inline constexpr unsigned POSITIVE      = 0x4ADE80; // "Has saves".
-    inline constexpr unsigned NEUTRAL       = 0x7C8499; // "No saves".
-    inline constexpr unsigned ERROR_TEXT    = 0xFF7359;
+    inline constexpr unsigned BACKGROUND    = 0xF5F5F3;
+    inline constexpr unsigned PANEL         = 0xFFFFFF; // Panels that group cards or rows.
+    inline constexpr unsigned CARD          = 0xF2F2F0; // A card or row inside a panel.
+    inline constexpr unsigned CARD_SELECTED = 0xF2F2F0; // The accent outline marks the selection.
+    inline constexpr unsigned CONTROL       = 0xE8E8E5; // Pills and value buttons on a card.
+    inline constexpr unsigned ART           = 0xE4E4E1; // Behind a sprite or an item picture.
+    inline constexpr unsigned EMPTY_SLOT    = 0xFAFAF8; // An empty box slot.
+    inline constexpr unsigned BORDER        = 0xE2E2DF; // Panel borders, dividers, icon boxes.
+    inline constexpr unsigned DASHED        = 0x9A9A98; // Dashed outlines and "no saves" rings.
+    inline constexpr unsigned TEXT          = 0x141414;
+    inline constexpr unsigned TEXT_SOFT     = 0x2A2A28; // The button legend and pill labels.
+    inline constexpr unsigned TEXT_MUTED    = 0x5E5E5C; // Captions and secondary lines.
+    inline constexpr unsigned TEXT_PATH     = 0x6B6B69; // File paths.
+    inline constexpr unsigned ON_DARK       = 0xFFFFFF; // Text and icons on the accent or black.
+    inline constexpr unsigned BUTTON_FACE   = 0x141414; // The circles of the button legend.
+    inline constexpr unsigned ACCENT        = 0xD71920; // The selection.
+    inline constexpr unsigned CAPTION       = 0xC2161C; // Panel captions such as "GEN IX · …".
+    inline constexpr unsigned RAISED        = 0xC2161C; // A stat the nature raises.
+    inline constexpr unsigned LOWERED       = 0x2F6FD6; // A stat the nature lowers.
+    inline constexpr unsigned GOLD          = 0x8A6100; // Neutral natures and switches that are on.
+    inline constexpr unsigned POSITIVE      = 0xD71920; // "Has saves".
+    inline constexpr unsigned NEUTRAL       = 0x9A9A98; // "No saves".
+    inline constexpr unsigned ERROR_TEXT    = 0xC2161C;
     inline constexpr unsigned POKEBALL_RED  = 0xE23D28;
+    inline constexpr unsigned HEADER        = 0xD71920; // The header bar.
+    inline constexpr unsigned HEADER_EDGE   = 0x141414; // The strip under the header bar.
 
     // Corner radii.
     inline constexpr float PANEL_RADIUS    = 20.0f;
@@ -47,8 +57,8 @@ namespace pksm::switchui::theme
     inline constexpr float ICON_BOX_RADIUS = 10.0f;
 
     // Text sizes in pixels.
-    inline constexpr float FONT_TITLE     = 40.0f; // "PKSM" in the header.
-    inline constexpr float FONT_SUBTITLE  = 20.0f; // The line under the header.
+    inline constexpr float FONT_TITLE     = 28.0f; // "PKSM" in the header.
+    inline constexpr float FONT_SUBTITLE  = 18.0f; // The screen's name in the header.
     inline constexpr float FONT_HEADING   = 22.0f; // The name of the open game.
     inline constexpr float FONT_ROW_TITLE = 18.0f;
     inline constexpr float FONT_BODY      = 16.0f; // The default size.
@@ -67,6 +77,8 @@ namespace pksm::switchui::theme
     inline constexpr float LIST_ROW_HEIGHT  = 72.0f;
     inline constexpr float ICON_BOX_SIZE    = 48.0f;
     inline constexpr float LEGEND_HEIGHT    = 26.0f;
+    inline constexpr float HEADER_HEIGHT    = 64.0f; // The red bar, across the whole screen.
+    inline constexpr float HEADER_EDGE_SIZE = 6.0f;  // The black strip under it.
 
     // Where the UI fonts are in romfs. The canvas uses a bold weight for titles, captions and
     // names; Roboto Bold covers both of its bold weights, 700 and 800.

@@ -9,7 +9,7 @@ namespace pksm::switchui::theme
 {
     void applyStyle(ImGuiStyle& style)
     {
-        ImGui::StyleColorsDark(&style);
+        ImGui::StyleColorsLight(&style);
 
         style.FontSizeBase      = FONT_BODY;
         style.WindowPadding     = ImVec2(PANEL_PADDING, PANEL_PADDING);
@@ -47,9 +47,9 @@ namespace pksm::switchui::theme
         colors[ImGuiCol_HeaderActive]      = vec(CARD_SELECTED);
         colors[ImGuiCol_Separator]         = vec(BORDER);
         colors[ImGuiCol_ScrollbarBg]       = vec(BACKGROUND, 0.0f);
-        colors[ImGuiCol_ScrollbarGrab]     = vec(BORDER);
-        colors[ImGuiCol_ScrollbarGrabHovered] = vec(DASHED);
-        colors[ImGuiCol_ScrollbarGrabActive]  = vec(DASHED);
+        colors[ImGuiCol_ScrollbarGrab]     = vec(TEXT_MUTED);
+        colors[ImGuiCol_ScrollbarGrabHovered] = vec(TEXT_MUTED);
+        colors[ImGuiCol_ScrollbarGrabActive]  = vec(TEXT_MUTED);
         colors[ImGuiCol_CheckMark]         = vec(ACCENT);
         colors[ImGuiCol_NavCursor]         = vec(ACCENT);
     }
