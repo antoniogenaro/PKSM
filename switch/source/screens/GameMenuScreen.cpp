@@ -63,7 +63,7 @@ namespace pksm::switchui
             case Action::Save:
                 if (session_->dirty())
                 {
-                    session_->exportWithMessage(message_);
+                    session_->saveWithMessage(message_);
                 }
                 break;
             case Action::Up:

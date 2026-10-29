@@ -146,7 +146,7 @@ namespace pksm::switchui
                     message_.clear();
                     break;
                 }
-                // The game menu below keeps the save and the bank open and exports both.
+                // The game menu below keeps the save and the bank open and saves both.
                 app.pop();
                 break;
             case Action::Confirm:

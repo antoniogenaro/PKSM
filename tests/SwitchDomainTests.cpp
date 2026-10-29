@@ -115,7 +115,7 @@ namespace
         const std::vector<GameProfile> profiles{profileIn(Text::Yes), profileIn(Text::Yes),
             profileIn(Text::No), profileIn(Text::Empty), profileIn(Text::Empty),
             profileIn(Text::NotAvailable), profileIn(Text::NotAvailable), profileIn(Text::WithId),
-            profileIn(Text::WithId), profileIn(Text::ExportedTo)};
+            profileIn(Text::WithId), profileIn(Text::SavedTo)};
         const GameGrid grid(profiles);
         check(grid.cards().size() == 6, "a new card starts when the group changes");
         check(grid.right(3) == 4 && grid.right(4) == 5, "right walks every game");
@@ -294,7 +294,7 @@ namespace
 
         check(loadTexts(TextLanguage::English, SWITCH_STRINGS), "English loads");
         check(std::string(tr(Text::Yes)) == "Yes", "English text");
-        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exported to sdmc:/a", "one value");
+        check(tr(Text::SavedTo, {"sdmc:/a"}) == "Saved to sdmc:/a", "one value");
         check(tr(Text::SlotCount, {"12", "30"}) == "12 / 30", "values go in order");
         check(tr(Text::WithId, {"Pikachu"}) == "Pikachu (#{})", "missing values stay marked");
         check(tr(Text::Yes, {"ignored"}) == "Yes", "extra values are ignored");
@@ -302,7 +302,7 @@ namespace
         check(loadTexts(TextLanguage::Spanish, SWITCH_STRINGS), "Spanish loads");
         check(textLanguage() == TextLanguage::Spanish, "the language can change");
         check(std::string(tr(Text::Yes)) == "Sí", "Spanish text");
-        check(tr(Text::ExportedTo, {"sdmc:/a"}) == "Exportado a sdmc:/a", "Spanish value");
+        check(tr(Text::SavedTo, {"sdmc:/a"}) == "Guardado en sdmc:/a", "Spanish value");
         check(std::string(tr(Text::GameSword)) == "Espada", "Spanish game name");
 
         // A translation that lacks a text, or inserts other values, falls back to English.
@@ -311,12 +311,12 @@ namespace
         std::filesystem::remove_all(folder);
         std::filesystem::create_directories(folder);
         writeFile(
-            folder / "en.json", R"({"Yes": "Yes", "No": "No", "ExportedTo": "Exported to {}"})");
-        writeFile(folder / "es.json", R"({"Yes": "Sí", "ExportedTo": "Exportado"})");
+            folder / "en.json", R"({"Yes": "Yes", "No": "No", "SavedTo": "Saved to {}"})");
+        writeFile(folder / "es.json", R"({"Yes": "Sí", "SavedTo": "Guardado"})");
         check(loadTexts(TextLanguage::Spanish, folder.string()), "partial files still load");
         check(std::string(tr(Text::Yes)) == "Sí", "translated text is used");
         check(std::string(tr(Text::No)) == "No", "a missing text comes from English");
-        check(std::string(tr(Text::ExportedTo)) == "Exported to {}",
+        check(std::string(tr(Text::SavedTo)) == "Saved to {}",
             "a text with other values comes from English");
         check(std::string(tr(Text::Empty)) == "Empty", "a text missing everywhere is its key");
 

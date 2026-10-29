@@ -45,7 +45,7 @@ namespace pksm::switchui
         const std::optional<console::SaveLocation>& consoleLocation() const { return console_; }
 
         // The bank, read the first time it is asked for. Nothing, with a message in `error`,
-        // when it cannot be read. Its changes are written by exportChanges(), together with
+        // when it cannot be read. Its changes are written by saveChanges(), together with
         // the save's, so a Pokémon moved between the two is never lost.
         PokemonBank* bank(std::string& error);
 
@@ -53,14 +53,14 @@ namespace pksm::switchui
         bool dirty() const;
         void markDirty() { dirty_ = true; }
 
-        // Writes the save, when it changed: an SD file gets a copy next to it and the original
-        // is never replaced; a console save is replaced, after a backup of it is made on the SD
-        // card. `outputPath` is the copy or the backup. Then writes the bank, when it changed;
-        // `outputPath` is empty when only the bank was written.
-        bool exportChanges(std::string& outputPath, std::string& error);
+        // Writes the save, when it changed: an SD file is replaced in place; a console save is
+        // replaced after a backup of it is made on the SD card. `outputPath` is the SD file or
+        // the backup. Then writes the bank, when it changed; `outputPath` is empty when only
+        // the bank was written.
+        bool saveChanges(std::string& outputPath, std::string& error);
 
         // Same, leaving in `message` what to show: what was written, or the error.
-        bool exportWithMessage(std::string& message);
+        bool saveWithMessage(std::string& message);
 
     private:
         Session(std::unique_ptr<pksm::Sav> save, const GameProfile& profile, std::string path,

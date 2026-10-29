@@ -16,7 +16,7 @@
     X(NotAvailable)                                                                                \
     X(WithId)                                                                                      \
     X(PendingChanges)                                                                              \
-    X(ExportedTo)                                                                                  \
+    X(SavedTo)                                                                                     \
     X(SavedToConsole)                                                                              \
     X(SavedToConsoleWithBank)                                                                      \
     X(UnsavedBeforeQuit)                                                                           \
@@ -62,12 +62,10 @@
     X(FileReadIncomplete)                                                                          \
     X(SaveParseFailed)                                                                             \
     X(SaveUnsupported)                                                                             \
-    X(ExportNoFreeName)                                                                            \
-    X(ExportCreateFailed)                                                                          \
-    X(ExportOpenFailed)                                                                            \
-    X(ExportEmptyNotRemoved)                                                                       \
-    X(ExportPartialRemoved)                                                                        \
-    X(ExportPartialKept)                                                                           \
+    X(SaveWriteFailed)                                                                             \
+    X(SaveWritePartial)                                                                            \
+    X(SaveReplaceFailed)                                                                           \
+    X(SaveReplaceLost)                                                                             \
     X(ConsoleSaveOpenFailed)                                                                       \
     X(ConsoleSaveReadFailed)                                                                       \
     X(ConsoleSaveWriteFailed)                                                                      \
@@ -77,7 +75,7 @@
     X(GameListPrompt)                                                                              \
     X(HintQuit)                                                                                    \
     X(HintBack)                                                                                    \
-    X(HintExport)                                                                                  \
+    X(HintSave)                                                                                    \
     X(HintDiscard)                                                                                 \
     X(HintEdit)                                                                                    \
     X(HintChange)                                                                                  \
@@ -169,7 +167,7 @@
     X(BankNewerVersion)                                                                            \
     X(BankWriteFailed)                                                                             \
     X(BankSaved)                                                                                   \
-    X(ExportedWithBank)                                                                            \
+    X(SavedWithBank)                                                                               \
     X(BankSlotUnreadable)                                                                          \
     X(TransferNoPath)                                                                              \
     X(TransferBadMove)                                                                             \

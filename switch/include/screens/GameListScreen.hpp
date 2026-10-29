@@ -20,7 +20,7 @@ namespace pksm::switchui
 
         void update(App& app, Action action) override;
         void draw(SwitchUi& ui) override;
-        // Scans again, so saves exported meanwhile, or those of a newly chosen user, are
+        // Scans again, so saves changed meanwhile, or those of a newly chosen user, are
         // counted.
         void onResume() override;
 
