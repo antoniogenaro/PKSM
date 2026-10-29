@@ -1,11 +1,15 @@
 #include "screens/SaveSummary.hpp"
 
+#include "app/App.hpp"
 #include "app/Session.hpp"
 #include "domain/FieldValues.hpp"
 #include "domain/GameProfile.hpp"
 #include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
+#include "screens/PickerScreens.hpp"
 #include "ui/Text.hpp"
+#include <memory>
+#include <vector>
 
 namespace pksm::switchui
 {
@@ -47,5 +51,33 @@ namespace pksm::switchui
             return message;
         }
         return session.dirty() ? std::string(tr(Text::PendingChanges)) : std::string{};
+    }
+
+    void leaveAsking(App& app, Session& session, std::string& message)
+    {
+        if (!session.dirty())
+        {
+            app.pop();
+            return;
+        }
+        constexpr size_t SAVE = 0;
+        std::vector<std::string> options{tr(Text::LeaveSave), tr(Text::LeaveDiscard)};
+        // The dialog closes before it calls back; the screen to leave is on top again then.
+        app.push(std::make_unique<OptionPickerScreen>(tr(Text::LeaveTitle), std::move(options),
+            SAVE, std::vector<size_t>{},
+            [&app, &session, &message](size_t index)
+            {
+                std::string error;
+                const bool done = index == SAVE ? session.saveWithMessage(message)
+                                                : session.discardChanges(error);
+                if (done)
+                {
+                    app.pop();
+                }
+                else if (index != SAVE)
+                {
+                    message = error;
+                }
+            }));
     }
 }

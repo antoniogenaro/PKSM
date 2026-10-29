@@ -134,6 +134,40 @@ namespace pksm::switchui
         return !bank_ || !bank_->dirty() || bank_->save(error);
     }
 
+    bool Session::discardChanges(std::string& error)
+    {
+        std::shared_ptr<u8[]> data;
+        size_t size = 0;
+        const bool read = console_ ? console::readSave(*console_, data, size, error)
+                                   : storage::readSaveFile(sourcePath_, data, size, error);
+        if (!read)
+        {
+            return false;
+        }
+        std::unique_ptr<pksm::Sav> save;
+        try
+        {
+            save = pksm::Sav::getSave(data, size);
+        }
+        catch (const std::exception& exception)
+        {
+            error = tr(Text::SaveParseFailed, {exception.what()});
+            return false;
+        }
+        if (!save || findGameProfile(save->version()) != profile_)
+        {
+            error = tr(Text::SaveUnsupported);
+            return false;
+        }
+
+        save->beginEditing();
+        save_ = std::move(save);
+        // The bank is read again the next time it is asked for.
+        bank_.reset();
+        dirty_ = false;
+        return true;
+    }
+
     bool Session::saveWithMessage(std::string& message)
     {
         const bool bankPending = bank_ && bank_->dirty();

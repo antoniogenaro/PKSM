@@ -190,19 +190,15 @@ namespace pksm::switchui
     {
         const PokemonEditorFields fields = pokemonEditorFields(*pokemon_, session_.save());
         const size_t pageFields          = (page_ == 0 ? fields.main : fields.more).size();
-        // The edit stays here until +; a picker calls this later, while this screen is below it.
+        // The edit stays here until + or B; a picker calls this later, while this screen is
+        // below it.
         const auto onChanged = [this]
         {
             unsaved_ = true;
             message_.clear();
         };
-        if (action != Action::Back && action != Action::None)
-        {
-            warnedBack_ = false;
-        }
-        if (readOnly_ && (action == Action::Quit || action == Action::Discard ||
-                             action == Action::PreviousTab || action == Action::NextTab ||
-                             action == Action::Confirm))
+        if (readOnly_ && (action == Action::Discard || action == Action::PreviousTab ||
+                             action == Action::NextTab || action == Action::Confirm))
         {
             // Nothing can change: the selection still moves and the pages still turn.
             message_ = tr(Text::EditorReadOnly);
@@ -210,10 +206,15 @@ namespace pksm::switchui
         }
         switch (action)
         {
-            case Action::Quit:
-                if (unsaved_)
+            case Action::Save:
+                // + puts the edit in its slot and then writes the save, like everywhere else.
+                if (!readOnly_ && unsaved_)
                 {
                     saveChanges();
+                }
+                if (session_.dirty())
+                {
+                    session_.saveWithMessage(message_);
                 }
                 break;
             case Action::Discard:
@@ -223,15 +224,12 @@ namespace pksm::switchui
                 }
                 break;
             case Action::Back:
-                if (unsaved_ && !warnedBack_)
+                // The edit goes to its slot without writing the save; + writes it later.
+                if (!readOnly_ && unsaved_)
                 {
-                    message_    = tr(Text::EditorUnsavedBack);
-                    warnedBack_ = true;
+                    saveChanges();
                 }
-                else
-                {
-                    app.pop();
-                }
+                app.pop();
                 break;
             case Action::Up:
             case Action::Down:

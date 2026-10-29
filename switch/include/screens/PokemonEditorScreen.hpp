@@ -64,9 +64,8 @@ namespace pksm::switchui
         size_t page_     = 0;
         Area area_       = Area::Fields;
         size_t selected_ = 0;
-        // Changes not yet written to the slot, and whether B was pressed once with them.
-        bool unsaved_     = false;
-        bool warnedBack_  = false;
+        // Changes not yet written to the slot.
+        bool unsaved_ = false;
         std::string message_;
     };
 }
