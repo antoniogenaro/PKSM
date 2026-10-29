@@ -720,19 +720,20 @@ namespace pksm::switchui
 
         padUpdate(&pad_);
         const u64 buttons = padGetButtonsDown(&pad_);
-        if (buttons & HidNpadButton_Up)
+        // The left stick moves like the d-pad.
+        if (buttons & (HidNpadButton_Up | HidNpadButton_StickLUp))
         {
             return Action::Up;
         }
-        if (buttons & HidNpadButton_Down)
+        if (buttons & (HidNpadButton_Down | HidNpadButton_StickLDown))
         {
             return Action::Down;
         }
-        if (buttons & HidNpadButton_Left)
+        if (buttons & (HidNpadButton_Left | HidNpadButton_StickLLeft))
         {
             return Action::Left;
         }
-        if (buttons & HidNpadButton_Right)
+        if (buttons & (HidNpadButton_Right | HidNpadButton_StickLRight))
         {
             return Action::Right;
         }
