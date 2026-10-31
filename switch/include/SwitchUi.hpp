@@ -189,6 +189,8 @@ namespace pksm::switchui
         // A Pokémon picked up to move: it is drawn lifted over the selected slot, and the slot it
         // came from (`carriedInParty`, `carriedSlot`) is dimmed when `carriedShown`.
         bool carrying       = false;
+        // The carried Pokémon is a copy, placed with X.
+        bool cloning        = false;
         bool carriedShown   = false;
         bool carriedInParty = false;
         size_t carriedSlot  = 0;
@@ -221,6 +223,8 @@ namespace pksm::switchui
         std::string message;
         // As in BoxView: a Pokémon picked up to move, and where it came from.
         bool carrying      = false;
+        // The carried Pokémon is a copy, placed with X.
+        bool cloning       = false;
         bool carriedShown  = false;
         bool carriedInGame = false;
         size_t carriedSlot = 0;
