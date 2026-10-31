@@ -116,12 +116,19 @@ namespace pksm::switchui
                 leaveAsking(app, session_, message_);
                 break;
             case Action::Discard:
-                cloneOrPlace();
+                if (!carried_.active)
+                {
+                    pickUp(true);
+                }
                 break;
             case Action::Move:
-                if (!carried_.clone)
+                if (!carried_.active)
                 {
-                    pickUpOrDrop();
+                    pickUp(false);
+                }
+                else
+                {
+                    place();
                 }
                 break;
             case Action::Save:
@@ -134,6 +141,10 @@ namespace pksm::switchui
                 if (!carried_.active)
                 {
                     openSelected(app);
+                }
+                else
+                {
+                    place();
                 }
                 break;
             default:
@@ -262,19 +273,6 @@ namespace pksm::switchui
         }
     }
 
-    void BoxBrowserScreen::cloneOrPlace()
-    {
-        if (!carried_.active)
-        {
-            pickUp(true);
-            return;
-        }
-        if (carried_.clone)
-        {
-            placeClone();
-        }
-    }
-
     void BoxBrowserScreen::placeClone()
     {
         auto copy   = readAt(carried_.party, carried_.box, carried_.slot);
@@ -303,11 +301,11 @@ namespace pksm::switchui
         refreshSlots();
     }
 
-    void BoxBrowserScreen::pickUpOrDrop()
+    void BoxBrowserScreen::place()
     {
-        if (!carried_.active)
+        if (carried_.clone)
         {
-            pickUp(false);
+            placeClone();
             return;
         }
         if (carried_.party == party_ && (party_ || carried_.box == box_) &&
@@ -388,7 +386,6 @@ namespace pksm::switchui
         view.detail     = detail_;
         view.message    = sessionMessage(session_, message_);
         view.carrying       = carried_.active;
-        view.cloning        = carried_.clone;
         view.carriedShown   = carriedSlotShown();
         view.carriedInParty = carried_.party;
         view.carriedSlot    = carried_.slot;
