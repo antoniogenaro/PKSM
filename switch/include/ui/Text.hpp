@@ -287,6 +287,16 @@
     X(NatureNeutralShort)                                                                          \
     X(NatureKey)                                                                                   \
     X(PickerCurrent)                                                                               \
+    X(PickerSearchTitle)                                                                           \
+    X(PickerSearchPlaceholder)                                                                     \
+    X(PickerOrderNumber)                                                                           \
+    X(PickerOrderName)                                                                             \
+    X(PickerPage)                                                                                  \
+    X(PickerMatches)                                                                               \
+    X(PickerNoMatches)                                                                             \
+    X(HintSearch)                                                                                  \
+    X(HintOrder)                                                                                   \
+    X(HintClearSearch)                                                                             \
     X(DateValue)                                                                                   \
     X(DateDay)                                                                                     \
     X(DateMonth)                                                                                   \

@@ -114,7 +114,7 @@ namespace pksm::switchui
             const std::string label =
                 tr(relearn ? Text::FieldRelearnMove : Text::FieldMove, {numericValue(slot + 1)});
             const pksm::Move move = relearn ? pokemon.relearnMove(slot) : pokemon.move(slot);
-            return choiceField(
+            EditableField field = choiceField(
                 display(label, withId(move.localize(language), static_cast<unsigned int>(move))),
                 // Titled with the slot, such as "Move 1", as on the canvas.
                 label, [&save] { return idsOf(save.availableMoves()); },
@@ -139,6 +139,8 @@ namespace pksm::switchui
                     pokemon.fixMoves();
                     pokemon.healPP();
                 });
+            field.pickerKind = PickerKind::Moves;
+            return field;
         }
     }
 
@@ -157,7 +159,7 @@ namespace pksm::switchui
         std::vector<EditableField>& more   = result.more;
 
         const unsigned int species = static_cast<unsigned int>(pokemon.species());
-        fields.push_back(choiceField(
+        EditableField speciesField = choiceField(
             display(tr(Text::FieldSpecies), pokemon.species() == pksm::Species::None
                                    ? tr(Text::Empty)
                                    : withId(pokemon.species().localize(language), species)),
@@ -165,7 +167,9 @@ namespace pksm::switchui
             [&pokemon](unsigned int id)
             { return withId(pksm::Species{static_cast<u16>(id)}.localize(pokemon.language()), id); },
             [&pokemon] { return static_cast<unsigned int>(pokemon.species()); },
-            [&pokemon](unsigned int id) { setSpecies(pokemon, pksm::Species{static_cast<u16>(id)}); }));
+            [&pokemon](unsigned int id) { setSpecies(pokemon, pksm::Species{static_cast<u16>(id)}); });
+        speciesField.pickerKind = PickerKind::Species;
+        fields.push_back(std::move(speciesField));
 
         fields.push_back(textField(display(tr(Text::FieldNickname), pokemon.nickname()), tr(Text::FieldNickname),
             generation >= pksm::Generation::SIX ? 12 : 10, [&pokemon] { return pokemon.nickname(); },
@@ -225,7 +229,7 @@ namespace pksm::switchui
             [&pokemon] { return static_cast<unsigned int>(pokemon.abilityNumber() >> 1); },
             [&pokemon](unsigned int slot) { pokemon.setAbility(static_cast<u8>(slot)); }));
 
-        fields.push_back(choiceField(
+        EditableField itemField = choiceField(
             display(tr(Text::FieldItem), withId(i18n::item(language, pokemon.heldItem()), pokemon.heldItem())),
             tr(Text::FieldItem),
             [&save]
@@ -245,7 +249,9 @@ namespace pksm::switchui
             [&pokemon](unsigned int item)
             { return withId(i18n::item(pokemon.language(), static_cast<u16>(item)), item); },
             [&pokemon] { return static_cast<unsigned int>(pokemon.heldItem()); },
-            [&pokemon](unsigned int item) { pokemon.heldItem(static_cast<u16>(item)); }));
+            [&pokemon](unsigned int item) { pokemon.heldItem(static_cast<u16>(item)); });
+        itemField.pickerKind = PickerKind::Items;
+        fields.push_back(std::move(itemField));
 
         const unsigned int ball = static_cast<unsigned int>(pokemon.ball());
         EditableField ballField = choiceField(
