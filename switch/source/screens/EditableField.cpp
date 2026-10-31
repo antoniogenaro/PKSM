@@ -37,8 +37,9 @@ namespace pksm::switchui
             }
             else
             {
+                // The values are the options' numbers, for the number order.
                 app.push(std::make_unique<OptionPickerScreen>(field.title, std::move(options),
-                    current, std::move(sprites), std::move(onPick)));
+                    current, std::move(sprites), std::move(onPick), values, field.pickerKind));
             }
         }
     }

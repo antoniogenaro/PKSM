@@ -13,11 +13,13 @@
 #include <switch.h>
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <cstdio>
 #include <iterator>
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -2397,111 +2399,253 @@ namespace pksm::switchui
         return true;
     }
 
-    void SwitchUi::drawOptionPicker(const std::string& title, const std::string& current,
-        const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
-        size_t firstRow, size_t& index)
+    void SwitchUi::drawOptionPicker(OptionPickerView& view)
     {
-        // The canvas move dialog: 1120 wide, a title row, then the options four to a row.
-        constexpr float width     = 1120.0f;
-        constexpr float titleRow  = 44.0f;
-        constexpr float gap       = 14.0f;
-        constexpr float rowHeight = 40.0f;
-        constexpr float rowGap    = 4.0f;
-        constexpr float columnGap = 6.0f;
-        constexpr float scrollbar = 18.0f; // Room on the right for the scroll bar.
-        // As tall as the options need, up to PICKER_ROWS rows.
-        const size_t rows      = (options.size() + PICKER_COLUMNS - 1) / PICKER_COLUMNS;
-        const size_t shownRows = std::clamp<size_t>(rows, 1, PICKER_ROWS);
+        const std::vector<std::string>& options = *view.options;
+        const std::vector<size_t>& sprites      = *view.spriteIndices;
+        const std::vector<size_t>& entries      = *view.entries;
+
+        // The canvas move dialog: 1120 wide, a title row, then the options four to a row. A
+        // long list adds a row with the search and the order, and keeps a whole page tall so
+        // the dialog does not jump as the search narrows it.
+        constexpr float width      = 1120.0f;
+        constexpr float titleRow   = 44.0f;
+        constexpr float toolbarRow = 44.0f;
+        constexpr float gap        = 14.0f;
+        constexpr float rowHeight  = 40.0f;
+        constexpr float rowGap     = 4.0f;
+        constexpr float columnGap  = 6.0f;
+        constexpr float scrollbar  = 18.0f; // Room on the right for the scroll bar.
+        constexpr size_t perPage   = PICKER_COLUMNS * PICKER_ROWS;
+        const size_t rows          = (entries.size() + PICKER_COLUMNS - 1) / PICKER_COLUMNS;
+        const size_t shownRows =
+            view.searchable ? PICKER_ROWS : std::clamp<size_t>(rows, 1, PICKER_ROWS);
         const float listHeight =
             rowHeight * static_cast<float>(shownRows) + rowGap * static_cast<float>(shownRows - 1);
-        const float height = MODAL_PADDING * 2.0f + titleRow + gap + listHeight;
+        const float toolbar = view.searchable ? toolbarRow + gap : 0.0f;
+        const float height  = MODAL_PADDING * 2.0f + titleRow + toolbar + gap + listHeight;
 
         beginModal(width, height);
         ImFont* bold         = theme::boldFont();
+        ImFont* regular      = ImGui::GetFont();
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         const ImVec2 origin  = ImGui::GetCursorScreenPos();
         const float inner    = width - MODAL_PADDING * 2.0f;
         const auto size      = [bold](float px, const std::string& text)
         { return bold->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        // A button's name in a black circle, as in the legend.
+        const auto drawFace = [&](const ImVec2& center, const char* name)
+        {
+            drawList->AddCircleFilled(center, 13.0f, theme::rgb(theme::BUTTON_FACE));
+            const ImVec2 nameSize = size(theme::FONT_SMALL, name);
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(std::round(center.x - nameSize.x * 0.5f), std::round(center.y - nameSize.y * 0.5f)),
+                theme::rgb(theme::ON_DARK), name);
+        };
 
         // The title, and on the right the value before picking.
-        drawList->AddText(bold, 26.0f, ImVec2(origin.x, origin.y + (titleRow - size(26.0f, title).y) * 0.5f),
-            theme::rgb(theme::TEXT), title.c_str());
-        if (!current.empty())
+        drawList->AddText(bold, 26.0f, ImVec2(origin.x, origin.y + (titleRow - size(26.0f, view.title).y) * 0.5f),
+            theme::rgb(theme::TEXT), view.title.c_str());
+        if (!view.current.empty())
         {
             const std::string label = tr(Text::PickerCurrent);
-            const float valueWidth  = std::min(size(22.0f, current).x, inner * 0.45f);
+            const float valueWidth  = std::min(size(22.0f, view.current).x, inner * 0.45f);
             const float valueX      = origin.x + inner - valueWidth;
             widgets::drawTextEllipsis(drawList, bold, 22.0f,
-                ImVec2(valueX, origin.y + (titleRow - size(22.0f, current).y) * 0.5f),
-                theme::rgb(theme::TEXT), current.c_str(), valueWidth);
+                ImVec2(valueX, origin.y + (titleRow - size(22.0f, view.current).y) * 0.5f),
+                theme::rgb(theme::TEXT), view.current.c_str(), valueWidth);
             drawList->AddText(bold, theme::FONT_SMALL,
                 ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
                     origin.y + (titleRow - size(theme::FONT_SMALL, label).y) * 0.5f),
                 theme::rgb(theme::TEXT_MUTED), label.c_str());
         }
 
-        // The options.
-        const float top         = origin.y + titleRow + gap;
+        // The search box and the order toggle.
+        if (view.searchable)
+        {
+            const float top = origin.y + titleRow + gap;
+            const float mid = top + toolbarRow * 0.5f;
+
+            // On the right, X and the two orders; the one in use is filled.
+            const std::string orderNames[] = {tr(Text::PickerOrderNumber), tr(Text::PickerOrderName)};
+            constexpr float pillPad   = 14.0f;
+            constexpr float trackPad  = 4.0f;
+            const float pillWidth     = std::max(size(theme::FONT_BODY, orderNames[0]).x,
+                                            size(theme::FONT_BODY, orderNames[1]).x) + pillPad * 2.0f;
+            const float trackWidth    = pillWidth * 2.0f + trackPad * 3.0f;
+            const ImVec2 trackMin(origin.x + inner - trackWidth, top);
+            const ImVec2 trackMax(trackMin.x + trackWidth, top + toolbarRow);
+            drawList->AddRectFilled(trackMin, trackMax, theme::rgb(theme::CONTROL), 12.0f);
+            for (size_t i = 0; i < 2; ++i)
+            {
+                const ImVec2 pillMin(trackMin.x + trackPad + static_cast<float>(i) * (pillWidth + trackPad),
+                    top + trackPad);
+                const ImVec2 pillMax(pillMin.x + pillWidth, top + toolbarRow - trackPad);
+                const bool active = static_cast<size_t>(view.order) == i;
+                if (active)
+                {
+                    drawList->AddRectFilled(pillMin, pillMax, theme::rgb(theme::BUTTON_FACE), 9.0f);
+                }
+                const ImVec2 nameSize = size(theme::FONT_BODY, orderNames[i]);
+                drawList->AddText(bold, theme::FONT_BODY,
+                    ImVec2(std::round(pillMin.x + (pillWidth - nameSize.x) * 0.5f),
+                        std::round(mid - nameSize.y * 0.5f)),
+                    theme::rgb(active ? theme::ON_DARK : theme::TEXT_SOFT), orderNames[i].c_str());
+                ImGui::SetCursorScreenPos(pillMin);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("order", ImVec2(pillWidth, pillMax.y - pillMin.y)) && !active)
+                {
+                    view.orderRequest = true;
+                }
+                ImGui::PopID();
+            }
+            drawFace(ImVec2(trackMin.x - 12.0f - 13.0f, mid), "X");
+
+            // On the left, the search: Y, what was typed, and how many match on how many pages.
+            const ImVec2 boxMin(origin.x, top);
+            const ImVec2 boxMax(trackMin.x - 12.0f - 26.0f - 12.0f, top + toolbarRow);
+            drawList->AddRectFilled(boxMin, boxMax, theme::rgb(theme::CARD), 12.0f);
+            drawList->AddRect(boxMin, boxMax,
+                theme::rgb(view.query.empty() ? theme::BORDER : theme::ACCENT), 12.0f, 0,
+                view.query.empty() ? 1.0f : 2.0f);
+            drawFace(ImVec2(boxMin.x + 12.0f + 13.0f, mid), "Y");
+
+            std::string info = tr(Text::PickerPage,
+                {std::to_string(view.page + 1), std::to_string(view.pageCount)});
+            if (!view.query.empty())
+            {
+                info = tr(Text::PickerMatches,
+                           {std::to_string(entries.size()), std::to_string(options.size())}) +
+                       "  ·  " + info;
+            }
+            const ImVec2 infoSize = size(theme::FONT_SMALL, info);
+            const float infoX     = boxMax.x - 14.0f - infoSize.x;
+            drawList->AddText(bold, theme::FONT_SMALL,
+                ImVec2(infoX, std::round(mid - infoSize.y * 0.5f)), theme::rgb(theme::TEXT_MUTED),
+                info.c_str());
+
+            const float queryX = boxMin.x + 12.0f + 26.0f + 12.0f;
+            if (view.query.empty())
+            {
+                const char* placeholder = tr(Text::PickerSearchPlaceholder);
+                const ImVec2 placeholderSize =
+                    regular->CalcTextSizeA(theme::FONT_ROW_TITLE, FLT_MAX, 0.0f, placeholder);
+                drawList->AddText(regular, theme::FONT_ROW_TITLE,
+                    ImVec2(queryX, std::round(mid - placeholderSize.y * 0.5f)),
+                    theme::rgb(theme::TEXT_MUTED), placeholder);
+            }
+            else
+            {
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_ROW_TITLE,
+                    ImVec2(queryX, std::round(mid - size(theme::FONT_ROW_TITLE, view.query).y * 0.5f)),
+                    theme::rgb(theme::TEXT), view.query.c_str(), infoX - 16.0f - queryX);
+            }
+        }
+
+        // The options of the page that holds the selection.
+        const float top         = origin.y + titleRow + toolbar + gap;
         const float columns     = static_cast<float>(PICKER_COLUMNS);
         const float optionWidth = (inner - scrollbar - columnGap * (columns - 1.0f)) / columns;
-        const size_t first      = firstRow * PICKER_COLUMNS;
-        const size_t last       = std::min(options.size(), first + PICKER_COLUMNS * PICKER_ROWS);
+        const size_t first      = std::min(view.selected, entries.empty() ? 0 : entries.size() - 1) /
+                                 perPage * perPage;
+        const size_t last       = std::min(entries.size(), first + perPage);
         for (size_t i = first; i < last; ++i)
         {
-            const size_t slot = i - first;
+            const size_t slot          = i - first;
+            const size_t option        = entries[i];
+            const std::string& name    = options[option];
             const ImVec2 min(origin.x + static_cast<float>(slot % PICKER_COLUMNS) * (optionWidth + columnGap),
                 top + static_cast<float>(slot / PICKER_COLUMNS) * (rowHeight + rowGap));
             const ImVec2 max(min.x + optionWidth, min.y + rowHeight);
             ImGui::SetCursorScreenPos(min);
-            ImGui::PushID(static_cast<int>(i));
+            ImGui::PushID(static_cast<int>(option));
             if (ImGui::InvisibleButton("option", ImVec2(optionWidth, rowHeight)))
             {
-                index = i;
+                view.selected = i;
             }
             ImGui::PopID();
-            const bool selected = i == index;
             drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), 10.0f);
-            if (selected)
+            if (i == view.selected)
             {
                 widgets::drawSelectionOutline(drawList, min, max, 10.0f);
             }
             float textLeft = min.x + 10.0f;
-            if (i < spriteIndices.size())
+            if (option < sprites.size())
             {
-                drawBallSprite(spriteIndices[i],
+                drawBallSprite(sprites[option],
                     {static_cast<int>(textLeft), static_cast<int>(min.y + (rowHeight - 24.0f) * 0.5f), 24, 24});
                 textLeft += 24.0f + 8.0f;
             }
-            widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
-                ImVec2(textLeft, min.y + (rowHeight - size(theme::FONT_SMALL, options[i]).y) * 0.5f),
-                theme::rgb(theme::TEXT), options[i].c_str(), max.x - 10.0f - textLeft);
+            const float textWidth = max.x - 10.0f - textLeft;
+            const ImVec2 position(textLeft, min.y + (rowHeight - size(theme::FONT_SMALL, name).y) * 0.5f);
+            const auto match      = view.query.empty() ? std::nullopt : findText(name, view.query);
+            if (match && size(theme::FONT_SMALL, name).x <= textWidth)
+            {
+                // The part that matches the search, in the accent colour on a light tint.
+                const char* text  = name.c_str();
+                const char* begin = text + match->start;
+                const char* end   = begin + match->length;
+                const float before = bold->CalcTextSizeA(theme::FONT_SMALL, FLT_MAX, 0.0f, text, begin).x;
+                const float inside = bold->CalcTextSizeA(theme::FONT_SMALL, FLT_MAX, 0.0f, begin, end).x;
+                drawList->AddRectFilled(ImVec2(position.x + before - 1.0f, min.y + 9.0f),
+                    ImVec2(position.x + before + inside + 1.0f, max.y - 9.0f),
+                    theme::rgb(theme::ACCENT, 36), 3.0f);
+                drawList->AddText(bold, theme::FONT_SMALL, position, theme::rgb(theme::TEXT), text, begin);
+                drawList->AddText(bold, theme::FONT_SMALL, ImVec2(position.x + before, position.y),
+                    theme::rgb(theme::ACCENT), begin, end);
+                drawList->AddText(bold, theme::FONT_SMALL, ImVec2(position.x + before + inside, position.y),
+                    theme::rgb(theme::TEXT), end);
+            }
+            else
+            {
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL, position,
+                    theme::rgb(theme::TEXT), name.c_str(), textWidth);
+            }
         }
 
-        // The scroll bar, only when the options take more than one page: how much the page
-        // shows, and where.
-        if (rows > PICKER_ROWS)
+        // A search that matches nothing says so where the options would be.
+        if (entries.empty())
+        {
+            const std::string none = tr(Text::PickerNoMatches, {view.query});
+            const ImVec2 noneSize  = size(theme::FONT_BODY, none);
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
+                ImVec2(std::max(origin.x, origin.x + (inner - noneSize.x) * 0.5f),
+                    top + (listHeight - noneSize.y) * 0.5f),
+                theme::rgb(theme::TEXT_MUTED), none.c_str(), inner);
+        }
+
+        // The scroll bar, only when there is more than one page: how much a page is, and
+        // which one is shown.
+        const size_t pages = view.searchable ? view.pageCount : (rows + PICKER_ROWS - 1) / PICKER_ROWS;
+        if (pages > 1)
         {
             const ImVec2 trackMin(origin.x + inner - 6.0f, top);
             drawList->AddRectFilled(trackMin, ImVec2(trackMin.x + 6.0f, top + listHeight),
                 theme::rgb(theme::BORDER), 3.0f);
-            const float shown = static_cast<float>(PICKER_ROWS) / static_cast<float>(rows);
-            const float start = static_cast<float>(firstRow) / static_cast<float>(rows);
+            const float share = 1.0f / static_cast<float>(pages);
+            const float start = static_cast<float>(first / perPage) * share;
             drawList->AddRectFilled(ImVec2(trackMin.x, top + listHeight * start),
-                ImVec2(trackMin.x + 6.0f, top + listHeight * (start + shown)),
+                ImVec2(trackMin.x + 6.0f, top + listHeight * (start + share)),
                 theme::rgb(theme::TEXT_MUTED), 3.0f);
         }
 
+        std::vector<widgets::ButtonHint> hints{
+            {"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}};
+        if (view.searchable)
+        {
+            hints.push_back({"Y", tr(Text::HintSearch)});
+            hints.push_back({"X", tr(Text::HintOrder)});
+            if (!view.query.empty())
+            {
+                hints.push_back({"−", tr(Text::HintClearSearch)});
+            }
+        }
         // L/R only page through lists longer than one page.
-        if (rows > PICKER_ROWS)
+        if (pages > 1)
         {
-            widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)},
-                {"L / R", tr(Text::HintChangePage)}});
+            hints.push_back({"L / R", tr(Text::HintChangePage)});
         }
-        else
-        {
-            widgets::drawButtonLegend({{"A", tr(Text::HintSelect)}, {"B", tr(Text::HintBack)}});
-        }
+        widgets::drawButtonLegend(hints);
         endModal();
     }
 

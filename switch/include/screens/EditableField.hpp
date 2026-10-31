@@ -2,6 +2,7 @@
 
 #include "SwitchUi.hpp"
 #include "domain/FieldValues.hpp"
+#include "domain/PickerList.hpp"
 #include <cstddef>
 #include <functional>
 #include <string>
@@ -75,6 +76,8 @@ namespace pksm::switchui
         // Poké Ball sprite for each choice, when the picker shows them.
         std::function<size_t(unsigned int)> sprite;
         ChoicePicker picker = ChoicePicker::List;
+        // Which remembered order a long list opens in.
+        PickerKind pickerKind = PickerKind::Other;
 
         std::function<::Date()> getDate;
         std::function<void(const ::Date&)> setDate;

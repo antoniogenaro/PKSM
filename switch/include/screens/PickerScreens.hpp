@@ -2,6 +2,7 @@
 
 #include "SwitchUi.hpp"
 #include "app/Screen.hpp"
+#include "domain/PickerList.hpp"
 #include "domain/FieldValues.hpp"
 #include <cstddef>
 #include <functional>
@@ -14,28 +15,47 @@ namespace pksm::switchui
     using PickHandler = std::function<void(size_t index)>;
 
     // A long list of options in a dialog over the screen below, COLUMNS to a row and ROWS rows
-    // to a page. The D-pad moves one option or one row, L/R a page.
+    // to a page. The D-pad moves one option or one row, L/R a page. A list longer than a page
+    // also has a search (Y opens the keyboard, − clears it) and an order (X switches between
+    // number and name); its page is shown.
     class OptionPickerScreen : public Screen
     {
     public:
-        static constexpr size_t COLUMNS = SwitchUi::PICKER_COLUMNS;
-        static constexpr size_t ROWS    = SwitchUi::PICKER_ROWS;
+        static constexpr size_t COLUMNS  = SwitchUi::PICKER_COLUMNS;
+        static constexpr size_t ROWS     = SwitchUi::PICKER_ROWS;
+        static constexpr size_t PER_PAGE = COLUMNS * ROWS;
 
+        // `numbers` holds each option's number for the number order; without them that order
+        // is the order given.
         OptionPickerScreen(std::string title, std::vector<std::string> options, size_t current,
-            std::vector<size_t> spriteIndices, PickHandler onPick);
+            std::vector<size_t> spriteIndices, PickHandler onPick,
+            std::vector<unsigned int> numbers = {}, PickerKind kind = PickerKind::Other);
 
         void update(App& app, Action action) override;
         void draw(SwitchUi& ui) override;
         bool isOverlay() const override { return true; }
 
     private:
+        bool searchable() const { return options_.size() > PER_PAGE; }
+        // Lists the options again after the search or the order changed, keeping `option`
+        // selected when it is still listed.
+        void refresh(size_t option);
+        void setOrder(PickerOrder order);
+        // The option selected, as a position in `options_`.
+        size_t selectedOption() const;
+
         std::string title_;
         std::vector<std::string> options_;
         std::vector<size_t> spriteIndices_;
+        std::vector<unsigned int> numbers_;
+        PickerKind kind_;
         size_t current_;
-        size_t index_;
-        // The first row shown; it follows the selection.
-        size_t firstRow_ = 0;
+        std::string query_;
+        PickerOrder order_;
+        // The options shown, as positions in `options_`.
+        std::vector<size_t> entries_;
+        // The selection, as a position in `entries_`.
+        size_t index_ = 0;
         PickHandler onPick_;
     };
 

@@ -286,6 +286,11 @@ namespace pksm::switchui::widgets
 
     float drawButtonLegend(std::initializer_list<ButtonHint> hints)
     {
+        return drawButtonLegend(std::vector<ButtonHint>(hints));
+    }
+
+    float drawButtonLegend(const std::vector<ButtonHint>& hints)
+    {
         constexpr float hintGap   = 32.0f;
         constexpr float faceGap   = 8.0f;
         constexpr float faceSize  = theme::LEGEND_HEIGHT;

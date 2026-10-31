@@ -6,6 +6,7 @@
 
 #include <initializer_list>
 #include <string>
+#include <vector>
 
 // The building blocks every screen of the design canvas shares: the PKSM header, panels, list
 // rows, dashed "import" buttons and the button legend. They draw into the current ImGui window
@@ -36,6 +37,8 @@ namespace pksm::switchui::widgets
     // The button legend along the bottom right of the current window. It does not move the cursor,
     // so content above should leave theme::LEGEND_HEIGHT free. Returns how wide it is.
     float drawButtonLegend(std::initializer_list<ButtonHint> hints);
+    // The same, for a legend whose buttons depend on the screen's state.
+    float drawButtonLegend(const std::vector<ButtonHint>& hints);
 
     // `text` in `color` (0xRRGGBB) along the bottom left of the current window, on the legend's
     // line, cut short with "…" past `maxWidth`.

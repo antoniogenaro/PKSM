@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 #include <switch.h>
+#include "domain/PickerList.hpp"
 #include "imgui.h"
 #include "platform/SystemStatus.hpp"
 #include "ui/Icons.hpp"
@@ -231,6 +232,29 @@ namespace pksm::switchui
         bool pageInGame = false;
     };
 
+    // What the option picker draws. Long lists add a search box, an order toggle and the page.
+    struct OptionPickerView
+    {
+        std::string title;
+        std::string current; // The value before picking, shown in the title row.
+        // Every option, and a Poké Ball sprite for each when not empty. Owned by the picker
+        // screen, which outlives the draw call.
+        const std::vector<std::string>* options      = nullptr;
+        const std::vector<size_t>* spriteIndices     = nullptr;
+        // The options shown, as positions in `options`, in their order.
+        const std::vector<size_t>* entries           = nullptr;
+        // The selection, as a position in `entries`. A touch on an option moves it.
+        size_t selected = 0;
+        // Long lists only: the search, the order, and the page the selection is on.
+        bool searchable   = false;
+        std::string query;
+        PickerOrder order = PickerOrder::Number;
+        size_t page       = 0;
+        size_t pageCount  = 1;
+        // Set by drawOptionPicker() when the order toggle is touched.
+        bool orderRequest = false;
+    };
+
     // What the date picker draws: a column for each part of the date, in the order shown, with
     // the values one step up and one step down beside the current one.
     struct DatePickerView
@@ -332,13 +356,11 @@ namespace pksm::switchui
         // selects it.
         void drawBag(BagView& view);
         // Pickers, as dialogs over the screen below. A touch on an entry moves the selection, so
-        // it is passed by reference. The option picker shows PICKER_ROWS rows of PICKER_COLUMNS
-        // from `firstRow`, with `current` (the value before picking) in its title.
+        // it is passed by reference. The option picker shows the page of PICKER_ROWS rows of
+        // PICKER_COLUMNS that holds the selection.
         static constexpr size_t PICKER_COLUMNS = 4;
         static constexpr size_t PICKER_ROWS    = 10;
-        void drawOptionPicker(const std::string& title, const std::string& current,
-            const std::vector<std::string>& options, const std::vector<size_t>& spriteIndices,
-            size_t firstRow, size_t& index);
+        void drawOptionPicker(OptionPickerView& view);
         // `natures` holds the 25 natures in their usual order: row * 5 + column. `current` is
         // the Pokémon's nature, shown in the header.
         void drawNaturePicker(
