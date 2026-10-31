@@ -3,8 +3,14 @@
 #include "SwitchUi.hpp"
 #include "app/Screen.hpp"
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
+
+namespace pksm
+{
+    class PKX;
+}
 
 namespace pksm::switchui
 {
@@ -12,7 +18,9 @@ namespace pksm::switchui
 
     // The party, the boxes of an open save and the selected Pokémon's detail, left to right. The
     // D-pad moves through the box and across to the party; L/R change the box. Y picks the
-    // selected Pokémon up and, on another slot, drops it there, swapping the two.
+    // selected Pokémon up and X picks up a copy, leaving the original in place. While carrying,
+    // A or Y drops it on the selected slot: a Pokémon already there takes the
+    // moved one's old slot and stays in hand. A copy only goes into an empty slot.
     class BoxBrowserScreen : public Screen
     {
     public:
@@ -32,18 +40,28 @@ namespace pksm::switchui
         void openSelected(App& app);
         // The party slots that can be chosen: the filled ones and the one after them.
         size_t selectablePartySlots() const;
-        // Y: picks the selected Pokémon up, or drops the carried one on the selected slot.
-        void pickUpOrDrop();
-        // Swaps the carried Pokémon with the selected slot and writes both to the save.
+        // A or Y while carrying: puts the carried Pokémon, or copy, on the selected slot.
+        void place();
+        // Picks up the selected Pokémon, or a copy of it.
+        void pickUp(bool clone);
+        // Writes the carried copy to the selected slot, which must be empty.
+        void placeClone();
+        // The Pokémon in a slot, or an empty one.
+        std::unique_ptr<pksm::PKX> readAt(bool party, unsigned int box, size_t slot);
+        // Writes `pokemon` to a slot in the format the slot needs. The party is not packed.
+        void writeAt(pksm::PKX& pokemon, bool party, unsigned int box, size_t slot);
+        // Swaps the carried Pokémon with the selected slot and writes both to the save. The one
+        // that was there stays carried.
         void dropCarried();
         bool carriedSlotShown() const;
         // Clears the footer message, or shows what is being carried.
         void clearMessage();
 
-        // A Pokémon picked up with Y, by where it was taken from.
+        // A Pokémon picked up with Y, or a copy picked up with X, by where it was taken from.
         struct Carried
         {
             bool active      = false;
+            bool clone       = false;
             bool party       = false;
             unsigned int box = 0;
             size_t slot      = 0;

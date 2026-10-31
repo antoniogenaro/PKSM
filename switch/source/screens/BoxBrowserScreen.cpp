@@ -108,7 +108,7 @@ namespace pksm::switchui
             case Action::Back:
                 if (carried_.active)
                 {
-                    // Nothing was written yet, so cancelling only puts it down.
+                    // The carried Pokémon is still in its old slot, so cancelling only puts it down.
                     carried_ = {};
                     message_.clear();
                     break;
@@ -116,10 +116,20 @@ namespace pksm::switchui
                 leaveAsking(app, session_, message_);
                 break;
             case Action::Discard:
-                app.closeSession();
+                if (!carried_.active)
+                {
+                    pickUp(true);
+                }
                 break;
             case Action::Move:
-                pickUpOrDrop();
+                if (!carried_.active)
+                {
+                    pickUp(false);
+                }
+                else
+                {
+                    place();
+                }
                 break;
             case Action::Save:
                 if (session_.dirty())
@@ -131,6 +141,10 @@ namespace pksm::switchui
                 if (!carried_.active)
                 {
                     openSelected(app);
+                }
+                else
+                {
+                    place();
                 }
                 break;
             default:
@@ -200,25 +214,98 @@ namespace pksm::switchui
 
     void BoxBrowserScreen::clearMessage()
     {
-        message_ = carried_.active ? tr(Text::PokemonCarrying, {carried_.name}) : std::string{};
+        if (!carried_.active)
+        {
+            message_.clear();
+            return;
+        }
+        message_ =
+            tr(carried_.clone ? Text::PokemonCloning : Text::PokemonCarrying, {carried_.name});
     }
 
     bool BoxBrowserScreen::carriedSlotShown() const
     {
-        return carried_.active && (carried_.party || carried_.box == box_);
+        // A clone leaves the original where it is, so its slot is not dimmed.
+        return carried_.active && !carried_.clone && (carried_.party || carried_.box == box_);
     }
 
-    void BoxBrowserScreen::pickUpOrDrop()
+    void BoxBrowserScreen::pickUp(bool clone)
     {
-        if (!carried_.active)
+        const PokemonSlot& slot = party_ ? partySlots_[selected_] : boxSlots_[selected_];
+        if (slot.empty || detail_.empty)
         {
-            const PokemonSlot& slot = party_ ? partySlots_[selected_] : boxSlots_[selected_];
-            if (slot.empty || detail_.empty)
-            {
-                return;
-            }
-            carried_ = {true, party_, box_, selected_, slot, detail_.name};
-            clearMessage();
+            return;
+        }
+        carried_ = {true, clone, party_, box_, selected_, slot, detail_.name};
+        clearMessage();
+    }
+
+    std::unique_ptr<pksm::PKX> BoxBrowserScreen::readAt(bool party, unsigned int box, size_t slot)
+    {
+        pksm::Sav& save = session_.save();
+        std::unique_ptr<pksm::PKX> pokemon;
+        if (party)
+        {
+            pokemon = slot < partyCount_ ? save.pkm(static_cast<u8>(slot)) : nullptr;
+        }
+        else
+        {
+            pokemon = save.pkm(static_cast<u8>(box), static_cast<u8>(slot));
+        }
+        return pokemon ? std::move(pokemon) : save.emptyPkm();
+    }
+
+    void BoxBrowserScreen::writeAt(pksm::PKX& pokemon, bool party, unsigned int box, size_t slot)
+    {
+        pksm::Sav& save = session_.save();
+        if (party)
+        {
+            pokemon.updatePartyData();
+        }
+        pokemon.refreshChecksum();
+        if (party)
+        {
+            save.pkm(pokemon, static_cast<u8>(slot));
+        }
+        else
+        {
+            save.pkm(pokemon, static_cast<u8>(box), static_cast<u8>(slot), false);
+        }
+    }
+
+    void BoxBrowserScreen::placeClone()
+    {
+        auto copy   = readAt(carried_.party, carried_.box, carried_.slot);
+        auto target = readAt(party_, box_, selected_);
+        if (!copy || !target || copy->species() == pksm::Species::None)
+        {
+            carried_ = {};
+            message_ = tr(Text::PokemonReadFailed);
+            return;
+        }
+        if (target->species() != pksm::Species::None)
+        {
+            message_ = tr(Text::CloneNeedsEmptySlot);
+            return;
+        }
+
+        writeAt(*copy, party_, box_, selected_);
+        if (party_)
+        {
+            session_.save().fixParty();
+        }
+
+        carried_ = {};
+        message_.clear();
+        session_.markDirty();
+        refreshSlots();
+    }
+
+    void BoxBrowserScreen::place()
+    {
+        if (carried_.clone)
+        {
+            placeClone();
             return;
         }
         if (carried_.party == party_ && (party_ || carried_.box == box_) &&
@@ -235,21 +322,8 @@ namespace pksm::switchui
     void BoxBrowserScreen::dropCarried()
     {
         pksm::Sav& save = session_.save();
-        const auto read = [&save, this](bool party, unsigned int box, size_t slot)
-        {
-            std::unique_ptr<pksm::PKX> pokemon;
-            if (party)
-            {
-                pokemon = slot < partyCount_ ? save.pkm(static_cast<u8>(slot)) : nullptr;
-            }
-            else
-            {
-                pokemon = save.pkm(static_cast<u8>(box), static_cast<u8>(slot));
-            }
-            return pokemon ? std::move(pokemon) : save.emptyPkm();
-        };
-        auto moving = read(carried_.party, carried_.box, carried_.slot);
-        auto target = read(party_, box_, selected_);
+        auto moving = readAt(carried_.party, carried_.box, carried_.slot);
+        auto target = readAt(party_, box_, selected_);
         if (!moving || !target || moving->species() == pksm::Species::None)
         {
             carried_ = {};
@@ -265,32 +339,26 @@ namespace pksm::switchui
             return;
         }
 
-        const auto write = [&save](pksm::PKX& pokemon, bool party, unsigned int box, size_t slot)
-        {
-            if (party)
-            {
-                pokemon.updatePartyData();
-            }
-            pokemon.refreshChecksum();
-            if (party)
-            {
-                save.pkm(pokemon, static_cast<u8>(slot));
-            }
-            else
-            {
-                save.pkm(pokemon, static_cast<u8>(box), static_cast<u8>(slot), false);
-            }
-        };
-        write(*moving, party_, box_, selected_);
-        write(*target, carried_.party, carried_.box, carried_.slot);
+        writeAt(*moving, party_, box_, selected_);
+        writeAt(*target, carried_.party, carried_.box, carried_.slot);
         // Packed once both are written, so neither write lands on a shifted slot.
         if (party_ || carried_.party)
         {
             save.fixParty();
         }
 
-        carried_ = {};
-        message_.clear();
+        // The Pokémon that was in the slot is now where the carried one came from, and stays in
+        // hand: B leaves it there, A or Y takes it on.
+        if (target->species() != pksm::Species::None)
+        {
+            carried_.sprite = pokemonSlot(target.get());
+            carried_.name   = describePokemon(*target).name;
+        }
+        else
+        {
+            carried_ = {};
+        }
+        clearMessage();
         session_.markDirty();
         refreshSlots();
         if (party_)

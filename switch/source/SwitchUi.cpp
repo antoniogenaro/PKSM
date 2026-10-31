@@ -1532,10 +1532,10 @@ namespace pksm::switchui
         widgets::endPanel();
 
         const float legend = view.carrying
-            ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
+            ? widgets::drawButtonLegend({{"A / Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
-                  {"L / R", tr(Text::HintChangeBox)}, {"X", tr(Text::HintDiscard)},
+                  {"X", tr(Text::HintClone)}, {"L / R", tr(Text::HintChangeBox)},
                   {"B", tr(Text::HintBack)}, {"+", tr(Text::HintSave)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
@@ -1757,11 +1757,11 @@ namespace pksm::switchui
         ImGui::Dummy(ImVec2(0.0f, 0.0f));
 
         const float legend = view.carrying
-            ? widgets::drawButtonLegend({{"Y", tr(Text::HintDrop)},
+            ? widgets::drawButtonLegend({{"A / Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
-                  {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintBack)},
-                  {"+", tr(Text::HintSave)}});
+                  {"X", tr(Text::HintClone)}, {"L / R", tr(Text::HintChangeBox)},
+                  {"B", tr(Text::HintBack)}, {"+", tr(Text::HintSave)}});
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();
