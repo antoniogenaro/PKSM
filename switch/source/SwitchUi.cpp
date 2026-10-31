@@ -1532,7 +1532,7 @@ namespace pksm::switchui
         widgets::endPanel();
 
         const float legend = view.carrying
-            ? widgets::drawButtonLegend({{view.cloning ? "X" : "Y", tr(Text::HintDrop)},
+            ? widgets::drawButtonLegend({{"A / Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
                   {"X", tr(Text::HintClone)}, {"L / R", tr(Text::HintChangeBox)},
@@ -1757,7 +1757,7 @@ namespace pksm::switchui
         ImGui::Dummy(ImVec2(0.0f, 0.0f));
 
         const float legend = view.carrying
-            ? widgets::drawButtonLegend({{view.cloning ? "X" : "Y", tr(Text::HintDrop)},
+            ? widgets::drawButtonLegend({{"A / Y", tr(Text::HintDrop)},
                   {"L / R", tr(Text::HintChangeBox)}, {"B", tr(Text::HintCancel)}})
             : widgets::drawButtonLegend({{"A", tr(Text::HintEdit)}, {"Y", tr(Text::HintMove)},
                   {"X", tr(Text::HintClone)}, {"L / R", tr(Text::HintChangeBox)},

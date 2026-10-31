@@ -153,15 +153,26 @@ namespace pksm::switchui
                 {
                     openSelected(app);
                 }
+                else
+                {
+                    place();
+                }
                 break;
             case Action::Move:
-                if (!carried_.clone)
+                if (!carried_.active)
                 {
-                    pickUpOrDrop();
+                    pickUp(false);
+                }
+                else
+                {
+                    place();
                 }
                 break;
             case Action::Discard:
-                cloneOrPlace();
+                if (!carried_.active)
+                {
+                    pickUp(true);
+                }
                 break;
             case Action::Save:
                 if (session_.dirty())
@@ -251,19 +262,6 @@ namespace pksm::switchui
         clearMessage();
     }
 
-    void BankScreen::cloneOrPlace()
-    {
-        if (!carried_.active)
-        {
-            pickUp(true);
-            return;
-        }
-        if (carried_.clone)
-        {
-            placeClone();
-        }
-    }
-
     void BankScreen::placeClone()
     {
         const Place from  = carried_.from;
@@ -321,15 +319,14 @@ namespace pksm::switchui
         refreshSlots();
     }
 
-    void BankScreen::pickUpOrDrop()
+    void BankScreen::place()
     {
-        const Place place = selectedPlace();
-        if (!carried_.active)
+        if (carried_.clone)
         {
-            pickUp(false);
+            placeClone();
             return;
         }
-        if (carried_.from == place)
+        if (carried_.from == selectedPlace())
         {
             // Dropped where it was taken from.
             carried_    = {};
@@ -533,7 +530,6 @@ namespace pksm::switchui
              {std::to_string((inGame_ ? gameBox_ : bankBox_) + 1), std::to_string(selected_ + 1)});
         view.message       = sessionMessage(session_, message_);
         view.carrying      = carried_.active;
-        view.cloning       = carried_.clone;
         view.carriedInGame = carried_.from.game;
         // A clone leaves the original where it is, so its slot is not dimmed.
         view.carriedShown  = carried_.active && !carried_.clone &&
