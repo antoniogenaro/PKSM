@@ -108,7 +108,7 @@ namespace pksm::switchui
             case Action::Back:
                 if (carried_.active)
                 {
-                    // Nothing was written yet, so cancelling only puts it down.
+                    // The carried Pokémon is still in its old slot, so cancelling only puts it down.
                     carried_ = {};
                     message_.clear();
                     break;
@@ -347,8 +347,18 @@ namespace pksm::switchui
             save.fixParty();
         }
 
-        carried_ = {};
-        message_.clear();
+        // The Pokémon that was in the slot is now where the carried one came from, and stays in
+        // hand: B leaves it there, A or Y takes it on.
+        if (target->species() != pksm::Species::None)
+        {
+            carried_.sprite = pokemonSlot(target.get());
+            carried_.name   = describePokemon(*target).name;
+        }
+        else
+        {
+            carried_ = {};
+        }
+        clearMessage();
         session_.markDirty();
         refreshSlots();
         if (party_)
