@@ -20,9 +20,9 @@ namespace pksm::switchui
     // A box of the bank beside a box of the open save, and the selected Pokémon's detail. The
     // D-pad moves through both boxes as one grid; L/R change the box the cursor is in. A opens
     // the selected Pokémon in the editor. Y picks it up and X picks up a copy, leaving the
-    // original in place. While carrying, A or Y drops it on the selected slot: a moved Pokémon
-    // swaps with what is there, a copy only goes into an empty slot. A Pokémon that enters the
-    // save from the bank is converted to the save's generation first.
+    // original in place. While carrying, A or Y drops it on the selected slot: a Pokémon already
+    // there takes the moved one's old slot and stays in hand. A copy only goes into an empty slot.
+    // A Pokémon that enters the save from the bank is converted to the save's generation first.
     class BankScreen : public Screen
     {
     public:

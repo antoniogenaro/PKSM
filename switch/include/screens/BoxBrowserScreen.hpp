@@ -19,8 +19,8 @@ namespace pksm::switchui
     // The party, the boxes of an open save and the selected Pokémon's detail, left to right. The
     // D-pad moves through the box and across to the party; L/R change the box. Y picks the
     // selected Pokémon up and X picks up a copy, leaving the original in place. While carrying,
-    // A or Y drops it on the selected slot: a moved Pokémon swaps with what is there, a copy only
-    // goes into an empty slot.
+    // A or Y drops it on the selected slot: a Pokémon already there takes the
+    // moved one's old slot and stays in hand. A copy only goes into an empty slot.
     class BoxBrowserScreen : public Screen
     {
     public:
@@ -50,7 +50,8 @@ namespace pksm::switchui
         std::unique_ptr<pksm::PKX> readAt(bool party, unsigned int box, size_t slot);
         // Writes `pokemon` to a slot in the format the slot needs. The party is not packed.
         void writeAt(pksm::PKX& pokemon, bool party, unsigned int box, size_t slot);
-        // Swaps the carried Pokémon with the selected slot and writes both to the save.
+        // Swaps the carried Pokémon with the selected slot and writes both to the save. The one
+        // that was there stays carried.
         void dropCarried();
         bool carriedSlotShown() const;
         // Clears the footer message, or shows what is being carried.
