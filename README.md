@@ -146,7 +146,8 @@ shiny status, gender, friendship, Poké Ball, form, IVs, EVs, moves, encounter
 details, and generation-eight enjoyment/fullness. On every screen with a save
 open except the bag, + saves it, writing the changes over the save file that
 was opened. In the Pokémon selector, use Up/Down to choose a slot, L/R to change
-boxes or open the party and Y to move a Pokémon. Leaving the boxes or the bank
+boxes or open the party, Y to move a Pokémon and X to clone it; a copy only goes
+into an empty slot. Leaving the boxes or the bank
 with unsaved changes asks whether to save or discard them. In the editors, use ZL/ZR to
 change values, L/R to turn pages, A to enter text or numeric IDs, B to return,
 and X to discard changes. B in the Pokémon editor keeps the edit without saving
