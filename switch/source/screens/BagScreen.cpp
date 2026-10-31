@@ -287,7 +287,8 @@ namespace pksm::switchui
                 {
                     setItem(slot, picked);
                 }
-            }));
+            },
+            choices, PickerKind::Items));
     }
 
     void BagScreen::setItem(size_t slot, unsigned int id)

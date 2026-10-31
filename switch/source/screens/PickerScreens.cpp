@@ -8,17 +8,61 @@
 
 namespace pksm::switchui
 {
+    namespace
+    {
+        // The order each kind of list had when last closed, for the next time it opens.
+        PickerOrder rememberedOrders[] = {
+            PickerOrder::Number, // Other: not remembered.
+            PickerOrder::Number, // Species
+            PickerOrder::Name,   // Moves
+            PickerOrder::Name    // Items
+        };
+
+        constexpr size_t SEARCH_LENGTH = 32;
+    }
+
     OptionPickerScreen::OptionPickerScreen(std::string title, std::vector<std::string> options,
-        size_t current, std::vector<size_t> spriteIndices, PickHandler onPick)
+        size_t current, std::vector<size_t> spriteIndices, PickHandler onPick,
+        std::vector<unsigned int> numbers, PickerKind kind)
         : title_(std::move(title)),
           options_(std::move(options)),
           spriteIndices_(std::move(spriteIndices)),
+          numbers_(std::move(numbers)),
+          kind_(kind),
           current_(options_.empty() ? 0 : std::min(current, options_.size() - 1)),
-          index_(current_),
+          order_(rememberedOrders[static_cast<size_t>(kind)]),
           onPick_(std::move(onPick))
     {
-        // Open with the current option on the first row shown.
-        firstRow_ = index_ / COLUMNS;
+        // A short list keeps the order it was given.
+        if (!searchable())
+        {
+            order_ = PickerOrder::Number;
+            numbers_.clear();
+        }
+        // Open on the current option.
+        refresh(current_);
+    }
+
+    void OptionPickerScreen::refresh(size_t option)
+    {
+        entries_ = pickerEntries(options_, numbers_, query_, order_);
+        const auto found = std::find(entries_.begin(), entries_.end(), option);
+        index_ = found == entries_.end() ? 0 : static_cast<size_t>(found - entries_.begin());
+    }
+
+    void OptionPickerScreen::setOrder(PickerOrder order)
+    {
+        order_ = order;
+        if (kind_ != PickerKind::Other)
+        {
+            rememberedOrders[static_cast<size_t>(kind_)] = order;
+        }
+        refresh(selectedOption());
+    }
+
+    size_t OptionPickerScreen::selectedOption() const
+    {
+        return index_ < entries_.size() ? entries_[index_] : current_;
     }
 
     void OptionPickerScreen::update(App& app, Action action)
@@ -28,17 +72,49 @@ namespace pksm::switchui
             app.pop();
             return;
         }
-        const size_t last = options_.size() - 1;
-        const size_t page = COLUMNS * ROWS;
+        const size_t count = entries_.size();
+        const size_t last  = count > 0 ? count - 1 : 0;
         switch (action)
         {
             case Action::Confirm:
-                app.pop();
-                onPick_(index_);
+                // Nothing to pick while the search matches nothing.
+                if (count > 0)
+                {
+                    const size_t picked = entries_[index_];
+                    app.pop();
+                    onPick_(picked);
+                }
                 break;
             case Action::Back:
             case Action::Quit:
                 app.pop();
+                break;
+            case Action::Move: // Y: search.
+                if (searchable())
+                {
+                    std::string typed;
+                    if (app.ui().editText(
+                            tr(Text::PickerSearchTitle, {title_}), query_, typed, SEARCH_LENGTH))
+                    {
+                        const size_t option = selectedOption();
+                        query_              = typed;
+                        refresh(option);
+                    }
+                }
+                break;
+            case Action::Alternate: // −: clear the search.
+                if (searchable() && !query_.empty())
+                {
+                    const size_t option = selectedOption();
+                    query_.clear();
+                    refresh(option);
+                }
+                break;
+            case Action::Discard: // X: the other order.
+                if (searchable())
+                {
+                    setOrder(order_ == PickerOrder::Number ? PickerOrder::Name : PickerOrder::Number);
+                }
                 break;
             case Action::Left:
                 index_ = index_ > 0 ? index_ - 1 : index_;
@@ -53,10 +129,10 @@ namespace pksm::switchui
                 index_ = index_ + COLUMNS <= last ? index_ + COLUMNS : index_;
                 break;
             case Action::PreviousPage:
-                index_ = index_ > page ? index_ - page : 0;
+                index_ = turnPage(index_, count, PER_PAGE, -1);
                 break;
             case Action::NextPage:
-                index_ = std::min(last, index_ + page);
+                index_ = turnPage(index_, count, PER_PAGE, 1);
                 break;
             default:
                 break;
@@ -65,21 +141,25 @@ namespace pksm::switchui
 
     void OptionPickerScreen::draw(SwitchUi& ui)
     {
-        // Keep the selection's row in view.
-        const size_t row = index_ / COLUMNS;
-        if (row < firstRow_)
+        OptionPickerView view;
+        view.title         = title_;
+        view.current       = options_.empty() ? std::string{} : options_[current_];
+        view.options       = &options_;
+        view.spriteIndices = &spriteIndices_;
+        view.entries       = &entries_;
+        view.selected      = index_;
+        view.searchable    = searchable();
+        view.query         = query_;
+        view.order         = order_;
+        view.page          = index_ / PER_PAGE;
+        view.pageCount     = pageCount(entries_.size(), PER_PAGE);
+        ui.drawOptionPicker(view);
+
+        index_ = entries_.empty() ? 0 : std::min(view.selected, entries_.size() - 1);
+        if (view.orderRequest)
         {
-            firstRow_ = row;
+            setOrder(order_ == PickerOrder::Number ? PickerOrder::Name : PickerOrder::Number);
         }
-        else if (row >= firstRow_ + ROWS)
-        {
-            firstRow_ = row - ROWS + 1;
-        }
-        const size_t rows     = (options_.size() + COLUMNS - 1) / COLUMNS;
-        const size_t lastFirst = rows > ROWS ? rows - ROWS : 0;
-        firstRow_              = std::min(firstRow_, lastFirst);
-        const std::string current = options_.empty() ? std::string{} : options_[current_];
-        ui.drawOptionPicker(title_, current, options_, spriteIndices_, firstRow_, index_);
     }
 
     NaturePickerScreen::NaturePickerScreen(
