@@ -31,6 +31,7 @@
 #include "domain/GameGrid.hpp"
 #include "domain/GameGrid.hpp"
 #include "domain/GameProfile.hpp"
+#include "domain/PickerList.hpp"
 #include "domain/SaveCache.hpp"
 #include "nlohmann/json.hpp"
 #include "ui/Text.hpp"
@@ -417,6 +418,47 @@ namespace
         check(firstShownRow(3, 0, 8, 4) == 0, "a short pouch never scrolls");
         check(firstShownRow(3, 2, 0, 4) == 0, "no rows shown keeps the first row");
     }
+    void testPickerList()
+    {
+        const std::string gelida = "Llama G\u00e9lida (#552)";
+        const auto found = findText(gelida, "GELIDA");
+        check(found && found->start == 6 && found->length == 7,
+            "a search ignores case and accents, and spans the accented letter's two bytes");
+        check(findText("Lanzallamas", "llam") && findText("Lanzallamas", "llam")->start == 5,
+            "a search is found inside a word");
+        check(findText("Llamarada", "\u00e1") && findText("Llamarada", "\u00e1")->start == 2,
+            "an accented search finds the plain letter");
+        check(!findText("Ascuas", "llam"), "a search that is not there is not found");
+        check(findText("Ascuas", "") && findText("Ascuas", "")->length == 0,
+            "an empty search matches everything");
+        check(findText("Sol (#53)", "53").has_value(), "a search finds the number of an option");
+
+        const std::vector<std::string> options{"Zapdos", "\u00c1rbol", "abra", "Llama", "Lanzallamas"};
+        const std::vector<unsigned int> numbers{145, 9, 63, 3, 53};
+        check(pickerEntries(options, numbers, "", PickerOrder::Number) ==
+                  std::vector<size_t>{3, 1, 4, 2, 0},
+            "the number order follows the numbers");
+        check(pickerEntries(options, {}, "", PickerOrder::Number) ==
+                  std::vector<size_t>{0, 1, 2, 3, 4},
+            "without numbers, the number order keeps the given order");
+        check(pickerEntries(options, numbers, "", PickerOrder::Name) ==
+                  std::vector<size_t>{2, 1, 4, 3, 0},
+            "the name order ignores case and accents");
+        check(pickerEntries(options, numbers, "lla", PickerOrder::Name) ==
+                  std::vector<size_t>{4, 3},
+            "only the options that match are listed");
+        check(pickerEntries(options, numbers, "xyz", PickerOrder::Name).empty(),
+            "a search that matches nothing lists nothing");
+
+        check(pageCount(0, 40) == 1 && pageCount(40, 40) == 1 && pageCount(41, 40) == 2,
+            "pages round up, and an empty list still has one");
+        check(turnPage(5, 100, 40, 1) == 45, "R keeps the place on the next page");
+        check(turnPage(45, 100, 40, -1) == 5, "L keeps the place on the page before");
+        check(turnPage(70, 100, 40, 1) == 99, "R stops at the last entry of a shorter page");
+        check(turnPage(85, 100, 40, 1) == 85, "R on the last page does not move");
+        check(turnPage(5, 100, 40, -1) == 5, "L on the first page does not move");
+        check(turnPage(0, 0, 40, 1) == 0, "an empty list stays at the start");
+    }
 }
 
 int main()
@@ -434,6 +476,7 @@ int main()
     testDates();
     testSaveCache();
     testBag();
+    testPickerList();
 
     if (failures != 0)
     {
