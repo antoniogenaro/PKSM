@@ -1086,7 +1086,7 @@ namespace pksm::switchui
             {Text::MenuPokemonEditor, Text::MenuPokemonEditorHint, icons::Icon::Boxes, true},
             {Text::MenuStorage, Text::MenuStorageHint, icons::Icon::Bank, true},
             {Text::MenuBag, Text::MenuBagHint, icons::Icon::Bag, true},
-            {Text::MenuEvents, Text::MenuEventsHint, icons::Icon::Gift, false},
+            {Text::MenuEvents, Text::MenuEventsHint, icons::Icon::Gift, true},
             {Text::MenuTrainerEditor, Text::MenuTrainerEditorHint, icons::Icon::Trainer, true},
             {Text::MenuOther, Text::MenuOtherHint, icons::Icon::More, false},
         };
@@ -2371,6 +2371,315 @@ namespace pksm::switchui
             {"ZL / ZR", tr(Text::HintQuantity)}, {"X", tr(Text::HintChangeItem)},
             {"−", tr(Text::HintRemove)}, {"L / R", tr(Text::HintPouch)},
             {"B", tr(Text::HintBack)}});
+        widgets::drawFooterMessage(
+            view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
+        endFrame();
+    }
+
+    void SwitchUi::drawEvents(EventsView& view)
+    {
+        // The canvas events screen: 52 pixel cards two to a row with a 40 pixel picture, and a
+        // 380 pixel detail panel with a 104 pixel picture and the add button at the bottom.
+        constexpr float cardHeight   = 52.0f;
+        constexpr float cardGap      = 8.0f;
+        constexpr float cardArt      = 40.0f;
+        constexpr float cardRadius   = 12.0f;
+        constexpr float pageRow      = 18.0f;
+        constexpr float detailWidth  = 380.0f;
+        constexpr float detailGap    = 12.0f;
+        constexpr float detailArt    = 104.0f;
+        constexpr float infoLabel    = 110.0f;
+        constexpr float infoRow      = 26.0f;
+        constexpr float moveHeight   = 30.0f;
+        constexpr float chipHeight   = 26.0f;
+        constexpr float buttonHeight = 48.0f;
+        constexpr size_t shownLanguages = 5;
+        constexpr ImGuiWindowFlags fixed =
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+        beginFrame();
+        widgets::drawHeader(tr(Text::MenuEvents), status_.current());
+        sectionGap();
+
+        ImFont* bold             = theme::boldFont();
+        const float contentWidth = ImGui::GetContentRegionAvail().x;
+        const auto size = [](ImFont* font, float px, const std::string& text)
+        { return font->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        // `text` vertically centred between `top` and `top + height`, from `x`.
+        const auto centredText = [&size](ImDrawList* drawList, ImFont* font, float px, float x,
+                                     float top, float height, unsigned color, const std::string& text)
+        {
+            drawList->AddText(font, px,
+                ImVec2(x, std::round(top + (height - size(font, px, text).y) * 0.5f)),
+                theme::rgb(color), text.c_str());
+        };
+        // A pill of `height` at `min` with `text` in it. Returns how wide it is.
+        const auto pill = [&](ImDrawList* drawList, const ImVec2& min, float height, float px,
+                              unsigned background, unsigned color, const std::string& text)
+        {
+            const float width = size(bold, px, text).x + height * 0.7f;
+            drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + height),
+                theme::rgb(background), height * 0.5f);
+            centredText(drawList, bold, px, min.x + height * 0.35f, min.y, height, color, text);
+            return width;
+        };
+        // The card's picture: its Pokémon, or a gift for anything else.
+        const auto art = [&](ImDrawList* drawList, const EventsView::Card& card, const ImVec2& min,
+                             float side, float radius, unsigned background)
+        {
+            drawList->AddRectFilled(min, ImVec2(min.x + side, min.y + side),
+                theme::rgb(background), radius);
+            if (card.pokemon)
+            {
+                const float inset = side * 0.05f;
+                drawPokemonSprite(card.species,
+                    {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
+                        static_cast<int>(side - inset * 2.0f),
+                        static_cast<int>(side - inset * 2.0f)},
+                    card.formSprite);
+            }
+            else
+            {
+                const int icon = static_cast<int>(side * 0.55f);
+                const float at = (side - static_cast<float>(icon)) * 0.5f;
+                icons::drawSized(drawList, icons::Icon::Gift, ImVec2(min.x + at, min.y + at), icon,
+                    theme::rgb(theme::TEXT_MUTED));
+            }
+        };
+        const auto kindPill = [&](ImDrawList* drawList, const EventsView::Card& card,
+                                  const ImVec2& min, float height, float px)
+        {
+            return pill(drawList, min, height, px, card.pokemon ? theme::BUTTON_FACE : theme::BORDER,
+                card.pokemon ? theme::ON_DARK : theme::TEXT_SOFT, card.kind);
+        };
+
+        // The cards of the shown page.
+        widgets::beginPanel(
+            "events-cards", ImVec2(contentWidth - detailWidth - theme::PANEL_GAP,
+                                -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const float columns    = static_cast<float>(EventsView::COLUMNS);
+            const float cardWidth  = (available.x - cardGap * (columns - 1.0f)) / columns;
+            for (size_t i = 0; i < view.cards.size(); ++i)
+            {
+                const EventsView::Card& card = view.cards[i];
+                const bool selected          = i == view.selected;
+                const ImVec2 min(
+                    origin.x + static_cast<float>(i % EventsView::COLUMNS) * (cardWidth + cardGap),
+                    origin.y + static_cast<float>(i / EventsView::COLUMNS) * (cardHeight + cardGap));
+                const ImVec2 max(min.x + cardWidth, min.y + cardHeight);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("card", ImVec2(cardWidth, cardHeight)))
+                {
+                    view.selected = i;
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cardRadius);
+                const ImVec2 artMin(min.x + 8.0f, min.y + (cardHeight - cardArt) * 0.5f);
+                art(drawList, card, artMin, cardArt, 9.0f, theme::BORDER);
+
+                // The name over the number and the kind.
+                const float textLeft  = artMin.x + cardArt + 12.0f;
+                const float textWidth = max.x - 12.0f - textLeft;
+                const float nameSize  = theme::FONT_BODY;
+                const float lineTop   = min.y + (cardHeight - 19.0f - 2.0f - 18.0f) * 0.5f;
+                widgets::drawTextEllipsis(drawList, bold, nameSize, ImVec2(textLeft, lineTop),
+                    theme::rgb(theme::TEXT), card.name.c_str(), textWidth);
+                const float infoTop = lineTop + 21.0f;
+                centredText(drawList, bold, theme::FONT_CAPTION, textLeft, infoTop, 18.0f,
+                    theme::TEXT_MUTED, card.number);
+                kindPill(drawList, card,
+                    ImVec2(textLeft + size(bold, theme::FONT_CAPTION, card.number).x + 8.0f,
+                        infoTop),
+                    18.0f, 11.0f);
+                if (selected)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, cardRadius);
+                }
+            }
+
+            const std::string page = tr(Text::PickerPage,
+                {std::to_string(view.page + 1), std::to_string(view.pageCount)});
+            const float pageWidth = size(bold, theme::FONT_SMALL, page).x;
+            centredText(drawList, bold, theme::FONT_SMALL,
+                std::round(origin.x + (available.x - pageWidth) * 0.5f),
+                origin.y + available.y - pageRow, pageRow, theme::TEXT_SOFT, page);
+        }
+        widgets::endPanel();
+
+        // The selected card.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("events-detail", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        if (view.selected < view.cards.size())
+        {
+            const EventsView::Card& card = view.cards[view.selected];
+            ImDrawList* drawList         = ImGui::GetWindowDrawList();
+            const ImVec2 origin          = ImGui::GetCursorScreenPos();
+            const ImVec2 available       = ImGui::GetContentRegionAvail();
+            const float right            = origin.x + available.x;
+            float y                      = origin.y;
+
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_CAPTION, ImVec2(origin.x, y),
+                theme::rgb(theme::CAPTION), view.caption.c_str(), available.x);
+            y += 20.0f + detailGap;
+
+            // The picture, and beside it the name, the kind and its marks.
+            art(drawList, card, ImVec2(origin.x, y), detailArt, theme::CARD_RADIUS, theme::CARD);
+            {
+                const float left  = origin.x + detailArt + 14.0f;
+                const float width = right - left;
+                // The name takes up to three lines.
+                const float nameSize = theme::FONT_HEADING;
+                const ImVec2 nameBox = bold->CalcTextSizeA(nameSize, FLT_MAX, width, card.name.c_str());
+                const float nameHeight = std::min(nameBox.y, nameSize * 1.15f * 3.0f);
+                const float column     = nameHeight + 8.0f + 22.0f;
+                float top              = y + std::max(0.0f, (detailArt - column) * 0.5f);
+                drawList->PushClipRect(ImVec2(left, top), ImVec2(right, top + nameHeight), true);
+                drawList->AddText(bold, nameSize, ImVec2(left, top), theme::rgb(theme::TEXT),
+                    card.name.c_str(), nullptr, width);
+                drawList->PopClipRect();
+                top += nameHeight + 8.0f;
+                float x = left + kindPill(drawList, card, ImVec2(left, top), 22.0f, 13.0f) + 6.0f;
+                for (const std::string& mark : view.marks)
+                {
+                    x += pill(drawList, ImVec2(x, top), 22.0f, 13.0f, theme::CONTROL,
+                             theme::TEXT_SOFT, mark) +
+                         6.0f;
+                }
+            }
+            y += detailArt + detailGap;
+
+            // Species, ball, trainer and held item; or what an item card holds.
+            for (const EventsView::Info& info : view.info)
+            {
+                centredText(drawList, bold, 15.0f, origin.x, y, infoRow, theme::TEXT_MUTED,
+                    info.label);
+                float valueLeft = origin.x + infoLabel;
+                if (info.ball && view.ball != 0)
+                {
+                    drawBallSprite(view.ball, {static_cast<int>(valueLeft), static_cast<int>(y + 1.0f),
+                                                  static_cast<int>(infoRow - 2.0f),
+                                                  static_cast<int>(infoRow - 2.0f)});
+                    valueLeft += infoRow + 4.0f;
+                }
+                const float valueHeight = size(bold, 15.0f, info.value).y;
+                widgets::drawTextEllipsis(drawList, bold, 15.0f,
+                    ImVec2(valueLeft, std::round(y + (infoRow - valueHeight) * 0.5f)),
+                    theme::rgb(theme::TEXT), info.value.c_str(), right - valueLeft);
+                y += infoRow;
+            }
+            y += detailGap - 6.0f;
+
+            // The moves, two to a row.
+            if (!view.moves.empty())
+            {
+                const float moveWidth = (available.x - 6.0f) * 0.5f;
+                for (size_t i = 0; i < view.moves.size(); ++i)
+                {
+                    const ImVec2 min(origin.x + static_cast<float>(i % 2) * (moveWidth + 6.0f),
+                        y + static_cast<float>(i / 2) * (moveHeight + 6.0f));
+                    drawList->AddRectFilled(min, ImVec2(min.x + moveWidth, min.y + moveHeight),
+                        theme::rgb(theme::CARD), 8.0f);
+                    const std::string& move = view.moves[i];
+                    widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                        ImVec2(min.x + 10.0f,
+                            std::round(min.y + (moveHeight - size(bold, theme::FONT_SMALL, move).y) * 0.5f)),
+                        theme::rgb(theme::TEXT), move.c_str(), moveWidth - 20.0f);
+                }
+                const size_t rows = (view.moves.size() + 1) / 2;
+                y += static_cast<float>(rows) * (moveHeight + 6.0f) - 6.0f + detailGap;
+            }
+
+            // The languages between ZL and ZR: a window of them around the chosen one, and how
+            // many more there are.
+            if (!view.languages.empty())
+            {
+                const size_t count = view.languages.size();
+                const size_t first =
+                    view.language < shownLanguages ? 0 : view.language + 1 - shownLanguages;
+                const size_t last = std::min(count, first + shownLanguages);
+                const auto button = [&](float x, const char* name)
+                {
+                    const float width = size(bold, 12.0f, name).x + 12.0f;
+                    const ImVec2 min(x, y + 2.0f);
+                    drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + 22.0f),
+                        theme::rgb(theme::BUTTON_FACE), 6.0f);
+                    centredText(drawList, bold, 12.0f, min.x + 6.0f, min.y, 22.0f, theme::ON_DARK,
+                        name);
+                    return width;
+                };
+                float x = origin.x + button(origin.x, "ZL") + 6.0f;
+                for (size_t i = first; i < last; ++i)
+                {
+                    const bool chosen       = i == view.language;
+                    const std::string& code = view.languages[i];
+                    const float width       = size(bold, theme::FONT_CAPTION, code).x + 16.0f;
+                    ImGui::SetCursorScreenPos(ImVec2(x, y));
+                    ImGui::PushID(static_cast<int>(i));
+                    if (ImGui::InvisibleButton("language", ImVec2(width, chipHeight)))
+                    {
+                        view.language = i;
+                    }
+                    ImGui::PopID();
+                    drawList->AddRectFilled(ImVec2(x, y), ImVec2(x + width, y + chipHeight),
+                        theme::rgb(chosen ? theme::ACCENT : theme::CARD), 7.0f);
+                    centredText(drawList, bold, theme::FONT_CAPTION, x + 8.0f, y, chipHeight,
+                        chosen ? theme::ON_DARK : theme::TEXT_SOFT, code);
+                    x += width + 6.0f;
+                }
+                const size_t hidden = count - (last - first);
+                if (hidden > 0)
+                {
+                    const std::string more  = "+" + std::to_string(hidden);
+                    const float width       = size(bold, theme::FONT_CAPTION, more).x + 16.0f;
+                    drawList->AddRectFilled(ImVec2(x, y), ImVec2(x + width, y + chipHeight),
+                        theme::rgb(theme::CARD), 7.0f);
+                    centredText(drawList, bold, theme::FONT_CAPTION, x + 8.0f, y, chipHeight,
+                        theme::TEXT_SOFT, more);
+                    x += width + 6.0f;
+                }
+                button(x, "ZR");
+            }
+
+            // Where the card goes, and the add button.
+            const float buttonTop = origin.y + available.y - buttonHeight;
+            centredText(drawList, bold, theme::FONT_SMALL, origin.x, buttonTop - 8.0f - 20.0f,
+                20.0f, theme::TEXT_MUTED, view.destination);
+            const ImVec2 buttonMin(origin.x, buttonTop);
+            const ImVec2 buttonMax(right, buttonTop + buttonHeight);
+            ImGui::SetCursorScreenPos(buttonMin);
+            if (ImGui::InvisibleButton("add", ImVec2(available.x, buttonHeight)))
+            {
+                view.addRequest = true;
+            }
+            drawList->AddRectFilled(buttonMin, buttonMax, theme::rgb(theme::ACCENT), 14.0f);
+            const std::string label = tr(Text::EventAdd);
+            const float labelWidth  = size(bold, 17.0f, label).x;
+            const float circle      = 26.0f;
+            const float startX      = std::round(origin.x + (available.x - circle - 10.0f - labelWidth) * 0.5f);
+            const ImVec2 center(startX + circle * 0.5f, buttonTop + buttonHeight * 0.5f);
+            drawList->AddCircleFilled(center, circle * 0.5f, theme::rgb(theme::ON_DARK), 24);
+            const ImVec2 aSize = size(bold, 15.0f, "A");
+            drawList->AddText(bold, 15.0f,
+                ImVec2(std::round(center.x - aSize.x * 0.5f), std::round(center.y - aSize.y * 0.5f)),
+                theme::rgb(theme::TEXT), "A");
+            centredText(drawList, bold, 17.0f, startX + circle + 10.0f, buttonTop, buttonHeight,
+                theme::ON_DARK, label);
+        }
+        widgets::endPanel();
+
+        std::vector<widgets::ButtonHint> hints{{"A", tr(Text::EventAdd)}};
+        if (view.selected < view.cards.size() && !view.languages.empty())
+        {
+            hints.push_back({"ZL / ZR", tr(Text::HintLanguage)});
+        }
+        hints.push_back({"L / R", tr(Text::HintPage)});
+        hints.push_back({"B", tr(Text::HintBack)});
+        const float legend = widgets::drawButtonLegend(hints);
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
         endFrame();

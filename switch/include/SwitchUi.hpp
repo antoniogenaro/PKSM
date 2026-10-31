@@ -308,6 +308,52 @@ namespace pksm::switchui
         std::string message;
     };
 
+    // Everything the events screen draws: a page of wonder cards, COLUMNS to a row, and the
+    // selected card's detail.
+    struct EventsView
+    {
+        static constexpr size_t COLUMNS = 2;
+        static constexpr size_t ROWS    = 8;
+
+        struct Card
+        {
+            std::string name;
+            std::string number; // "#0007"
+            std::string kind;   // "Pokémon", "Objeto"…
+            bool pokemon      = false;
+            size_t species    = 0;
+            size_t formSprite = 0;
+        };
+        struct Info
+        {
+            std::string label;
+            std::string value;
+            // Shows the `ball` sprite before the value.
+            bool ball = false;
+        };
+
+        // The shown page, and the selection on it. A touch on a card moves the selection.
+        std::vector<Card> cards;
+        size_t selected  = 0;
+        size_t page      = 0;
+        size_t pageCount = 1;
+
+        // The selected card.
+        std::string caption; // "EVENTO #0007 · ESPADA"
+        std::vector<std::string> marks; // Pills after the kind: "Gigamax", "Variocolor".
+        size_t ball = 0;                // The Poké Ball sprite, or 0 for none.
+        std::vector<Info> info;
+        std::vector<std::string> moves;
+        // The languages the Pokémon can be received in, as short codes, and the chosen one. Empty
+        // for cards without a Pokémon. A touch on one chooses it.
+        std::vector<std::string> languages;
+        size_t language = 0;
+        std::string destination; // Where the card goes in the save.
+        std::string message;
+        // Set by drawEvents() when the add button is touched.
+        bool addRequest = false;
+    };
+
     class SwitchUi
     {
     public:
@@ -355,6 +401,8 @@ namespace pksm::switchui
         // The bag: the pouches and the items of the selected one. Touching a pouch or an item
         // selects it.
         void drawBag(BagView& view);
+        // The wonder cards and the selected one's detail. Touching a card selects it.
+        void drawEvents(EventsView& view);
         // Pickers, as dialogs over the screen below. A touch on an entry moves the selection, so
         // it is passed by reference. The option picker shows the page of PICKER_ROWS rows of
         // PICKER_COLUMNS that holds the selection.
