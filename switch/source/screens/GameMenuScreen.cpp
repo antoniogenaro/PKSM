@@ -3,11 +3,13 @@
 #include "SwitchUi.hpp"
 #include "app/App.hpp"
 #include "app/Session.hpp"
+#include "domain/EventLibrary.hpp"
 #include "domain/GameProfile.hpp"
 #include "screens/BankScreen.hpp"
 #include "sav/Sav.hpp"
 #include "screens/BagScreen.hpp"
 #include "screens/BoxBrowserScreen.hpp"
+#include "screens/EventsScreen.hpp"
 #include "screens/SaveSummary.hpp"
 #include "screens/TrainerEditorScreen.hpp"
 #include "utils/i18n.hpp"
@@ -22,6 +24,7 @@ namespace pksm::switchui
         constexpr size_t POKEMON_EDITOR_ITEM = 0;
         constexpr size_t BANK_ITEM           = 1;
         constexpr size_t BAG_ITEM            = 2;
+        constexpr size_t EVENTS_ITEM         = 3;
         constexpr size_t TRAINER_EDITOR_ITEM = 4;
     }
 
@@ -118,6 +121,24 @@ namespace pksm::switchui
                 return;
             }
             app.push(std::make_unique<BagScreen>(*session_, path_));
+        }
+        else if (selected_ == EVENTS_ITEM)
+        {
+            // Only Sword and Shield cards are packed.
+            if (session_->save().generation() != pksm::Generation::EIGHT ||
+                session_->save().maxBoxes() == 0)
+            {
+                message_ = tr(Text::OptionUnavailable);
+                return;
+            }
+            std::string error;
+            auto library = EventLibrary::load(error);
+            if (!library)
+            {
+                message_ = error;
+                return;
+            }
+            app.push(std::make_unique<EventsScreen>(*session_, std::move(library)));
         }
         else if (selected_ == TRAINER_EDITOR_ITEM)
         {

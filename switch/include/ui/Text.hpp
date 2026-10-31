@@ -285,6 +285,31 @@
     X(BagItemsMany)                                                                                \
     X(HintChangeItem)                                                                              \
     X(HintRemove)                                                                                  \
+    /* Events */                                                                                   \
+    X(EventCaption)                                                                                \
+    X(EventKindPokemon)                                                                            \
+    X(EventKindItem)                                                                               \
+    X(EventKindBattlePoints)                                                                       \
+    X(EventKindClothing)                                                                           \
+    X(EventGigantamax)                                                                             \
+    X(EventShiny)                                                                                  \
+    X(EventOtId)                                                                                   \
+    X(EventYourTrainer)                                                                            \
+    X(EventRandomLevel)                                                                            \
+    X(EventItemCount)                                                                              \
+    X(EventBattlePoints)                                                                           \
+    X(EventClothingPieces)                                                                         \
+    X(EventToBoxes)                                                                                \
+    X(EventToBag)                                                                                  \
+    X(EventToPoints)                                                                               \
+    X(EventToWardrobe)                                                                             \
+    X(EventAdd)                                                                                    \
+    X(EventAddedToBox)                                                                             \
+    X(EventAdded)                                                                                  \
+    X(EventBoxesFull)                                                                              \
+    X(EventsUnreadable)                                                                            \
+    X(EventLanguageCodes)                                                                          \
+    X(HintLanguage)                                                                                \
     /* Pickers and keyboard */                                                                     \
     X(NatureNeutral)                                                                               \
     X(NatureNeutralShort)                                                                          \
