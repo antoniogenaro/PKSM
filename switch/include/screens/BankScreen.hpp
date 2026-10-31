@@ -20,7 +20,8 @@ namespace pksm::switchui
     // A box of the bank beside a box of the open save, and the selected Pokémon's detail. The
     // D-pad moves through both boxes as one grid; L/R change the box the cursor is in. A opens
     // the selected Pokémon in the editor. Y picks it up and, on another slot, drops it there,
-    // swapping the two. A Pokémon that enters the save from the bank is converted to the save's
+    // swapping the two. X picks up a copy instead, which only goes into an empty slot and leaves
+    // the original in place. A Pokémon that enters the save from the bank is converted to the save's
     // generation first.
     class BankScreen : public Screen
     {
@@ -56,6 +57,12 @@ namespace pksm::switchui
         void write(const Place& place, pksm::PKX* pokemon, bool fromBank);
 
         void pickUpOrDrop();
+        // Picks up the selected Pokémon, or a copy of it.
+        void pickUp(bool clone);
+        // X: picks up a copy of the selected Pokémon, or places the carried copy.
+        void cloneOrPlace();
+        // Writes the carried copy to the selected slot, which must be empty.
+        void placeClone();
         // A: the selected Pokémon in the editor.
         void openSelected(App& app);
         void drop();
@@ -63,9 +70,11 @@ namespace pksm::switchui
         std::unique_ptr<pksm::PKX> convertForSave(const pksm::PKX& pokemon);
         void clearMessage();
 
+        // A Pokémon picked up with Y, or a copy picked up with X.
         struct Carried
         {
             bool active = false;
+            bool clone  = false;
             Place from;
             PokemonSlot sprite;
             std::string name;

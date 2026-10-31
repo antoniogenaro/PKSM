@@ -84,6 +84,7 @@
     X(HintChange)                                                                                  \
     X(HintChangeBox)                                                                               \
     X(HintMove)                                                                                    \
+    X(HintClone)                                                                                   \
     X(HintDrop)                                                                                    \
     X(HintCancel)                                                                                  \
     X(HintPage)                                                                                    \
@@ -154,6 +155,8 @@
     /* Boxes and party */                                                                          \
     X(PokemonReadFailed)                                                                           \
     X(PokemonCarrying)                                                                             \
+    X(PokemonCloning)                                                                              \
+    X(CloneNeedsEmptySlot)                                                                         \
     X(PartyNeedsPokemon)                                                                           \
     /* Bank */                                                                                     \
     X(BankTitle)                                                                                   \

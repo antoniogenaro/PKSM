@@ -155,7 +155,13 @@ namespace pksm::switchui
                 }
                 break;
             case Action::Move:
-                pickUpOrDrop();
+                if (!carried_.clone)
+                {
+                    pickUpOrDrop();
+                }
+                break;
+            case Action::Discard:
+                cloneOrPlace();
                 break;
             case Action::Save:
                 if (session_.dirty())
@@ -217,7 +223,102 @@ namespace pksm::switchui
 
     void BankScreen::clearMessage()
     {
-        message_ = carried_.active ? tr(Text::PokemonCarrying, {carried_.name}) : std::string{};
+        if (!carried_.active)
+        {
+            message_.clear();
+            return;
+        }
+        message_ =
+            tr(carried_.clone ? Text::PokemonCloning : Text::PokemonCarrying, {carried_.name});
+    }
+
+    void BankScreen::pickUp(bool clone)
+    {
+        const Place place  = selectedPlace();
+        bool readable      = true;
+        const auto pokemon = read(place, readable);
+        if (!readable)
+        {
+            message_ = tr(Text::BankSlotUnreadable);
+            return;
+        }
+        if (!pokemon)
+        {
+            return;
+        }
+        const auto& slots = place.game ? gameSlots_ : bankSlots_;
+        carried_          = {true, clone, place, slots[place.slot], detail_.name};
+        clearMessage();
+    }
+
+    void BankScreen::cloneOrPlace()
+    {
+        if (!carried_.active)
+        {
+            pickUp(true);
+            return;
+        }
+        if (carried_.clone)
+        {
+            placeClone();
+        }
+    }
+
+    void BankScreen::placeClone()
+    {
+        const Place from  = carried_.from;
+        const Place to    = selectedPlace();
+        bool readable     = true;
+        const auto target = read(to, readable);
+        if (!readable)
+        {
+            message_ = tr(Text::BankSlotUnreadable);
+            return;
+        }
+        if (target)
+        {
+            message_ = tr(Text::CloneNeedsEmptySlot);
+            return;
+        }
+        auto copy = read(from, readable);
+        if (!copy)
+        {
+            carried_ = {};
+            message_ = tr(Text::PokemonReadFailed);
+            refreshSlots();
+            return;
+        }
+
+        // A copy going from the bank into the save is converted, as a moved one is.
+        std::unique_ptr<pksm::PKX> placed;
+        if (to.game && !from.game)
+        {
+            placed = convertForSave(*copy);
+            if (!placed)
+            {
+                return;
+            }
+            const pksm::Sav& save = session_.save();
+            if (copy->generation() != save.generation() && !(confirming_ && confirmTarget_ == to))
+            {
+                confirming_    = true;
+                confirmTarget_ = to;
+                message_       = tr(Text::TransferConfirm,
+                          {describePokemon(*copy).name, generationName(save.generation())});
+                return;
+            }
+        }
+        else
+        {
+            placed = std::move(copy);
+        }
+        confirming_ = false;
+
+        write(to, placed.get(), !from.game);
+
+        carried_ = {};
+        message_.clear();
+        refreshSlots();
     }
 
     void BankScreen::pickUpOrDrop()
@@ -225,20 +326,7 @@ namespace pksm::switchui
         const Place place = selectedPlace();
         if (!carried_.active)
         {
-            bool readable      = true;
-            const auto pokemon = read(place, readable);
-            if (!readable)
-            {
-                message_ = tr(Text::BankSlotUnreadable);
-                return;
-            }
-            if (!pokemon)
-            {
-                return;
-            }
-            const auto& slots = place.game ? gameSlots_ : bankSlots_;
-            carried_          = {true, place, slots[place.slot], detail_.name};
-            clearMessage();
+            pickUp(false);
             return;
         }
         if (carried_.from == place)
@@ -445,8 +533,10 @@ namespace pksm::switchui
              {std::to_string((inGame_ ? gameBox_ : bankBox_) + 1), std::to_string(selected_ + 1)});
         view.message       = sessionMessage(session_, message_);
         view.carrying      = carried_.active;
+        view.cloning       = carried_.clone;
         view.carriedInGame = carried_.from.game;
-        view.carriedShown  = carried_.active &&
+        // A clone leaves the original where it is, so its slot is not dimmed.
+        view.carriedShown  = carried_.active && !carried_.clone &&
                             carried_.from.box == (carried_.from.game ? gameBox_ : bankBox_);
         view.carriedSlot = carried_.from.slot;
         view.carried     = carried_.sprite;
