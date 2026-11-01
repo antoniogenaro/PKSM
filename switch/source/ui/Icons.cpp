@@ -38,6 +38,7 @@ namespace pksm::switchui::icons
             "romfs:/icons/male.svg",
             "romfs:/icons/female.svg",
             "romfs:/icons/shiny.svg",
+            "romfs:/icons/pokedex.svg",
             "romfs:/icons/pouch-medicine.svg",
             "romfs:/icons/pouch-balls.svg",
             "romfs:/icons/pouch-battle.svg",
