@@ -65,10 +65,8 @@ namespace pksm::switchui::widgets
 
         // A straight dashed line from `from` to `to`.
         void drawDashedLine(ImDrawList* drawList, const ImVec2& from, const ImVec2& to, ImU32 color,
-            float thickness)
+            float thickness, float dash, float gap)
         {
-            constexpr float dash = 9.0f;
-            constexpr float gap  = 6.0f;
             const float dx       = to.x - from.x;
             const float dy       = to.y - from.y;
             const float length   = std::sqrt(dx * dx + dy * dy);
@@ -181,7 +179,7 @@ namespace pksm::switchui::widgets
         }
     }
 
-    void drawHeader(const char* title, const HeaderStatus& status)
+    bool drawHeader(const char* title, const HeaderStatus& status, const HeaderButton* button)
     {
         constexpr float gap        = 16.0f; // Between the parts on the left.
         constexpr float statusGap  = 24.0f; // Between the parts on the right.
@@ -269,6 +267,33 @@ namespace pksm::switchui::widgets
                 avatarIcon, theme::rgb(theme::TEXT));
             right -= statusGap;
         }
+        bool touched = false;
+        if (button)
+        {
+            // The canvas pill: 44 pixels tall, the icon's circle 6 pixels from its left.
+            constexpr float pillHeight = 44.0f;
+            constexpr float pillLeft   = 6.0f;
+            constexpr float pillRight  = 16.0f;
+            const float labelWidth     = textSize(button->label, theme::FONT_BODY, true).x;
+            const float pillWidth = pillLeft + avatarSize + avatarGap + labelWidth + pillRight;
+            right -= pillWidth;
+            const ImVec2 pillMin(right, std::round(centerY - pillHeight * 0.5f));
+            const ImVec2 pillMax(right + pillWidth, pillMin.y + pillHeight);
+            drawList->AddRectFilled(
+                pillMin, pillMax, theme::rgb(theme::HEADER_BUTTON), pillHeight * 0.5f);
+            const ImVec2 iconCenter(pillMin.x + pillLeft + avatarSize * 0.5f, centerY);
+            drawList->AddCircleFilled(iconCenter, avatarSize * 0.5f, theme::rgb(theme::HEADER_EDGE), 32);
+            drawList->AddCircleFilled(iconCenter, avatarSize * 0.5f - 2.0f, white, 32);
+            icons::drawSized(drawList, button->icon,
+                ImVec2(std::round(iconCenter.x - avatarIcon * 0.5f),
+                    std::round(iconCenter.y - avatarIcon * 0.5f)),
+                avatarIcon, theme::rgb(theme::TEXT));
+            drawText(drawList, ImVec2(pillMin.x + pillLeft + avatarSize + avatarGap, textY),
+                theme::FONT_BODY, white, button->label, nullptr, true);
+            ImGui::SetCursorScreenPos(pillMin);
+            touched = ImGui::InvisibleButton("header-button", ImVec2(pillWidth, pillHeight));
+            right -= statusGap;
+        }
 
         if (title && title[0] != '\0')
         {
@@ -282,6 +307,7 @@ namespace pksm::switchui::widgets
         ImGui::SetCursorScreenPos(
             ImVec2(origin.x + window->WindowPadding.x, bandBottom + theme::HEADER_EDGE_SIZE));
         ImGui::Dummy(ImVec2(0.0f, 0.0f));
+        return touched;
     }
 
     float drawButtonLegend(std::initializer_list<ButtonHint> hints)
@@ -514,32 +540,21 @@ namespace pksm::switchui::widgets
         return touched;
     }
 
-    bool drawDashedButton(
-        const char* id, const char* label, const ImVec2& size, bool stacked, float rounding)
+    void drawDashedRect(ImDrawList* drawList, const ImVec2& min, const ImVec2& max, float rounding,
+        float thickness, unsigned color, float dash, float gap)
     {
-        constexpr float thickness = 3.0f;
-        constexpr float plusGap   = 12.0f;
-
-        const ImVec2 min        = ImGui::GetCursorScreenPos();
-        const ImVec2 available  = ImGui::GetContentRegionAvail();
-        const ImVec2 buttonSize(size.x > 0.0f ? size.x : available.x + size.x,
-            size.y > 0.0f ? size.y : available.y + size.y);
-        const bool touched      = ImGui::InvisibleButton(id, buttonSize);
-        const ImVec2 max(min.x + buttonSize.x, min.y + buttonSize.y);
-
         // Straight dashes along each side, and whole arcs at the corners.
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        const ImU32 color    = theme::rgb(theme::DASHED);
-        const float inset    = thickness * 0.5f;
-        const float l        = min.x + inset;
-        const float t        = min.y + inset;
-        const float r        = max.x - inset;
-        const float b        = max.y - inset;
-        const float radius   = std::min(rounding, std::min(r - l, b - t) * 0.5f);
-        drawDashedLine(drawList, ImVec2(l + radius, t), ImVec2(r - radius, t), color, thickness);
-        drawDashedLine(drawList, ImVec2(r, t + radius), ImVec2(r, b - radius), color, thickness);
-        drawDashedLine(drawList, ImVec2(r - radius, b), ImVec2(l + radius, b), color, thickness);
-        drawDashedLine(drawList, ImVec2(l, b - radius), ImVec2(l, t + radius), color, thickness);
+        const ImU32 rgb    = theme::rgb(color);
+        const float inset  = thickness * 0.5f;
+        const float l      = min.x + inset;
+        const float t      = min.y + inset;
+        const float r      = max.x - inset;
+        const float b      = max.y - inset;
+        const float radius = std::min(rounding, std::min(r - l, b - t) * 0.5f);
+        drawDashedLine(drawList, ImVec2(l + radius, t), ImVec2(r - radius, t), rgb, thickness, dash, gap);
+        drawDashedLine(drawList, ImVec2(r, t + radius), ImVec2(r, b - radius), rgb, thickness, dash, gap);
+        drawDashedLine(drawList, ImVec2(r - radius, b), ImVec2(l + radius, b), rgb, thickness, dash, gap);
+        drawDashedLine(drawList, ImVec2(l, b - radius), ImVec2(l, t + radius), rgb, thickness, dash, gap);
         const struct
         {
             ImVec2 center;
@@ -553,8 +568,25 @@ namespace pksm::switchui::widgets
         for (const auto& corner : corners)
         {
             drawList->PathArcTo(corner.center, radius, corner.from, corner.from + PI * 0.5f, 12);
-            drawList->PathStroke(color, ImDrawFlags_None, thickness);
+            drawList->PathStroke(rgb, ImDrawFlags_None, thickness);
         }
+    }
+
+    bool drawDashedButton(
+        const char* id, const char* label, const ImVec2& size, bool stacked, float rounding)
+    {
+        constexpr float thickness = 3.0f;
+        constexpr float plusGap   = 12.0f;
+
+        const ImVec2 min        = ImGui::GetCursorScreenPos();
+        const ImVec2 available  = ImGui::GetContentRegionAvail();
+        const ImVec2 buttonSize(size.x > 0.0f ? size.x : available.x + size.x,
+            size.y > 0.0f ? size.y : available.y + size.y);
+        const bool touched      = ImGui::InvisibleButton(id, buttonSize);
+        const ImVec2 max(min.x + buttonSize.x, min.y + buttonSize.y);
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawDashedRect(drawList, min, max, rounding, thickness, theme::DASHED);
 
         const float plusSizePx  = stacked ? 36.0f : 28.0f;
         const ImVec2 plusSize   = textSize("+", plusSizePx);

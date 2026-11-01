@@ -11,7 +11,8 @@
 namespace pksm::switchui
 {
     // The first screen: every supported game, whether or not the SD card or the selected
-    // console user has saves of it. X chooses another console user.
+    // console user has saves of it. X chooses another console user; − or the header's button
+    // opens the global Pokédex.
     class GameListScreen : public Screen
     {
     public:
@@ -34,5 +35,7 @@ namespace pksm::switchui
         SaveLibrary library_;
         std::vector<GameCard> games_;
         size_t selected_ = 0;
+        // The header's Pokédex button was touched; update() opens it.
+        bool pokedexRequested_ = false;
     };
 }

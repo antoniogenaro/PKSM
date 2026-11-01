@@ -69,10 +69,17 @@ $(BUILD)/SubsystemsTests: SubsystemsTests.cpp ../common/source/Subsystems.cpp | 
 $(BUILD)/SwitchDomainTests: SwitchDomainTests.cpp ../switch/source/domain/GameProfile.cpp \
 		../switch/source/domain/FieldValues.cpp ../switch/source/domain/GameGrid.cpp \
 		../switch/source/domain/SaveCache.cpp ../switch/source/domain/BagValues.cpp \
-		../switch/source/domain/PickerList.cpp \
+		../switch/source/domain/PickerList.cpp ../switch/source/domain/Pokedex.cpp \
+		../core/source/utils/VersionTables.cpp $(BUILD)/personal.o \
 		../switch/source/ui/Text.cpp $(wildcard ../switch/strings/*.json) | $(BUILD)
 	@$(CXX) $(CXXFLAGS) -I../switch/include -I../core/include -I../external \
-		-DSWITCH_STRINGS='"../switch/strings"' -o $@ $(filter %.cpp,$^)
+		-DSWITCH_STRINGS='"../switch/strings"' -o $@ $(filter %.cpp %.o,$^)
+
+# Core's species tables, read from the repository instead of romfs. Tests run from this folder.
+$(BUILD)/personal.o: ../core/source/personal/personal.cpp | $(BUILD)
+	@$(CXX) $(CXXFLAGS) -I../core/include -D_PKSMCORE_CONFIGURED \
+		-D_PKSMCORE_PERSONAL_FOLDER='"../core/personals/"' \
+		-D'_PKSMCORE_EXTRA_LANGUAGES=NL, PT, RU, RO' -c -o $@ $<
 
 $(BUILD)/SwitchSaveFilesTests: SwitchSaveFilesTests.cpp \
 		../switch/include/SwitchSaveFiles.hpp | $(BUILD)

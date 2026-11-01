@@ -32,9 +32,11 @@
 #include "domain/GameGrid.hpp"
 #include "domain/GameProfile.hpp"
 #include "domain/PickerList.hpp"
+#include "domain/Pokedex.hpp"
 #include "domain/SaveCache.hpp"
 #include "nlohmann/json.hpp"
 #include "ui/Text.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -459,6 +461,112 @@ namespace
         check(turnPage(5, 100, 40, -1) == 5, "L on the first page does not move");
         check(turnPage(0, 0, 40, 1) == 0, "an empty list stays at the start");
     }
+
+    void testPokedex()
+    {
+        using namespace pksm::switchui::dex;
+        using pksm::Generation;
+
+        check(gameSpecies(Game::FireRedLeafGreen).size() == 386,
+            "FireRed and LeafGreen hold the first 386 species");
+        check(gameSpecies(Game::LetsGo).size() == 153 && appears(Game::LetsGo, 809) &&
+                  !appears(Game::LetsGo, 152),
+            "Let's Go holds Kanto, Meltan and Melmetal");
+        check(gameSpecies(Game::BrilliantDiamondShiningPearl).size() == 493,
+            "the Sinnoh remakes hold the first 493 species");
+        check(!gameSpecies(Game::SwordShield).empty() && gameSpecies(Game::SwordShield)[0] == 810,
+            "Sword and Shield list the Galar Pokédex first");
+        check(!appears(Game::SwordShield, 4) || gameSpecies(Game::SwordShield).back() != 4,
+            "species of no regional Pokédex follow the regional ones");
+        check(appears(Game::ScarletViolet, 906) && !appears(Game::SwordShield, 906),
+            "Sprigatito is only in Scarlet and Violet");
+        check(formCount(Game::ScarletViolet, 916) == 2, "Oinkologne has two forms in Scarlet");
+        check(formCount(Game::FireRedLeafGreen, 201) == 28, "Unown has 28 forms");
+        check(formCount(Game::SwordShield, 906) == 0, "a missing species has no forms");
+        check(formCount(Game::ScarletViolet, 25) == 9 && !hasForm(Game::ScarletViolet, 25, 8) &&
+                  hasForm(Game::ScarletViolet, 25, 9),
+            "forms that are not in a game are left out, even between others");
+        check(globalForms(25).size() >= 10, "the global forms join every game's");
+        check(allSpecies().size() >= 1025 && allSpecies().front() == 1,
+            "the global list is every species in national order");
+
+        check(gameOf(Generation::THREE, pksm::GameVersion::E) == Game::FireRedLeafGreen,
+            "a Generation III Pokémon counts for FireRed and LeafGreen");
+        check(gameOf(Generation::LGPE, pksm::GameVersion::GP) == Game::LetsGo,
+            "a Let's Go Pokémon counts for Let's Go");
+        check(gameOf(Generation::EIGHT, pksm::GameVersion::SW) == Game::SwordShield,
+            "a PK8 counts for Sword and Shield");
+        check(gameOf(Generation::NINE, pksm::GameVersion::SL) == Game::ScarletViolet &&
+                  gameOf(Generation::NINE, pksm::GameVersion::ZA) == Game::LegendsZA,
+            "a Generation IX Pokémon counts for the game it comes from");
+        check(!gameOf(Generation::SEVEN, pksm::GameVersion::SN),
+            "a Pokémon of a game the Pokédex does not list counts for none");
+
+        Records records;
+        check(records.add({Game::ScarletViolet, 916, 0, false}, "2026-11-01"),
+            "a new form is added");
+        check(!records.add({Game::ScarletViolet, 916, 0, false}, "2026-12-01") &&
+                  *records.date({Game::ScarletViolet, 916, 0, false}) == "2026-11-01",
+            "registering again keeps the first date");
+        records.add({Game::ScarletViolet, 915, 0, true}, "2026-11-01");
+        check(!records.has({Game::SwordShield, 916, 0, false}),
+            "a form registered in one game does not count for another");
+
+        const auto copy = Records::fromJson(records.toJson());
+        check(copy && copy->size() == 2 && copy->has({Game::ScarletViolet, 915, 0, true}),
+            "the records file reads back what was written");
+        check(!Records::fromJson("[1, 2]") && !Records::fromJson("not json"),
+            "a file that is not a records file is refused");
+        const auto partial = Records::fromJson(
+            R"({"version":1,"entries":[{"game":"xx","species":1,"form":0,"shiny":false},)"
+            R"({"game":"sv","species":25,"form":0,"shiny":false,"date":"2026-01-02"}]})");
+        check(partial && partial->size() == 1, "entries that cannot be used are skipped");
+
+        const auto species = cells(records, Game::ScarletViolet, RecordFilter::All,
+            FormFilter::Species);
+        check(species.size() == gameSpecies(Game::ScarletViolet).size(),
+            "without filters there is a cell per species");
+        const auto oinkologne = std::find_if(species.begin(), species.end(),
+            [](const Cell& cell) { return cell.species == 916; });
+        check(oinkologne != species.end() && oinkologne->registered && oinkologne->forms == 2 &&
+                  oinkologne->formsRegistered == 1,
+            "a species with one of two forms is registered and shows 1/2");
+        const auto registered = cells(records, Game::ScarletViolet, RecordFilter::Registered,
+            FormFilter::Species);
+        check(registered.size() == 1 && registered[0].species == 916,
+            "a shiny form alone does not register the species");
+        const auto shiny = cells(records, Game::ScarletViolet, RecordFilter::Registered,
+            FormFilter::Shiny);
+        check(shiny.size() == 1 && shiny[0].species == 915 && shiny[0].shiny,
+            "the shiny filter shows the shiny forms");
+        const auto missing = cells(records, Game::ScarletViolet, RecordFilter::Missing,
+            FormFilter::AllForms);
+        const auto missingFemale = std::find_if(missing.begin(), missing.end(),
+            [](const Cell& cell) { return cell.species == 916; });
+        check(missingFemale != missing.end() && missingFemale->form == 1,
+            "with every form, each form has its own cell and state");
+        check(cells(records, std::nullopt, RecordFilter::Registered, FormFilter::Species).size() ==
+                  1,
+            "the global grid shows what any game registered");
+
+        const Progress svSpecies = progress(records, Game::ScarletViolet, FormFilter::Species);
+        check(svSpecies.registered == 1 &&
+                  svSpecies.total == gameSpecies(Game::ScarletViolet).size(),
+            "a game's progress counts its species");
+        const Progress global = progress(records, std::nullopt, FormFilter::Species);
+        size_t everySpecies = 0;
+        for (const Game game : games())
+        {
+            everySpecies += gameSpecies(game).size();
+        }
+        check(global.registered == 1 && global.total == everySpecies,
+            "the global progress sums every game");
+        check(progress(records, Game::ScarletViolet, FormFilter::Shiny).registered == 1,
+            "shiny forms have their own progress");
+        check(Progress{199, 200}.percent() == 99 && Progress{200, 200}.percent() == 100 &&
+                  Progress{0, 0}.percent() == 0,
+            "the percentage rounds down, so only a complete game shows 100");
+    }
 }
 
 int main()
@@ -477,6 +585,7 @@ int main()
     testSaveCache();
     testBag();
     testPickerList();
+    testPokedex();
 
     if (failures != 0)
     {
