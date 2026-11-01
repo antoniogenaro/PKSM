@@ -902,11 +902,13 @@ namespace pksm::switchui
         return touched;
     }
 
-    void SwitchUi::drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
+    bool SwitchUi::drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
         size_t& selected, const std::string& error, bool canSwitchUser)
     {
         beginFrame();
-        widgets::drawHeader(tr(Text::GameListPrompt), status_.current());
+        const widgets::HeaderButton pokedex{tr(Text::HintPokedex), icons::Icon::Pokedex};
+        const bool pokedexTouched =
+            widgets::drawHeader(tr(Text::GameListPrompt), status_.current(), &pokedex);
         if (!error.empty())
         {
             ImGui::TextColored(ERROR_COLOR, "%s", error.c_str());
@@ -961,16 +963,15 @@ namespace pksm::switchui
             ImGui::PopID();
         }
 
+        std::vector<widgets::ButtonHint> hints{{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)}};
         if (canSwitchUser)
         {
-            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)},
-                {"X", tr(Text::HintSwitchUser)}});
+            hints.push_back({"X", tr(Text::HintSwitchUser)});
         }
-        else
-        {
-            widgets::drawButtonLegend({{"A", tr(Text::HintOpen)}, {"B", tr(Text::HintQuit)}});
-        }
+        hints.push_back({"−", tr(Text::HintPokedex)});
+        widgets::drawButtonLegend(hints);
         endFrame();
+        return pokedexTouched;
     }
 
     void SwitchUi::drawSaveList(const GameCard& game, const std::string& group,
@@ -2682,6 +2683,510 @@ namespace pksm::switchui
         const float legend = widgets::drawButtonLegend(hints);
         widgets::drawFooterMessage(
             view.message, theme::ACCENT, contentWidth - legend - theme::PANEL_GAP);
+        endFrame();
+    }
+
+    void SwitchUi::drawPokedex(PokedexView& view)
+    {
+        // The canvas Pokédex: the games in a 250 pixel panel, a 7 x 6 grid, and a 340 pixel
+        // summary of the focused Pokémon.
+        constexpr float gamesWidth   = 250.0f;
+        constexpr float summaryWidth = 340.0f;
+        constexpr float cellGap      = 6.0f;
+        constexpr float cellRadius   = 12.0f;
+        constexpr float cellArt      = 44.0f;
+        constexpr float filterHeight = 38.0f;
+        constexpr float captionRow   = 20.0f;
+        constexpr float pageRow      = 18.0f;
+        constexpr float formHeight   = 56.0f;
+        constexpr float formArt      = 40.0f;
+        constexpr float gameRow      = 22.0f;
+        constexpr float summaryArt   = 96.0f;
+        constexpr unsigned SUCCESS   = theme::SUCCESS;
+        constexpr unsigned DARK_BAR  = 0x3A3A38; // The global card's empty bar.
+        constexpr unsigned DARK_NOTE = 0xD6D6D3; // The global card's note.
+        constexpr unsigned SWATCH    = 0xC9C9C5; // "Registrado" in the grid's key.
+        constexpr unsigned QUESTION  = 0x6B6B68; // The "?" of a slot not registered.
+        constexpr ImGuiWindowFlags fixed =
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+        beginFrame();
+        widgets::drawHeader(tr(Text::DexTitle), status_.current());
+        sectionGap();
+
+        ImFont* bold             = theme::boldFont();
+        ImFont* regular          = ImGui::GetFont();
+        const float contentWidth = ImGui::GetContentRegionAvail().x;
+        const auto size = [](ImFont* font, float px, const std::string& text)
+        { return font->CalcTextSizeA(px, FLT_MAX, 0.0f, text.c_str()); };
+        // `text` vertically centred between `top` and `top + height`, from `x`.
+        const auto centredText = [&size](ImDrawList* drawList, ImFont* font, float px, float x,
+                                     float top, float height, unsigned color, const std::string& text)
+        {
+            drawList->AddText(font, px,
+                ImVec2(std::round(x), std::round(top + (height - size(font, px, text).y) * 0.5f)),
+                theme::rgb(color), text.c_str());
+        };
+        // `text` ending at `right`, vertically centred. Returns where it starts.
+        const auto rightText = [&](ImDrawList* drawList, ImFont* font, float px, float right,
+                                   float top, float height, unsigned color, const std::string& text)
+        {
+            const float left = right - size(font, px, text).x;
+            centredText(drawList, font, px, left, top, height, color, text);
+            return left;
+        };
+        // The canvas check mark, `side` pixels wide, at `min`.
+        const auto checkMark = [](ImDrawList* drawList, const ImVec2& min, float side,
+                                   unsigned color, float thickness)
+        {
+            const float unit      = side / 24.0f;
+            const ImVec2 points[] = {ImVec2(min.x + 5.0f * unit, min.y + 12.5f * unit),
+                ImVec2(min.x + 9.5f * unit, min.y + 17.0f * unit),
+                ImVec2(min.x + 19.0f * unit, min.y + 7.0f * unit)};
+            drawList->AddPolyline(points, 3, theme::rgb(color), ImDrawFlags_None, thickness);
+        };
+        // A check and `text` ending at `right`.
+        const auto checkedText = [&](ImDrawList* drawList, float px, float right, float top,
+                                     float height, const std::string& text)
+        {
+            const float left = rightText(drawList, bold, px, right, top, height, SUCCESS, text);
+            checkMark(drawList, ImVec2(left - 16.0f, top + (height - 12.0f) * 0.5f), 12.0f,
+                SUCCESS, 2.2f);
+        };
+        // A Pokémon's picture: its sprite, or a dashed "?" box when it is not registered.
+        const auto art = [&](ImDrawList* drawList, const ImVec2& min, float side, size_t species,
+                             size_t formSprite, bool registered, float radius, float question)
+        {
+            if (registered && species >= pokemonSprites_.size() && formSprite == 0)
+            {
+                // The sheets end before the newest Pokémon: the canvas's placeholder instead.
+                const float inset = side * 0.1f;
+                drawList->AddRectFilled(ImVec2(min.x + inset, min.y + inset),
+                    ImVec2(min.x + side - inset, min.y + side - inset), theme::rgb(SWATCH), radius);
+                return;
+            }
+            if (registered)
+            {
+                drawPokemonSprite(species,
+                    {static_cast<int>(min.x), static_cast<int>(min.y), static_cast<int>(side),
+                        static_cast<int>(side)},
+                    formSprite);
+                return;
+            }
+            widgets::drawDashedRect(drawList, min, ImVec2(min.x + side, min.y + side), radius, 2.0f,
+                theme::DASHED, 5.0f, 3.0f);
+            const ImVec2 mark = size(bold, question, "?");
+            drawList->AddText(bold, question,
+                ImVec2(std::round(min.x + (side - mark.x) * 0.5f),
+                    std::round(min.y + (side - mark.y) * 0.5f)),
+                theme::rgb(QUESTION), "?");
+        };
+        // A progress bar from `min`, `width` wide, filled to `percent` in `fill`.
+        const auto bar = [](ImDrawList* drawList, const ImVec2& min, float width, float height,
+                             unsigned percent, unsigned track, unsigned fill)
+        {
+            const ImVec2 max(min.x + width, min.y + height);
+            drawList->AddRectFilled(min, max, theme::rgb(track), height * 0.5f);
+            const float filled = width * static_cast<float>(std::min(percent, 100u)) / 100.0f;
+            if (filled >= 1.0f)
+            {
+                drawList->AddRectFilled(
+                    min, ImVec2(min.x + filled, max.y), theme::rgb(fill), height * 0.5f);
+            }
+        };
+        const auto percentText = [](unsigned percent) { return std::to_string(percent) + " %"; };
+
+        // The games: Global first, dark and taller, then one row each.
+        widgets::beginPanel("dex-games", ImVec2(gamesWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            constexpr float rowGap     = 6.0f;
+            constexpr float globalGap  = 12.0f;
+            constexpr float globalPadX = 14.0f;
+            constexpr float globalPadY = 12.0f;
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+
+            const float noteHeight   = size(bold, theme::FONT_CAPTION, view.globalNote).y;
+            const float globalHeight = globalPadY * 2.0f + 30.0f + 6.0f + 8.0f + 6.0f + noteHeight;
+            {
+                const ImVec2 min = origin;
+                const ImVec2 max(origin.x + available.x, origin.y + globalHeight);
+                ImGui::SetCursorScreenPos(min);
+                if (ImGui::InvisibleButton("global", ImVec2(max.x - min.x, max.y - min.y)))
+                {
+                    view.game = 0;
+                }
+                drawList->AddRectFilled(min, max, theme::rgb(theme::TEXT), theme::CARD_RADIUS);
+                const float left  = min.x + globalPadX;
+                const float right = max.x - globalPadX;
+                float y           = min.y + globalPadY;
+                centredText(drawList, bold, theme::FONT_CAPTION, left, y, 30.0f, theme::ON_DARK,
+                    view.global.name);
+                rightText(drawList, bold, 30.0f, right, y, 30.0f, theme::ON_DARK,
+                    percentText(view.global.percent));
+                y += 30.0f + 6.0f;
+                bar(drawList, ImVec2(left, y), right - left, 8.0f, view.global.percent, DARK_BAR,
+                    view.global.complete ? SUCCESS : theme::ACCENT);
+                y += 8.0f + 6.0f;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_CAPTION, ImVec2(left, y),
+                    theme::rgb(DARK_NOTE), view.globalNote.c_str(), right - left);
+                if (view.game == 0)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
+                }
+            }
+
+            const float rowsTop = origin.y + globalHeight + globalGap;
+            const float count   = static_cast<float>(std::max<size_t>(view.games.size(), 1));
+            const float rowHeight =
+                (origin.y + available.y - rowsTop - rowGap * (count - 1.0f)) / count;
+            for (size_t i = 0; i < view.games.size(); ++i)
+            {
+                const PokedexView::Game& game = view.games[i];
+                const bool selected           = view.game == i + 1;
+                const ImVec2 min(origin.x, rowsTop + static_cast<float>(i) * (rowHeight + rowGap));
+                const ImVec2 max(origin.x + available.x, min.y + rowHeight);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("game", ImVec2(max.x - min.x, rowHeight)))
+                {
+                    view.game = i + 1;
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cellRadius);
+
+                const float left    = min.x + 12.0f;
+                const float right   = max.x - 12.0f;
+                const float block   = 20.0f + 6.0f + 6.0f;
+                const float top     = min.y + (rowHeight - block) * 0.5f;
+                float nameRight     = right;
+                if (game.complete)
+                {
+                    const ImVec2 center(right - 10.0f, top + 10.0f);
+                    drawList->AddCircleFilled(center, 10.0f, theme::rgb(SUCCESS), 20);
+                    checkMark(drawList, ImVec2(center.x - 10.0f, center.y - 10.0f), 20.0f,
+                        theme::ON_DARK, 2.4f);
+                    nameRight = right - 26.0f;
+                }
+                else
+                {
+                    nameRight = rightText(drawList, bold, theme::FONT_SMALL, right, top, 20.0f,
+                                    game.percent == 0 ? theme::TEXT_MUTED : theme::TEXT,
+                                    percentText(game.percent)) -
+                                8.0f;
+                }
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                    ImVec2(left, std::round(top + (20.0f - size(bold, theme::FONT_SMALL, game.name).y) * 0.5f)),
+                    theme::rgb(theme::TEXT), game.name.c_str(), nameRight - left);
+                const unsigned fill = game.complete ? SUCCESS
+                                      : selected    ? theme::ACCENT
+                                                    : theme::TEXT;
+                bar(drawList, ImVec2(left, top + 26.0f), right - left, 6.0f,
+                    game.complete ? 100u : game.percent, theme::BORDER, fill);
+                if (selected)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, cellRadius);
+                }
+            }
+        }
+        widgets::endPanel();
+
+        // The grid of the chosen game, with its filters.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        const float gridWidth =
+            ImGui::GetContentRegionAvail().x - summaryWidth - theme::PANEL_GAP;
+        widgets::beginPanel("dex-grid", ImVec2(gridWidth, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const float right      = origin.x + available.x;
+            float y                = origin.y;
+
+            // The game's name, and the key: a registered slot and one that is not.
+            {
+                float x = rightText(drawList, bold, 12.0f, right, y, captionRow, theme::TEXT_MUTED,
+                    tr(Text::DexUnregistered));
+                x -= 6.0f + 12.0f;
+                widgets::drawDashedRect(drawList, ImVec2(x, y + 4.0f), ImVec2(x + 12.0f, y + 16.0f),
+                    3.0f, 2.0f, theme::DASHED, 3.0f, 2.0f);
+                x = rightText(drawList, bold, 12.0f, x - 14.0f, y, captionRow, theme::TEXT_MUTED,
+                    tr(Text::DexRegistered));
+                x -= 6.0f + 12.0f;
+                drawList->AddRectFilled(
+                    ImVec2(x, y + 4.0f), ImVec2(x + 12.0f, y + 16.0f), theme::rgb(SWATCH), 3.0f);
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_CAPTION,
+                    ImVec2(origin.x, std::round(y + (captionRow - size(bold, theme::FONT_CAPTION, view.caption).y) * 0.5f)),
+                    theme::rgb(theme::CAPTION), view.caption.c_str(), x - 16.0f - origin.x);
+            }
+            y += captionRow + 8.0f;
+
+            // The two filters, side by side: the button, the filter's name and its value.
+            {
+                const float width = (available.x - 8.0f) * 0.5f;
+                const struct
+                {
+                    const char* button;
+                    const char* label;
+                    const std::string& value;
+                    bool* request;
+                } filters[] = {
+                    {"X", tr(Text::DexFilterRecord), view.recordFilter, &view.recordRequest},
+                    {"Y", tr(Text::DexFilterForm), view.formFilter, &view.formRequest},
+                };
+                for (size_t i = 0; i < std::size(filters); ++i)
+                {
+                    const auto& filter = filters[i];
+                    const ImVec2 min(origin.x + static_cast<float>(i) * (width + 8.0f), y);
+                    const ImVec2 max(min.x + width, y + filterHeight);
+                    ImGui::SetCursorScreenPos(min);
+                    ImGui::PushID(static_cast<int>(i));
+                    if (ImGui::InvisibleButton("filter", ImVec2(width, filterHeight)))
+                    {
+                        *filter.request = true;
+                    }
+                    ImGui::PopID();
+                    drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), 10.0f);
+                    const ImVec2 face(min.x + 6.0f + 13.0f, min.y + filterHeight * 0.5f);
+                    drawList->AddCircleFilled(face, 13.0f, theme::rgb(theme::BUTTON_FACE), 24);
+                    const ImVec2 letter = size(bold, theme::FONT_CAPTION, filter.button);
+                    drawList->AddText(bold, theme::FONT_CAPTION,
+                        ImVec2(std::round(face.x - letter.x * 0.5f),
+                            std::round(face.y - letter.y * 0.5f)),
+                        theme::rgb(theme::ON_DARK), filter.button);
+                    float x = face.x + 13.0f + 8.0f;
+                    centredText(drawList, bold, theme::FONT_CAPTION, x, min.y, filterHeight,
+                        theme::TEXT_MUTED, filter.label);
+                    x += size(bold, theme::FONT_CAPTION, filter.label).x + 8.0f;
+                    const float chevron = max.x - 10.0f - 12.0f;
+                    widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                        ImVec2(x, std::round(min.y + (filterHeight - size(bold, theme::FONT_SMALL, filter.value).y) * 0.5f)),
+                        theme::rgb(theme::TEXT), filter.value.c_str(), chevron - 8.0f - x);
+                    const float chevronY  = min.y + filterHeight * 0.5f - 4.0f;
+                    const ImVec2 points[] = {ImVec2(chevron + 1.5f, chevronY + 1.5f),
+                        ImVec2(chevron + 6.0f, chevronY + 6.0f),
+                        ImVec2(chevron + 10.5f, chevronY + 1.5f)};
+                    drawList->AddPolyline(
+                        points, 3, theme::rgb(theme::TEXT), ImDrawFlags_None, 2.5f);
+                }
+            }
+            y += filterHeight + 8.0f;
+
+            // The cells, PokedexView::COLUMNS to a row.
+            const float gridBottom = origin.y + available.y - pageRow - 8.0f;
+            const float columns    = static_cast<float>(PokedexView::COLUMNS);
+            const float rows       = static_cast<float>(PokedexView::ROWS);
+            const float cellWidth  = (available.x - cellGap * (columns - 1.0f)) / columns;
+            const float cellHeight = (gridBottom - y - cellGap * (rows - 1.0f)) / rows;
+            if (view.cells.empty())
+            {
+                ImGui::SetCursorScreenPos(ImVec2(origin.x, y + 12.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, theme::vec(theme::TEXT_MUTED));
+                ImGui::PushTextWrapPos(origin.x + available.x);
+                ImGui::TextWrapped("%s", view.message.c_str());
+                ImGui::PopTextWrapPos();
+                ImGui::PopStyleColor();
+            }
+            for (size_t i = 0; i < view.cells.size(); ++i)
+            {
+                const PokedexView::Cell& cell = view.cells[i];
+                const ImVec2 min(
+                    origin.x + static_cast<float>(i % PokedexView::COLUMNS) * (cellWidth + cellGap),
+                    y + static_cast<float>(i / PokedexView::COLUMNS) * (cellHeight + cellGap));
+                const ImVec2 max(min.x + cellWidth, min.y + cellHeight);
+                ImGui::SetCursorScreenPos(min);
+                ImGui::PushID(static_cast<int>(i));
+                if (ImGui::InvisibleButton("cell", ImVec2(cellWidth, cellHeight)))
+                {
+                    view.selected = i;
+                }
+                ImGui::PopID();
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cellRadius);
+
+                const ImVec2 number = size(bold, 12.0f, cell.number);
+                const float block   = cellArt + 4.0f + number.y;
+                const float top     = min.y + (cellHeight - block) * 0.5f;
+                art(drawList, ImVec2(std::round(min.x + (cellWidth - cellArt) * 0.5f), top),
+                    cellArt, cell.species, cell.formSprite, cell.registered, 10.0f, 20.0f);
+                drawList->AddText(bold, 12.0f,
+                    ImVec2(std::round(min.x + (cellWidth - number.x) * 0.5f),
+                        std::round(top + cellArt + 4.0f)),
+                    theme::rgb(cell.registered ? theme::TEXT : theme::TEXT_MUTED),
+                    cell.number.c_str());
+                if (!cell.badge.empty())
+                {
+                    const float width = size(bold, 10.0f, cell.badge).x + 10.0f;
+                    const ImVec2 badgeMin(max.x - 4.0f - width, min.y + 4.0f);
+                    drawList->AddRectFilled(badgeMin,
+                        ImVec2(badgeMin.x + width, badgeMin.y + 16.0f),
+                        theme::rgb(theme::BUTTON_FACE), 8.0f);
+                    centredText(drawList, bold, 10.0f, badgeMin.x + 5.0f, badgeMin.y, 16.0f,
+                        theme::ON_DARK, cell.badge);
+                }
+                if (cell.shiny)
+                {
+                    icons::drawSized(drawList, icons::Icon::Shiny,
+                        ImVec2(min.x + 5.0f, min.y + 5.0f), 14, theme::rgb(SHINY));
+                }
+                if (i == view.selected)
+                {
+                    widgets::drawSelectionOutline(drawList, min, max, cellRadius);
+                }
+            }
+
+            // The page: "Página 1 / 10".
+            const std::string page  = tr(Text::DexPage, {std::to_string(view.page + 1)});
+            const std::string total = " / " + std::to_string(view.pageCount);
+            const float pageWidth =
+                size(bold, theme::FONT_SMALL, page).x + size(bold, theme::FONT_SMALL, total).x;
+            const float pageLeft = std::round(origin.x + (available.x - pageWidth) * 0.5f);
+            const float pageTop  = origin.y + available.y - pageRow;
+            centredText(drawList, bold, theme::FONT_SMALL, pageLeft, pageTop, pageRow,
+                theme::TEXT_SOFT, page);
+            centredText(drawList, bold, theme::FONT_SMALL,
+                pageLeft + size(bold, theme::FONT_SMALL, page).x, pageTop, pageRow,
+                theme::TEXT_MUTED, total);
+        }
+        widgets::endPanel();
+
+        // The focused Pokémon: its number, picture, name and types, its forms, and each game.
+        ImGui::SameLine(0.0f, theme::PANEL_GAP);
+        widgets::beginPanel("dex-summary", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE), nullptr, fixed);
+        if (view.hasFocus)
+        {
+            ImDrawList* drawList   = ImGui::GetWindowDrawList();
+            const ImVec2 origin    = ImGui::GetCursorScreenPos();
+            const ImVec2 available = ImGui::GetContentRegionAvail();
+            const float right      = origin.x + available.x;
+            float y                = origin.y;
+
+            centredText(drawList, bold, theme::FONT_CAPTION, origin.x, y, captionRow,
+                theme::CAPTION, view.number);
+            y += captionRow + 10.0f;
+
+            drawList->AddRectFilled(ImVec2(origin.x, y),
+                ImVec2(origin.x + summaryArt, y + summaryArt), theme::rgb(theme::CARD),
+                theme::CARD_RADIUS);
+            art(drawList, ImVec2(origin.x + 8.0f, y + 8.0f), summaryArt - 16.0f, view.species,
+                view.formSprite, true, 14.0f, 28.0f);
+            {
+                const float left  = origin.x + summaryArt + 14.0f;
+                const float block = 26.0f + 8.0f + 32.0f;
+                const float top   = y + (summaryArt - block) * 0.5f;
+                float nameRight   = right;
+                if (view.shiny)
+                {
+                    icons::drawSized(drawList, icons::Icon::Shiny,
+                        ImVec2(right - 20.0f, top + 3.0f), 20, theme::rgb(SHINY));
+                    nameRight -= 26.0f;
+                }
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_HEADING, ImVec2(left, top),
+                    theme::rgb(theme::TEXT), view.name.c_str(), nameRight - left);
+                drawTypePills(drawList, ImVec2(left, top + 26.0f + 8.0f), view.types);
+            }
+            y += summaryArt + 12.0f;
+
+            // The forms, two to a row.
+            centredText(drawList, bold, theme::FONT_SMALL, origin.x, y, captionRow, theme::TEXT,
+                tr(Text::DexForms));
+            rightText(drawList, bold, theme::FONT_SMALL, right, y, captionRow, theme::TEXT_MUTED,
+                view.formProgress);
+            y += captionRow + 8.0f;
+            {
+                const float width = (available.x - 8.0f) * 0.5f;
+                for (size_t i = 0; i < view.forms.size(); ++i)
+                {
+                    const PokedexView::Form& form = view.forms[i];
+                    const ImVec2 min(origin.x + static_cast<float>(i % 2) * (width + 8.0f),
+                        y + static_cast<float>(i / 2) * (formHeight + 8.0f));
+                    const ImVec2 max(min.x + width, min.y + formHeight);
+                    drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cellRadius);
+                    art(drawList, ImVec2(min.x + 8.0f, min.y + 8.0f), formArt, form.species,
+                        form.formSprite, form.registered, 9.0f, 18.0f);
+                    const float left = min.x + 8.0f + formArt + 10.0f;
+                    widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL,
+                        ImVec2(left, min.y + 9.0f), theme::rgb(theme::TEXT), form.name.c_str(),
+                        max.x - 8.0f - left);
+                    const float stateTop = min.y + 30.0f;
+                    if (form.registered)
+                    {
+                        checkMark(drawList, ImVec2(left, stateTop + 2.0f), 12.0f, SUCCESS, 2.2f);
+                        centredText(drawList, bold, 12.0f, left + 16.0f, stateTop, 16.0f, SUCCESS,
+                            tr(Text::DexFormRegistered));
+                    }
+                    else
+                    {
+                        centredText(drawList, bold, 12.0f, left, stateTop, 16.0f,
+                            theme::TEXT_MUTED, tr(Text::DexFormUnregistered));
+                    }
+                    if (form.focused)
+                    {
+                        widgets::drawSelectionOutline(drawList, min, max, cellRadius);
+                    }
+                }
+                const size_t formRows = (view.forms.size() + 1) / 2;
+                y += static_cast<float>(formRows) * (formHeight + 8.0f) + 4.0f;
+            }
+
+            // Each game: how many of its forms are registered, or that it does not appear.
+            centredText(drawList, bold, theme::FONT_SMALL, origin.x, y, captionRow, theme::TEXT,
+                tr(Text::DexByGame));
+            y += captionRow + 4.0f;
+            const float noteHeight = 40.0f;
+            const float noteTop    = origin.y + available.y - noteHeight;
+            for (const PokedexView::GameState& game : view.byGame)
+            {
+                if (y + gameRow > noteTop - 6.0f)
+                {
+                    break;
+                }
+                const unsigned color = game.appears ? theme::TEXT : theme::TEXT_MUTED;
+                float stateLeft      = right;
+                if (game.registered)
+                {
+                    checkedText(drawList, theme::FONT_CAPTION, right, y, gameRow, game.state);
+                    stateLeft = right - size(bold, theme::FONT_CAPTION, game.state).x - 16.0f;
+                }
+                else
+                {
+                    stateLeft = rightText(drawList, bold, theme::FONT_CAPTION, right, y, gameRow,
+                        theme::TEXT_MUTED, game.state);
+                }
+                widgets::drawTextEllipsis(drawList, game.appears ? bold : regular,
+                    theme::FONT_SMALL,
+                    ImVec2(origin.x, std::round(y + (gameRow - size(bold, theme::FONT_SMALL, game.name).y) * 0.5f)),
+                    theme::rgb(color), game.name.c_str(), stateLeft - 10.0f - origin.x);
+                y += gameRow;
+            }
+
+            // How Pokémon get registered, along the bottom.
+            {
+                const ImVec2 min(origin.x, noteTop);
+                const ImVec2 max(right, noteTop + noteHeight);
+                drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cellRadius);
+                const ImVec2 center(min.x + 12.0f + 9.0f, min.y + noteHeight * 0.5f);
+                drawList->AddCircle(center, 8.0f, theme::rgb(theme::TEXT_SOFT), 20, 1.8f);
+                drawList->AddLine(ImVec2(center.x, center.y - 1.0f),
+                    ImVec2(center.x, center.y + 4.0f), theme::rgb(theme::TEXT_SOFT), 2.0f);
+                drawList->AddCircleFilled(
+                    ImVec2(center.x, center.y - 4.0f), 1.2f, theme::rgb(theme::TEXT_SOFT), 8);
+                const float left = center.x + 9.0f + 8.0f;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_CAPTION,
+                    ImVec2(left, std::round(min.y + (noteHeight - size(bold, theme::FONT_CAPTION, "H").y) * 0.5f)),
+                    theme::rgb(theme::TEXT_SOFT), tr(Text::DexRegisterNote), max.x - 12.0f - left);
+            }
+        }
+        widgets::endPanel();
+
+        const float legendWidth = widgets::drawButtonLegend({{"ZL / ZR", tr(Text::HintGame)},
+            {"X / Y", tr(Text::HintFilters)}, {"L / R", tr(Text::HintPage)},
+            {"B", tr(Text::HintBack)}});
+        if (!view.cells.empty() && !view.message.empty())
+        {
+            widgets::drawFooterMessage(view.message, theme::ERROR_TEXT,
+                contentWidth - legendWidth - theme::PANEL_GAP);
+        }
         endFrame();
     }
 

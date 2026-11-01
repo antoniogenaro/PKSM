@@ -22,10 +22,19 @@ namespace pksm::switchui::widgets
     void drawTextEllipsis(ImDrawList* drawList, ImFont* font, float size, const ImVec2& position,
         ImU32 color, const char* text, float maxWidth);
 
+    // A button on the header bar, such as "Pokédex": an icon in a white circle and a label.
+    struct HeaderButton
+    {
+        const char* label;
+        icons::Icon icon;
+    };
+
     // The red bar across the top of the screen: a Poké Ball, "PKSM" and `title` on the left,
-    // and `status` (the user, the time and the battery) on the right, over a black strip. It
-    // ignores the window padding and leaves the cursor under the strip.
-    void drawHeader(const char* title, const HeaderStatus& status);
+    // and `status` (the user, the time and the battery) on the right, over a black strip, with
+    // `button` before the user when there is one. It ignores the window padding and leaves the
+    // cursor under the strip. Returns true when the button is touched.
+    bool drawHeader(
+        const char* title, const HeaderStatus& status, const HeaderButton* button = nullptr);
 
     // One button of the legend: the button's name, such as "A", "L / R" or "+", and what it does.
     struct ButtonHint
@@ -73,6 +82,10 @@ namespace pksm::switchui::widgets
 
     // Draws `row` across the available width. Returns true when touched.
     bool drawListRow(const char* id, const ListRow& row, bool selected);
+
+    // A dashed outline of the rectangle from `min` to `max`, inside it, in `color` (0xRRGGBB).
+    void drawDashedRect(ImDrawList* drawList, const ImVec2& min, const ImVec2& max, float rounding,
+        float thickness, unsigned color, float dash = 9.0f, float gap = 6.0f);
 
     // A transparent button with a dashed outline and a "+" before `label`, such as "Import save".
     // With `stacked`, the "+" sits above the label, as on the game grid. Returns true when touched.

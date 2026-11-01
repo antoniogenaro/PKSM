@@ -416,8 +416,16 @@ namespace pksm::switchui
         {
             return *sprite;
         }
-        const auto forms = formIndices(pokemon.generation(), species);
-        const size_t form = pokemon.alternativeForm();
+        return formSpriteIndex(pokemon.generation(), species, pokemon.alternativeForm());
+    }
+
+    size_t formSpriteIndex(pksm::Generation generation, pksm::Species species, size_t form)
+    {
+        if (species == pksm::Species::None || species > pksm::Species::Calyrex)
+        {
+            return 0;
+        }
+        const auto forms = formIndices(generation, species);
         return form < forms.size() ? static_cast<size_t>(forms[form]) : 0;
     }
 }

@@ -80,5 +80,7 @@ namespace pksm::switchui
         std::optional<console::SaveLocation> console_;
         std::unique_ptr<PokemonBank> bank_;
         bool dirty_ = false;
+        // Why the last save could not register the bank's Pokémon in the Pokédex, if it could not.
+        std::string pokedexError_;
     };
 }

@@ -354,6 +354,79 @@ namespace pksm::switchui
         bool addRequest = false;
     };
 
+    // Everything the global Pokédex draws: the games with their progress, a page of the chosen
+    // game's Pokémon, and the focused one's summary.
+    struct PokedexView
+    {
+        static constexpr size_t COLUMNS = 7;
+        static constexpr size_t ROWS    = 6;
+        static constexpr size_t PAGE    = COLUMNS * ROWS;
+
+        struct Game
+        {
+            std::string name;
+            unsigned percent = 0;
+            bool complete    = false;
+        };
+        struct Cell
+        {
+            size_t species    = 0;
+            size_t formSprite = 0;
+            std::string number; // "0916"
+            bool registered = false;
+            bool shiny      = false;
+            std::string badge; // "1/2" for a species with several forms, or empty.
+        };
+        struct Form
+        {
+            std::string name;
+            size_t species    = 0;
+            size_t formSprite = 0;
+            bool registered   = false;
+            bool focused      = false;
+        };
+        struct GameState
+        {
+            std::string name;
+            std::string state; // "1 / 2", or "No aparece".
+            bool appears    = false;
+            bool registered = false;
+        };
+
+        // The "Global" card first, then the games. `game` is 0 for Global and 1 onwards for
+        // `games`; a touch on one changes it.
+        Game global;
+        std::string globalNote; // "Todas las formas de todos los juegos"
+        std::vector<Game> games;
+        size_t game = 0;
+
+        std::string caption; // "ESCARLATA / PÚRPURA"
+        std::string recordFilter;
+        std::string formFilter;
+        // The shown page, and the focus on it. A touch on a cell moves the focus.
+        std::vector<Cell> cells;
+        size_t selected  = 0;
+        size_t page      = 0;
+        size_t pageCount = 1;
+        std::string message; // Shown instead of the grid when it is empty.
+
+        // The focused Pokémon, when there is one.
+        bool hasFocus = false;
+        std::string number; // "N.º 0916"
+        std::string name;
+        size_t species    = 0;
+        size_t formSprite = 0;
+        bool shiny        = false;
+        std::vector<std::pair<std::string, size_t>> types;
+        std::string formProgress; // "1 / 2"
+        std::vector<Form> forms;  // At most four, around the focused form.
+        std::vector<GameState> byGame;
+
+        // Set by drawPokedex() when a filter is touched.
+        bool recordRequest = false;
+        bool formRequest   = false;
+    };
+
     class SwitchUi
     {
     public:
@@ -372,8 +445,9 @@ namespace pksm::switchui
         void setUserName(std::string name) { status_.setUser(std::move(name)); }
         // Every supported game, laid out by `grid`; `games` follows the grid's numbering.
         // A touch on a game moves the selection, so it is passed by reference. With
-        // `canSwitchUser` the legend offers X to choose another console user.
-        void drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
+        // `canSwitchUser` the legend offers X to choose another console user. Returns true when
+        // the header's Pokédex button is touched.
+        bool drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
             size_t& selected, const std::string& error, bool canSwitchUser);
         // The saves of one game: first `consoleUser`'s console save when the game card says
         // there is one, then `files`, as paths relative to the save folder. `selected` counts
@@ -403,6 +477,8 @@ namespace pksm::switchui
         void drawBag(BagView& view);
         // The wonder cards and the selected one's detail. Touching a card selects it.
         void drawEvents(EventsView& view);
+        // The global Pokédex. Touching a game, a cell or a filter selects it.
+        void drawPokedex(PokedexView& view);
         // Pickers, as dialogs over the screen below. A touch on an entry moves the selection, so
         // it is passed by reference. The option picker shows the page of PICKER_ROWS rows of
         // PICKER_COLUMNS that holds the selection.
