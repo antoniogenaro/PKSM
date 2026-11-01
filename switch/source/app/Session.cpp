@@ -1,6 +1,7 @@
 #include "app/Session.hpp"
 
 #include "domain/GameProfile.hpp"
+#include "domain/PokedexFile.hpp"
 #include "domain/PokemonBank.hpp"
 #include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
@@ -107,6 +108,7 @@ namespace pksm::switchui
     bool Session::saveChanges(std::string& outputPath, std::string& error)
     {
         outputPath.clear();
+        pokedexError_.clear();
         if (dirty_)
         {
             bool written = false;
@@ -131,7 +133,18 @@ namespace pksm::switchui
             dirty_ = false;
         }
         // Only after the save, so the bank never holds less than the saved game expects.
-        return !bank_ || !bank_->dirty() || bank_->save(error);
+        if (!bank_ || !bank_->dirty())
+        {
+            return true;
+        }
+        if (!bank_->save(error))
+        {
+            return false;
+        }
+        // The bank is saved: its Pokémon count for the global Pokédex. A Pokédex that cannot be
+        // written does not undo the save; saveWithMessage() reports it.
+        dex::registerBank(*bank_, pokedexError_);
+        return true;
     }
 
     bool Session::discardChanges(std::string& error)
@@ -188,6 +201,10 @@ namespace pksm::switchui
         else
         {
             message = tr(bankPending ? Text::SavedWithBank : Text::SavedTo, {outputPath});
+        }
+        if (!pokedexError_.empty())
+        {
+            message += " · " + pokedexError_;
         }
         return true;
     }

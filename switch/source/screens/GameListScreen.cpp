@@ -3,6 +3,7 @@
 #include "app/App.hpp"
 #include "domain/GameProfile.hpp"
 #include "screens/PickerScreens.hpp"
+#include "screens/PokedexScreen.hpp"
 #include "screens/SaveListScreen.hpp"
 #include "ui/Text.hpp"
 #include <memory>
@@ -51,6 +52,11 @@ namespace pksm::switchui
 
     void GameListScreen::update(App& app, Action action)
     {
+        if (pokedexRequested_)
+        {
+            pokedexRequested_ = false;
+            action            = Action::Alternate;
+        }
         switch (action)
         {
             case Action::Quit:
@@ -87,6 +93,9 @@ namespace pksm::switchui
                         }));
                 }
                 break;
+            case Action::Alternate: // −
+                app.push(std::make_unique<PokedexScreen>());
+                break;
             case Action::Confirm:
                 if (selected_ < games_.size())
                 {
@@ -107,6 +116,9 @@ namespace pksm::switchui
 
     void GameListScreen::draw(SwitchUi& ui)
     {
-        ui.drawGameList(grid_, games_, selected_, library_.error, !users_.empty());
+        if (ui.drawGameList(grid_, games_, selected_, library_.error, !users_.empty()))
+        {
+            pokedexRequested_ = true;
+        }
     }
 }

@@ -310,6 +310,45 @@
     X(EventsUnreadable)                                                                            \
     X(EventLanguageCodes)                                                                          \
     X(HintLanguage)                                                                                \
+    /* Pokédex */                                                                                 \
+    X(HintPokedex)                                                                                \
+    X(DexTitle)                                                                                   \
+    X(DexGameFireRedLeafGreen)                                                                    \
+    X(DexGameLetsGo)                                                                              \
+    X(DexGameSwordShield)                                                                         \
+    X(DexGameDiamondPearl)                                                                        \
+    X(DexGameLegendsArceus)                                                                       \
+    X(DexGameScarletViolet)                                                                       \
+    X(DexGameLegendsZA)                                                                           \
+    X(DexGlobal)                                                                                  \
+    X(DexGlobalSpecies)                                                                           \
+    X(DexGlobalShiny)                                                                             \
+    X(DexGlobalForms)                                                                             \
+    X(DexGlobalCaption)                                                                           \
+    X(DexFilterRecord)                                                                            \
+    X(DexFilterForm)                                                                              \
+    X(DexFilterAny)                                                                               \
+    X(DexRegistered)                                                                              \
+    X(DexNotRegistered)                                                                           \
+    X(DexUnregistered)                                                                            \
+    X(DexShiny)                                                                                   \
+    X(DexAllForms)                                                                                \
+    X(DexForms)                                                                                   \
+    X(DexFormRegistered)                                                                          \
+    X(DexFormUnregistered)                                                                        \
+    X(DexFormMale)                                                                                \
+    X(DexFormFemale)                                                                              \
+    X(DexFormNumber)                                                                              \
+    X(DexMoreForms)                                                                               \
+    X(DexByGame)                                                                                  \
+    X(DexNotInGame)                                                                               \
+    X(DexRegisterNote)                                                                            \
+    X(DexPage)                                                                                    \
+    X(DexNoMatches)                                                                               \
+    X(DexReadFailed)                                                                              \
+    X(DexWriteFailed)                                                                             \
+    X(HintGame)                                                                                   \
+    X(HintFilters)                                                                                \
     /* Pickers and keyboard */                                                                     \
     X(NatureNeutral)                                                                               \
     X(NatureNeutralShort)                                                                          \

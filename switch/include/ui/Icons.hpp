@@ -23,6 +23,7 @@ namespace pksm::switchui::icons
         Male,    // ♂
         Female,  // ♀
         Shiny,   // A four-pointed star.
+        Pokedex, // A Pokédex: a page with a dot and two lines.
         // Bag pouches.
         PouchMedicine,    // A medicine bottle.
         PouchBalls,       // A Poké Ball.

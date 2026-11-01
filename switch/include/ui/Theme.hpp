@@ -45,10 +45,12 @@ namespace pksm::switchui::theme
     inline constexpr unsigned GOLD          = 0x8A6100; // Neutral natures and switches that are on.
     inline constexpr unsigned POSITIVE      = 0xD71920; // "Has saves".
     inline constexpr unsigned NEUTRAL       = 0x9A9A98; // "No saves".
+    inline constexpr unsigned SUCCESS       = 0x1F7A4D; // Registered, and games at 100 %.
     inline constexpr unsigned ERROR_TEXT    = 0xC2161C;
     inline constexpr unsigned POKEBALL_RED  = 0xE23D28;
     inline constexpr unsigned HEADER        = 0xD71920; // The header bar.
     inline constexpr unsigned HEADER_EDGE   = 0x141414; // The strip under the header bar.
+    inline constexpr unsigned HEADER_BUTTON = 0xA8141A; // Buttons on the header bar.
 
     // Corner radii.
     inline constexpr float PANEL_RADIUS    = 20.0f;
