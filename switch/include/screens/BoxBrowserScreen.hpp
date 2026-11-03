@@ -54,6 +54,8 @@ namespace pksm::switchui
         // that was there stays carried.
         void dropCarried();
         bool carriedSlotShown() const;
+        // Whether the selected slot is a box slot the save does not have.
+        bool selectedLocked() const;
         // Clears the footer message, or shows what is being carried.
         void clearMessage();
 

@@ -91,7 +91,9 @@ namespace
         check(findGameProfile(GameVersion::SL) == nullptr, "Scarlet is not supported");
 
         const auto profiles = gameProfiles();
-        check(profiles.size() == 4, "four games are listed");
+        check(profiles.size() == 6, "six games are listed");
+        check(findGameProfile(GameVersion::GP) != nullptr && findGameProfile(GameVersion::GE) != nullptr,
+            "both Let's Go games are supported");
         bool allFound = true;
         for (const auto& profile : profiles)
         {
@@ -108,8 +110,9 @@ namespace
     void testGameGrid()
     {
         const GameGrid real(gameProfiles());
-        check(real.gameCount() == 4, "the game list shows every game");
-        check(real.cards().size() == 2, "paired games share a card");
+        check(real.gameCount() == 6, "the game list shows every game");
+        check(real.cards().size() == 3, "paired games share a card");
+        check(real.cards()[1].games == std::vector<size_t>{2, 3}, "the Let's Go games pair up");
         check(real.cards()[0].group == Text::GroupGen3Gba, "the GBA games come first");
         check(real.cards()[0].games == std::vector<size_t>{0, 1}, "FireRed and LeafGreen pair up");
         check(real.down(0) == 0, "down stays put with a single row");

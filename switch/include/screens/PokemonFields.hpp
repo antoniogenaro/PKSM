@@ -39,6 +39,9 @@ namespace pksm::switchui
     // Writes the Pokémon back into its slot.
     void savePokemon(pksm::Sav& save, pksm::PKX& pokemon, bool party, u8 box, u8 slot);
 
+    // The name of a box of the save, or "Box 3" for games without box names, such as Let's Go.
+    std::string boxTitle(const pksm::Sav& save, int box);
+
     // A slot as the box grid shows it; a missing Pokémon is an empty slot.
     PokemonSlot pokemonSlot(const pksm::PKX* pokemon);
     // What the box screen's detail panel shows of `pokemon`.

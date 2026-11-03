@@ -2,6 +2,7 @@
 
 #include "app/App.hpp"
 #include "app/Session.hpp"
+#include "domain/LetsGoStorage.hpp"
 #include "pkx/PKX.hpp"
 #include "sav/Sav.hpp"
 #include "screens/PokemonEditorScreen.hpp"
@@ -37,8 +38,14 @@ namespace pksm::switchui
         boxFilled_ = 0;
         for (u8 slot = 0; slot < BOX_SLOTS; ++slot)
         {
+            if (!letsgo::slotExists(save, static_cast<int>(box_), slot))
+            {
+                boxSlots_.push_back(PokemonSlot{.locked = true});
+                continue;
+            }
             const auto pokemon = save.pkm(static_cast<u8>(box_), slot);
             boxSlots_.push_back(pokemonSlot(pokemon.get()));
+            boxSlots_.back().partyPlace = letsgo::partyPlace(save, static_cast<int>(box_), slot);
             boxFilled_ += boxSlots_.back().empty ? 0 : 1;
         }
         partySlots_.clear();
@@ -63,7 +70,7 @@ namespace pksm::switchui
                 pokemon = save.pkm(slot);
             }
         }
-        else
+        else if (letsgo::slotExists(save, static_cast<int>(box_), slot))
         {
             pokemon = save.pkm(static_cast<u8>(box_), slot);
         }
@@ -258,7 +265,8 @@ namespace pksm::switchui
     void BoxBrowserScreen::writeAt(pksm::PKX& pokemon, bool party, unsigned int box, size_t slot)
     {
         pksm::Sav& save = session_.save();
-        if (party)
+        // A Let's Go Pokémon in a box may be in the party too.
+        if (party || save.generation() == pksm::Generation::LGPE)
         {
             pokemon.updatePartyData();
         }
@@ -301,8 +309,18 @@ namespace pksm::switchui
         refreshSlots();
     }
 
+    bool BoxBrowserScreen::selectedLocked() const
+    {
+        return !party_ && selected_ < boxSlots_.size() && boxSlots_[selected_].locked;
+    }
+
     void BoxBrowserScreen::place()
     {
+        if (selectedLocked())
+        {
+            message_ = tr(Text::SlotUnavailable);
+            return;
+        }
         if (carried_.clone)
         {
             placeClone();
@@ -341,6 +359,13 @@ namespace pksm::switchui
 
         writeAt(*moving, party_, box_, selected_);
         writeAt(*target, carried_.party, carried_.box, carried_.slot);
+        // A Let's Go party Pokémon moved between boxes stays in the party.
+        if (!party_ && !carried_.party)
+        {
+            letsgo::swapped(save, static_cast<int>(carried_.box), carried_.slot,
+                static_cast<int>(box_), selected_);
+        }
+        letsgo::dropEmptyPartyPlaces(save);
         // Packed once both are written, so neither write lands on a shifted slot.
         if (party_ || carried_.party)
         {
@@ -371,6 +396,11 @@ namespace pksm::switchui
 
     void BoxBrowserScreen::openSelected(App& app)
     {
+        if (selectedLocked())
+        {
+            message_ = tr(Text::SlotUnavailable);
+            return;
+        }
         pksm::Sav& save = session_.save();
         const u8 slot   = static_cast<u8>(selected_);
         auto pokemon    = party_ ? save.pkm(slot) : save.pkm(static_cast<u8>(box_), slot);
@@ -386,7 +416,7 @@ namespace pksm::switchui
     void BoxBrowserScreen::draw(SwitchUi& ui)
     {
         BoxView view;
-        view.boxName    = session_.save().boxName(static_cast<u8>(box_));
+        view.boxName    = boxTitle(session_.save(), static_cast<int>(box_));
         view.boxFilled  = boxFilled_;
         view.box        = boxSlots_;
         view.party      = partySlots_;

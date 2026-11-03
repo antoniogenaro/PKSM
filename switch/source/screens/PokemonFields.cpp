@@ -3,6 +3,7 @@
 #include "SwitchUi.hpp"
 #include "domain/FieldValues.hpp"
 #include "domain/FormSprites.hpp"
+#include "domain/LetsGoStorage.hpp"
 #include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
@@ -497,11 +498,18 @@ namespace pksm::switchui
         else
         {
             save.pkm(pokemon, box, slot, false);
+            letsgo::dropEmptyPartyPlaces(save);
         }
         if (pokemon.species() != pksm::Species::None)
         {
             save.dex(pokemon);
         }
+    }
+
+    std::string boxTitle(const pksm::Sav& save, int box)
+    {
+        std::string name = save.boxName(static_cast<u8>(box));
+        return name.empty() ? tr(Text::BankBoxName, {std::to_string(box + 1)}) : name;
     }
 
     PokemonSlot pokemonSlot(const pksm::PKX* pokemon)

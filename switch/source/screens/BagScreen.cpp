@@ -13,6 +13,7 @@
 #include "ui/Text.hpp"
 #include "utils/i18n.hpp"
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <memory>
 
@@ -58,6 +59,19 @@ namespace pksm::switchui
                                       : i18n::item(language, static_cast<u16>(id));
         }
 
+        // Let's Go keeps its key items with the other items; as on the 3DS, they are not
+        // changed, removed or offered, so the story cannot lose one.
+        constexpr std::array<unsigned int, 35> LETS_GO_KEY_ITEMS{101, 102, 103, 113, 115, 121,
+            122, 123, 124, 125, 126, 127, 128, 442, 632, 651, 872, 873, 874, 875, 876, 877, 878,
+            885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895, 896};
+
+        bool fixedItem(const pksm::Sav& save, unsigned int id)
+        {
+            return save.generation() == pksm::Generation::LGPE &&
+                   std::find(LETS_GO_KEY_ITEMS.begin(), LETS_GO_KEY_ITEMS.end(), id) !=
+                       LETS_GO_KEY_ITEMS.end();
+        }
+
         // The items the save lets `pouch` hold.
         std::vector<unsigned int> allowedItems(const pksm::Sav& save, pksm::Sav::Pouch pouch)
         {
@@ -68,7 +82,9 @@ namespace pksm::switchui
             {
                 if (listed == pouch)
                 {
-                    return pouchItems(items, UINT16_MAX);
+                    std::vector<unsigned int> allowed = pouchItems(items, UINT16_MAX);
+                    std::erase_if(allowed, [&save](unsigned int id) { return fixedItem(save, id); });
+                    return allowed;
                 }
             }
             return {};
@@ -98,6 +114,13 @@ namespace pksm::switchui
                     return Text::BagPouchTreasures;
                 case pksm::Sav::Pouch::Ingredient:
                     return Text::BagPouchIngredients;
+                case pksm::Sav::Pouch::Candy:
+                    return Text::BagPouchCandies;
+                // Of the games the app opens, only Let's Go has this pouch: its power-ups.
+                case pksm::Sav::Pouch::ZCrystals:
+                    return Text::BagPouchPowerUps;
+                case pksm::Sav::Pouch::CatchingItem:
+                    return Text::BagPouchCatching;
                 default:
                     return Text::BagPouchOther;
             }
@@ -125,6 +148,8 @@ namespace pksm::switchui
                     return icons::Icon::PouchTreasures;
                 case pksm::Sav::Pouch::Ingredient:
                     return icons::Icon::PouchIngredients;
+                case pksm::Sav::Pouch::CatchingItem:
+                    return icons::Icon::PouchBalls;
                 default:
                     return icons::Icon::Bag;
             }
@@ -254,6 +279,11 @@ namespace pksm::switchui
         const pksm::Sav& save         = session_.save();
         const size_t slot             = selected_[pouch_];
         const unsigned int current    = slot < slots_.size() ? slots_[slot].id : 0;
+        if (fixedItem(save, current))
+        {
+            message_ = tr(Text::BagKeyItemFixed);
+            return;
+        }
         std::vector<unsigned int> held;
         held.reserve(slots_.size());
         for (const Slot& filled : slots_)
@@ -313,6 +343,11 @@ namespace pksm::switchui
         {
             return;
         }
+        if (fixedItem(session_.save(), slots_[slot].id))
+        {
+            message_ = tr(Text::BagKeyItemFixed);
+            return;
+        }
         // The pouch stays packed: the items after it move up one slot.
         pksm::Sav& save   = session_.save();
         const size_t last = slots_.size() - 1;
@@ -345,7 +380,7 @@ namespace pksm::switchui
         {
             return;
         }
-        if (maxCount() <= 1)
+        if (maxCount() <= 1 || fixedItem(session_.save(), slots_[slot].id))
         {
             message_ = tr(Text::BagCountFixed);
             return;
@@ -365,7 +400,7 @@ namespace pksm::switchui
         {
             return;
         }
-        if (maxCount() <= 1)
+        if (maxCount() <= 1 || fixedItem(session_.save(), slots_[slot].id))
         {
             message_ = tr(Text::BagCountFixed);
             return;
