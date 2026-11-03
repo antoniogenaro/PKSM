@@ -367,6 +367,7 @@ namespace pksm::switchui
             std::string name;
             unsigned percent = 0;
             bool complete    = false;
+            std::string count; // "12/151"
         };
         struct Cell
         {

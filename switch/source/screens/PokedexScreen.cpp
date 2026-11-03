@@ -381,7 +381,10 @@ namespace pksm::switchui
     {
         PokedexView view;
         const auto toGame = [](const dex::Progress& progress, std::string name)
-        { return PokedexView::Game{std::move(name), progress.percent(), progress.complete()}; };
+        {
+            return PokedexView::Game{std::move(name), progress.percent(), progress.complete(),
+                std::to_string(progress.registered) + "/" + std::to_string(progress.total)};
+        };
         view.global      = toGame(progress_[0], tr(Text::DexGlobal));
         view.globalNote  = tr(globalNote(form_));
         const auto games = dex::games();
