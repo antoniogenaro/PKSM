@@ -102,6 +102,10 @@ export PKM_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/pkm_spritesheet.t3x
 export PKM_SPRITESHEET_SHA256	:=	c54b464de9e56f5b04c7d679bdf0b9b6c84dbea5555bb7ae62862b1862081032
 export BALL_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/types_spritesheet.t3x
+# The Pokémon pkm_spritesheet.t3x lacks, from PKHeX's sprites (GPLv3), packed by
+# tools/pack_sprites.py.
+export EXTRA_SPRITESHEET_SOURCE	:=	$(TOPDIR)/sprites/pkm_spritesheet_extra.t3x
+export EXTRA_SPRITESHEET	:=	$(ROMFS_PATH)/sprites/pkm_spritesheet_extra.t3x
 export BALL_SPRITESHEET_URL	:=	https://cdn.sigkill.tech/assets/types_spritesheet.t3x
 export BALL_SPRITESHEET_SHA256	:=	9fbaa10fe205ce57cf8732c37f72420204f906d75c65ffaee8bf615a08e48685
 
@@ -125,7 +129,11 @@ all: $(OUTPUT).nro
 $(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp $(TOPDIR)/icon.jpg \
 		$(DEPSDIR)/i18n.stamp $(DEPSDIR)/strings.stamp $(DEPSDIR)/personal.stamp \
 		$(DEPSDIR)/fonts.stamp $(DEPSDIR)/icons.stamp $(DEPSDIR)/events.stamp \
-		$(PKM_SPRITESHEET) $(BALL_SPRITESHEET)
+		$(PKM_SPRITESHEET) $(BALL_SPRITESHEET) $(EXTRA_SPRITESHEET)
+
+$(EXTRA_SPRITESHEET): $(EXTRA_SPRITESHEET_SOURCE)
+	@mkdir -p $(dir $@)
+	@cp $< $@
 
 $(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) | $(DEPSDIR)
 	@mkdir -p $(ROMFS_PATH)/i18n

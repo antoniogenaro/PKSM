@@ -133,8 +133,8 @@ and `switch-sdl2_ttf` packages, then build from the devkitPro MSYS2 shell:
 make switch
 ```
 
-Copy `switch/pksm-switch.nro` to the SD card. Place a Sword/Shield or
-FireRed/LeafGreen save backup anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
+Copy `switch/pksm-switch.nro` to the SD card. Place a Scarlet/Violet,
+Sword/Shield, Let's Go or FireRed/LeafGreen save backup anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
 backup directory) and launch the application. In folders containing a `main`
 save, the file list shows only `main`, hiding the other files in that backup
 folder. Files in folders without `main` remain available. Core language and
@@ -177,7 +177,8 @@ full 3DS interface or a tool for accessing active game saves.
 - The whole [FlagBrew](https://github.com/FlagBrew) team for collaborating with
   us
 - [kwsch](https://github.com/kwsch) and [SciresM](https://github.com/SciresM)
-  for PKHeX, memecrypto and documentation
+  for PKHeX, memecrypto and documentation, and the PKHeX sprites the Switch
+  app uses for the Pokémon from Hisui on
 - [fincs](https://github.com/fincs) and
   [WinterMute](https://github.com/WinterMute) for citro2d and devkitARM
 - [kamronbatman](https://github.com/kamronbatman) and ProjectPokemon.org for

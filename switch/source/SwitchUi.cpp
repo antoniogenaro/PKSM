@@ -37,6 +37,9 @@ namespace pksm::switchui
         constexpr ImVec4 NO_SAVES_COLOR  = theme::vec(theme::NEUTRAL);
         constexpr char POKEMON_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet.t3x";
         constexpr char BALL_SPRITESHEET_PATH[] = "romfs:/sprites/types_spritesheet.t3x";
+        // The Pokémon the first sheet lacks, from EXTRA_FIRST_SPECIES on (tools/pack_sprites.py).
+        constexpr char EXTRA_SPRITESHEET_PATH[] = "romfs:/sprites/pkm_spritesheet_extra.t3x";
+        constexpr size_t EXTRA_FIRST_SPECIES     = 899;
         constexpr size_t BALL_SPRITE_BASE = 144;
         constexpr size_t MAX_BALL_SPRITE = 25;
 
@@ -331,6 +334,10 @@ namespace pksm::switchui
             ImGui::DestroyContext();
             imguiInitialized_ = false;
         }
+        if (extraSpritesheet_)
+        {
+            SDL_DestroyTexture(extraSpritesheet_);
+        }
         if (pokemonSpritesheet_)
         {
             SDL_DestroyTexture(pokemonSpritesheet_);
@@ -382,6 +389,8 @@ namespace pksm::switchui
         }
         if (!loadSpriteSheet(POKEMON_SPRITESHEET_PATH, tr(Text::PokemonSheet), pokemonSpritesheet_,
                 pokemonSprites_, error) ||
+            !loadSpriteSheet(EXTRA_SPRITESHEET_PATH, tr(Text::PokemonSheet), extraSpritesheet_,
+                extraSprites_, error) ||
             !loadSpriteSheet(BALL_SPRITESHEET_PATH, tr(Text::BallSheet), ballSpritesheet_, ballSprites_,
                 error))
         {
@@ -622,7 +631,22 @@ namespace pksm::switchui
             drawSprite(ballSpritesheet_, ballSprites_, formSprite, 0, destination, tint);
             return;
         }
-        drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination, tint);
+        if (index < pokemonSprites_.size())
+        {
+            drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination, tint);
+        }
+        else if (index >= EXTRA_FIRST_SPECIES)
+        {
+            drawSprite(extraSpritesheet_, extraSprites_, index - EXTRA_FIRST_SPECIES, 0,
+                destination, tint);
+        }
+    }
+
+    bool SwitchUi::hasPokemonSprite(size_t species) const
+    {
+        return species < pokemonSprites_.size() ||
+               (species >= EXTRA_FIRST_SPECIES &&
+                   species - EXTRA_FIRST_SPECIES < extraSprites_.size());
     }
 
     void SwitchUi::drawBallSprite(size_t index, const SDL_Rect& destination)
@@ -2791,7 +2815,7 @@ namespace pksm::switchui
         const auto art = [&](ImDrawList* drawList, const ImVec2& min, float side, size_t species,
                              size_t formSprite, bool registered, float radius, float question)
         {
-            const bool hasSprite = species < pokemonSprites_.size() || formSprite != 0;
+            const bool hasSprite = hasPokemonSprite(species) || formSprite != 0;
             if (registered && !hasSprite)
             {
                 // The sheets end before the newest Pokémon: the canvas's placeholder instead.
