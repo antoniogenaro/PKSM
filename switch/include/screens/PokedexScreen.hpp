@@ -14,7 +14,8 @@
 namespace pksm::switchui
 {
     // The global Pokédex: what the user has registered by saving Pokémon in the bank, game by
-    // game and form by form. ZL/ZR change the game, X and Y the filters, L/R the page.
+    // game and form by form. ZL/ZR change the game, L/R the page; X and Y open the filters'
+    // pickers.
     class PokedexScreen : public Screen
     {
     public:
@@ -30,6 +31,9 @@ namespace pksm::switchui
         // when it is still listed.
         void refresh();
         void moveFocus(Action action);
+        // Opens the option picker of the "Registro" or the "Forma" filter.
+        void pickRecordFilter(App& app);
+        void pickFormFilter(App& app);
         // The game whose names and sprites show `species`: the chosen one, or for Global the
         // newest game it appears in.
         dex::Game shownGame(uint16_t species) const;
@@ -47,6 +51,14 @@ namespace pksm::switchui
         size_t game_              = 0;
         dex::RecordFilter record_ = dex::RecordFilter::All;
         dex::FormFilter form_     = dex::FormFilter::Species;
+        // A filter touched while drawing, whose picker opens on the next update.
+        enum class Touched
+        {
+            None,
+            Record,
+            Form
+        };
+        Touched touched_ = Touched::None;
         std::vector<dex::Cell> cells_;
         size_t selected_ = 0;
         // Each game's progress, Global first, for the form filter in use.

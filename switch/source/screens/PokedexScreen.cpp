@@ -6,10 +6,14 @@
 #include "domain/PickerList.hpp"
 #include "domain/PokedexFile.hpp"
 #include "enums/Species.hpp"
+#include "screens/PickerScreens.hpp"
 #include "ui/Text.hpp"
 #include "utils/i18n.hpp"
 #include <algorithm>
 #include <cctype>
+#include <functional>
+#include <memory>
+#include <utility>
 
 namespace pksm::switchui
 {
@@ -17,13 +21,21 @@ namespace pksm::switchui
     {
         constexpr size_t PAGE = PokedexView::PAGE;
 
-        // The next value of a filter, back to the first after the last.
-        template <typename Filter>
-        Filter next(Filter filter)
+        // Opens the picker of a filter, as the other short pickers of the app, and applies the
+        // chosen value through `onPick`.
+        template <typename Filter, typename Name>
+        void pickFilter(App& app, Text title, Filter current, Name name,
+            std::function<void(Filter)> onPick)
         {
-            const auto value = static_cast<size_t>(filter) + 1;
-            return value < static_cast<size_t>(Filter::Count) ? static_cast<Filter>(value)
-                                                              : static_cast<Filter>(0);
+            std::vector<std::string> options;
+            for (size_t i = 0; i < static_cast<size_t>(Filter::Count); ++i)
+            {
+                options.emplace_back(tr(name(static_cast<Filter>(i))));
+            }
+            app.push(std::make_unique<OptionPickerScreen>(tr(title), std::move(options),
+                static_cast<size_t>(current), std::vector<size_t>{},
+                [onPick = std::move(onPick)](size_t index)
+                { onPick(static_cast<Filter>(index)); }));
         }
 
         Text globalNote(dex::FormFilter filter)
@@ -208,8 +220,45 @@ namespace pksm::switchui
         }
     }
 
+    void PokedexScreen::pickRecordFilter(App& app)
+    {
+        pickFilter<dex::RecordFilter>(app, Text::DexFilterRecord, record_, dex::recordFilterName,
+            [this](dex::RecordFilter filter)
+            {
+                if (filter != record_)
+                {
+                    record_ = filter;
+                    refresh();
+                }
+            });
+    }
+
+    void PokedexScreen::pickFormFilter(App& app)
+    {
+        pickFilter<dex::FormFilter>(app, Text::DexFilterForm, form_, dex::formFilterName,
+            [this](dex::FormFilter filter)
+            {
+                if (filter != form_)
+                {
+                    form_ = filter;
+                    refresh();
+                }
+            });
+    }
+
     void PokedexScreen::update(App& app, Action action)
     {
+        const Touched touched = std::exchange(touched_, Touched::None);
+        if (touched == Touched::Record)
+        {
+            pickRecordFilter(app);
+            return;
+        }
+        if (touched == Touched::Form)
+        {
+            pickFormFilter(app);
+            return;
+        }
         switch (action)
         {
             case Action::Back:
@@ -237,12 +286,10 @@ namespace pksm::switchui
                 refresh();
                 break;
             case Action::Discard: // X
-                record_ = next(record_);
-                refresh();
+                pickRecordFilter(app);
                 break;
             case Action::Move: // Y
-                form_ = next(form_);
-                refresh();
+                pickFormFilter(app);
                 break;
             default:
                 break;
@@ -385,13 +432,11 @@ namespace pksm::switchui
         }
         if (view.recordRequest)
         {
-            record_ = next(record_);
-            refresh();
+            touched_ = Touched::Record;
         }
-        if (view.formRequest)
+        else if (view.formRequest)
         {
-            form_ = next(form_);
-            refresh();
+            touched_ = Touched::Form;
         }
     }
 }
