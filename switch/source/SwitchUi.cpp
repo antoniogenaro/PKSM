@@ -2704,7 +2704,7 @@ namespace pksm::switchui
         constexpr float summaryArt   = 96.0f;
         constexpr unsigned SUCCESS   = theme::SUCCESS;
         constexpr unsigned DARK_BAR  = 0x3A3A38; // The global card's empty bar.
-        constexpr unsigned DARK_NOTE = 0xD6D6D3; // The global card's note.
+        constexpr unsigned DARK_NOTE = 0xD6D6D3; // The global card's count.
         constexpr unsigned SWATCH    = 0xC9C9C5; // "Registrado" in the grid's key.
         constexpr unsigned QUESTION  = 0x6B6B68; // The "?" of a slot not registered.
         // A Pokémon not registered: its sprite in a soft black.
@@ -2819,8 +2819,7 @@ namespace pksm::switchui
             const ImVec2 origin    = ImGui::GetCursorScreenPos();
             const ImVec2 available = ImGui::GetContentRegionAvail();
 
-            const float noteHeight   = size(bold, theme::FONT_CAPTION, view.globalNote).y;
-            const float globalHeight = globalPadY * 2.0f + 30.0f + 6.0f + 8.0f + 6.0f + noteHeight;
+            const float globalHeight = globalPadY * 2.0f + 30.0f + 6.0f + 8.0f;
             {
                 const ImVec2 min = origin;
                 const ImVec2 max(origin.x + available.x, origin.y + globalHeight);
@@ -2843,9 +2842,6 @@ namespace pksm::switchui
                 y += 30.0f + 6.0f;
                 bar(drawList, ImVec2(left, y), right - left, 8.0f, view.global.percent, DARK_BAR,
                     view.global.complete ? SUCCESS : theme::ACCENT);
-                y += 8.0f + 6.0f;
-                widgets::drawTextEllipsis(drawList, bold, theme::FONT_CAPTION, ImVec2(left, y),
-                    theme::rgb(DARK_NOTE), view.globalNote.c_str(), right - left);
                 if (view.game == 0)
                 {
                     widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
