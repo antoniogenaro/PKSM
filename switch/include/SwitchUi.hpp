@@ -557,14 +557,19 @@ namespace pksm::switchui
         // The species' sprite, or `formSprite` from the types sheet when it is not 0.
         void drawPokemonSprite(size_t index, const SDL_Rect& destination, size_t formSprite = 0,
             ImU32 tint = IM_COL32_WHITE);
+        // Whether either Pokémon sheet has the species.
+        bool hasPokemonSprite(size_t species) const;
         void drawBallSprite(size_t index, const SDL_Rect& destination);
 
         bool imguiInitialized_ = false;
         SDL_Window* window_ = nullptr;
         SDL_Renderer* renderer_ = nullptr;
         SDL_Texture* pokemonSpritesheet_ = nullptr;
+        // The Pokémon pkm_spritesheet.t3x lacks, from Hisui's on.
+        SDL_Texture* extraSpritesheet_ = nullptr;
         SDL_Texture* ballSpritesheet_ = nullptr;
         std::vector<PokemonSprite> pokemonSprites_;
+        std::vector<PokemonSprite> extraSprites_;
         std::vector<PokemonSprite> ballSprites_;
         PadState pad_{};
         SystemStatus status_;
