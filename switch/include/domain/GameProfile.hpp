@@ -31,6 +31,9 @@ namespace pksm::switchui
         const char* consoleSaveFile = "";
         // The SD folder that gets a backup of a console save before it is replaced.
         const char* backupFolder = "";
+        // What the trainer's points are called, Battle Points or League Points, and their most.
+        Text pointsName    = Text::TrainerBattlePoints;
+        uint32_t maxPoints = 9999;
 
         bool hasConsoleSaves() const { return consoleTitleId != 0; }
 

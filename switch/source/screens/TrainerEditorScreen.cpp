@@ -175,7 +175,7 @@ namespace pksm::switchui
             [&save](unsigned int value) { save.money(value); }, moneyText(save.money())));
         if (profile.hasBattlePoints)
         {
-            fields.push_back(counter(Text::TrainerBattlePoints, 9999, 100, [&save] { return save.BP(); },
+            fields.push_back(counter(profile.pointsName, profile.maxPoints, 100, [&save] { return save.BP(); },
                 [&save](unsigned int value) { save.BP(value); }));
         }
         return fields;

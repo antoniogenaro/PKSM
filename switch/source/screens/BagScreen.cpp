@@ -90,7 +90,7 @@ namespace pksm::switchui
             return {};
         }
 
-        Text pouchName(pksm::Sav::Pouch pouch)
+        Text pouchName(const pksm::Sav& save, pksm::Sav::Pouch pouch)
         {
             switch (pouch)
             {
@@ -114,8 +114,10 @@ namespace pksm::switchui
                     return Text::BagPouchTreasures;
                 case pksm::Sav::Pouch::Ingredient:
                     return Text::BagPouchIngredients;
+                // Scarlet and Violet keep their materials where Let's Go keeps candies.
                 case pksm::Sav::Pouch::Candy:
-                    return Text::BagPouchCandies;
+                    return save.generation() == pksm::Generation::NINE ? Text::BagPouchMaterials
+                                                                       : Text::BagPouchCandies;
                 // Of the games the app opens, only Let's Go has this pouch: its power-ups.
                 case pksm::Sav::Pouch::ZCrystals:
                     return Text::BagPouchPowerUps;
@@ -482,7 +484,7 @@ namespace pksm::switchui
         view.caption = tr(Text::BagPouchesCaption, {upper(tr(session_.profile().name))});
         for (size_t i = 0; i < pouches_.size(); ++i)
         {
-            view.pouches.push_back({tr(pouchName(pouches_[i].first)), std::to_string(filled_[i]),
+            view.pouches.push_back({tr(pouchName(session_.save(), pouches_[i].first)), std::to_string(filled_[i]),
                 pouchIcon(pouches_[i].first)});
         }
         view.pouch     = pouch_;
