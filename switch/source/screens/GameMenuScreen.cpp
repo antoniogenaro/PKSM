@@ -104,6 +104,13 @@ namespace pksm::switchui
                 message_ = tr(Text::NoBoxes);
                 return;
             }
+            // Its Pokémon have a format of their own that the bank cannot keep, and core cannot
+            // turn other Pokémon into it.
+            if (session_->save().version() == pksm::GameVersion::PLA)
+            {
+                message_ = tr(Text::BankUnavailableLegends);
+                return;
+            }
             std::string error;
             PokemonBank* bank = session_->bank(error);
             if (!bank)
@@ -125,7 +132,8 @@ namespace pksm::switchui
         else if (selected_ == EVENTS_ITEM)
         {
             // Only Sword and Shield cards are packed.
-            if (session_->save().generation() != pksm::Generation::EIGHT ||
+            const pksm::GameVersion version = session_->save().version();
+            if ((version != pksm::GameVersion::SW && version != pksm::GameVersion::SH) ||
                 session_->save().maxBoxes() == 0)
             {
                 message_ = tr(Text::OptionUnavailable);
