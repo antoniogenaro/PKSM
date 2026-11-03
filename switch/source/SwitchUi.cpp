@@ -2755,8 +2755,8 @@ namespace pksm::switchui
             checkMark(drawList, ImVec2(left - 16.0f, top + (height - 12.0f) * 0.5f), 12.0f,
                 SUCCESS, 2.2f);
         };
-        // A Pokémon's picture: its sprite, or its silhouette in a dashed box when it is not
-        // registered ("?" when there is no sprite to draw it from).
+        // A Pokémon's picture: its sprite, or its silhouette when it is not registered (a dashed
+        // "?" box when there is no sprite to draw it from).
         const auto art = [&](ImDrawList* drawList, const ImVec2& min, float side, size_t species,
                              size_t formSprite, bool registered, float radius, float question)
         {
@@ -2777,18 +2777,16 @@ namespace pksm::switchui
                     formSprite);
                 return;
             }
-            widgets::drawDashedRect(drawList, min, ImVec2(min.x + side, min.y + side), radius, 2.0f,
-                theme::DASHED, 5.0f, 3.0f);
             if (hasSprite)
             {
-                const float inset = side * 0.1f;
                 drawPokemonSprite(species,
-                    {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
-                        static_cast<int>(side - inset * 2.0f),
-                        static_cast<int>(side - inset * 2.0f)},
+                    {static_cast<int>(min.x), static_cast<int>(min.y), static_cast<int>(side),
+                        static_cast<int>(side)},
                     formSprite, SILHOUETTE);
                 return;
             }
+            widgets::drawDashedRect(drawList, min, ImVec2(min.x + side, min.y + side), radius, 2.0f,
+                theme::DASHED, 5.0f, 3.0f);
             const ImVec2 mark = size(bold, question, "?");
             drawList->AddText(bold, question,
                 ImVec2(std::round(min.x + (side - mark.x) * 0.5f),
@@ -2918,13 +2916,13 @@ namespace pksm::switchui
             const float right      = origin.x + available.x;
             float y                = origin.y;
 
-            // The game's name, and the key: a registered slot and one that is not.
+            // The game's name, and the key: a registered slot and a silhouette.
             {
                 float x = rightText(drawList, bold, 12.0f, right, y, captionRow, theme::TEXT_MUTED,
                     tr(Text::DexUnregistered));
                 x -= 6.0f + 12.0f;
-                widgets::drawDashedRect(drawList, ImVec2(x, y + 4.0f), ImVec2(x + 12.0f, y + 16.0f),
-                    3.0f, 2.0f, theme::DASHED, 3.0f, 2.0f);
+                drawList->AddRectFilled(
+                    ImVec2(x, y + 4.0f), ImVec2(x + 12.0f, y + 16.0f), SILHOUETTE, 3.0f);
                 x = rightText(drawList, bold, 12.0f, x - 14.0f, y, captionRow, theme::TEXT_MUTED,
                     tr(Text::DexRegistered));
                 x -= 6.0f + 12.0f;
