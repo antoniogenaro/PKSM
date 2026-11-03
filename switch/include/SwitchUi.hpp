@@ -397,7 +397,6 @@ namespace pksm::switchui
         // The "Global" card first, then the games. `game` is 0 for Global and 1 onwards for
         // `games`; a touch on one changes it.
         Game global;
-        std::string globalNote; // "Todas las formas de todos los juegos"
         std::vector<Game> games;
         size_t game = 0;
 

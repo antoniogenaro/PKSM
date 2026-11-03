@@ -38,19 +38,6 @@ namespace pksm::switchui
                 { onPick(static_cast<Filter>(index)); }));
         }
 
-        Text globalNote(dex::FormFilter filter)
-        {
-            switch (filter)
-            {
-                case dex::FormFilter::Shiny:
-                    return Text::DexGlobalShiny;
-                case dex::FormFilter::AllForms:
-                    return Text::DexGlobalForms;
-                default:
-                    return Text::DexGlobalSpecies;
-            }
-        }
-
         std::string upper(std::string text)
         {
             // The game names are ASCII but for "Púrpura", whose accented letter is kept.
@@ -386,7 +373,6 @@ namespace pksm::switchui
                 std::to_string(progress.registered) + "/" + std::to_string(progress.total)};
         };
         view.global      = toGame(progress_[0], tr(Text::DexGlobal));
-        view.globalNote  = tr(globalNote(form_));
         const auto games = dex::games();
         for (size_t i = 0; i < games.size(); ++i)
         {
