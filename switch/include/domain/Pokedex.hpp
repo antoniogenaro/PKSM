@@ -153,7 +153,8 @@ namespace pksm::switchui::dex
     };
 
     // How much of `game` is registered, counted as `form` says: species, shiny forms or forms.
-    // Without a game, the sums over every game.
+    // Without a game, each species or form once, registered when any game has it, as the global
+    // grid lists them.
     Progress progress(const Records& records, std::optional<Game> game, FormFilter form);
 
     // Whether any non-shiny form (or shiny form, with `shiny`) of `species` is registered in

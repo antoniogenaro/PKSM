@@ -534,14 +534,14 @@ namespace pksm::switchui::dex
     {
         if (!game)
         {
-            Progress sum;
-            for (const Game each : games())
+            // Each species, or form, once: what the global grid lists.
+            Progress result;
+            for (const Cell& cell : cells(records, std::nullopt, RecordFilter::All, form))
             {
-                const Progress part = progress(records, each, form);
-                sum.registered     += part.registered;
-                sum.total          += part.total;
+                ++result.total;
+                result.registered += cell.registered ? 1 : 0;
             }
-            return sum;
+            return result;
         }
         Progress result;
         const bool shiny = form == FormFilter::Shiny;

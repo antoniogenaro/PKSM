@@ -554,13 +554,12 @@ namespace
                   svSpecies.total == gameSpecies(Game::ScarletViolet).size(),
             "a game's progress counts its species");
         const Progress global = progress(records, std::nullopt, FormFilter::Species);
-        size_t everySpecies = 0;
-        for (const Game game : games())
-        {
-            everySpecies += gameSpecies(game).size();
-        }
-        check(global.registered == 1 && global.total == everySpecies,
-            "the global progress sums every game");
+        check(global.registered == 1 && global.total == allSpecies().size(),
+            "the global progress counts each species once");
+        const Progress everyForm = progress(records, std::nullopt, FormFilter::AllForms);
+        check(everyForm.total ==
+                  cells(records, std::nullopt, RecordFilter::All, FormFilter::AllForms).size(),
+            "the global progress counts each form once");
         check(progress(records, Game::ScarletViolet, FormFilter::Shiny).registered == 1,
             "shiny forms have their own progress");
         check(Progress{199, 200}.percent() == 99 && Progress{200, 200}.percent() == 100 &&
