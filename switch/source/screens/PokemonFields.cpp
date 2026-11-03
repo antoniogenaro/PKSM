@@ -386,7 +386,8 @@ namespace pksm::switchui
                 [&pokemon] { return static_cast<unsigned int>(pokemon.eggLocation()); },
                 [&pokemon](unsigned int value) { pokemon.eggLocation(static_cast<u16>(value)); }));
         }
-        if (generation == pksm::Generation::EIGHT)
+        // Legends: Arceus's Pokémon are generation VIII too, in a format of their own.
+        if (generation == pksm::Generation::EIGHT && pokemon.extension() == ".pk8")
         {
             auto& pk8 = static_cast<pksm::PK8&>(pokemon);
             more.push_back(counterField(tr(Text::FieldEnjoyment), tr(Text::FieldEnjoyment), 255,

@@ -7,7 +7,7 @@ namespace pksm::switchui
 {
     namespace
     {
-        constexpr std::array<GameProfile, 8> PROFILES{{
+        constexpr std::array<GameProfile, 9> PROFILES{{
             {pksm::GameVersion::FR, Text::GameFireRed, Text::GroupGen3Gba, 6, false, 999999, 7, 5,
                 0xE23D28},
             {pksm::GameVersion::LG, Text::GameLeafGreen, Text::GroupGen3Gba, 3, false, 999999, 7,
@@ -22,6 +22,8 @@ namespace pksm::switchui
                 9999999, 12, 12, 0x2FA7E0, 0x0100ABF008968000, "/main", "Sword"},
             {pksm::GameVersion::SH, Text::GameShield, Text::GroupGen8SwordShield, 889, true,
                 9999999, 12, 12, 0xD6405A, 0x01008DB008C2C000, "/main", "Shield"},
+            {pksm::GameVersion::PLA, Text::GameLegendsArceus, Text::GroupGen8Legends, 493, false,
+                9999999, 12, 12, 0xC9A94E, 0x01001F5010DFA000, "/main", "Legends Arceus"},
             {pksm::GameVersion::SL, Text::GameScarlet, Text::GroupGen9ScarletViolet, 1007, true,
                 9999999, 12, 12, 0xD9382E, 0x0100A3D008C5C000, "/main", "Scarlet",
                 Text::TrainerLeaguePoints, 9999999},

@@ -33,9 +33,11 @@
     X(GameLetsGoEevee)                                                                             \
     X(GameScarlet)                                                                                 \
     X(GameViolet)                                                                                  \
+    X(GameLegendsArceus)                                                                           \
     X(GroupGen3Gba)                                                                                \
     X(GroupGen7LetsGo)                                                                             \
     X(GroupGen8SwordShield)                                                                        \
+    X(GroupGen8Legends)                                                                            \
     X(GroupGen9ScarletViolet)                                                                      \
     /* Start-up */                                                                                \
     X(SdlInitFailed)                                                                               \
@@ -164,6 +166,7 @@
     X(PokemonCloning)                                                                              \
     X(CloneNeedsEmptySlot)                                                                         \
     X(PartyNeedsPokemon)                                                                           \
+    X(BankUnavailableLegends)                                                                      \
     X(SlotUnavailable)                                                                             \
     /* Bank */                                                                                     \
     X(BankTitle)                                                                                   \
@@ -284,6 +287,7 @@
     X(BagPouchPowerUps)                                                                            \
     X(BagPouchCatching)                                                                            \
     X(BagPouchMaterials)                                                                           \
+    X(BagPouchRecipes)                                                                             \
     X(BagKeyItemFixed)                                                                             \
     X(BagItemCount)                                                                                \
     X(BagAddItem)                                                                                  \
