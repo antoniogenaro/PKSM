@@ -546,11 +546,13 @@ namespace pksm::switchui
 
         bool loadSpriteSheet(const char* path, const std::string& name, SDL_Texture*& texture,
             std::vector<PokemonSprite>& sprites, std::string& error);
+        // `tint` multiplies the sprite's colours: white keeps them, black makes a silhouette.
         void drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,
-            size_t index, size_t baseIndex, const SDL_Rect& destination);
+            size_t index, size_t baseIndex, const SDL_Rect& destination,
+            ImU32 tint = IM_COL32_WHITE);
         // The species' sprite, or `formSprite` from the types sheet when it is not 0.
-        void drawPokemonSprite(
-            size_t index, const SDL_Rect& destination, size_t formSprite = 0);
+        void drawPokemonSprite(size_t index, const SDL_Rect& destination, size_t formSprite = 0,
+            ImU32 tint = IM_COL32_WHITE);
         void drawBallSprite(size_t index, const SDL_Rect& destination);
 
         bool imguiInitialized_ = false;
