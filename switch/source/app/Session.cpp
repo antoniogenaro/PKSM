@@ -1,6 +1,7 @@
 #include "app/Session.hpp"
 
 #include "domain/GameProfile.hpp"
+#include "domain/LetsGoStorage.hpp"
 #include "domain/PokedexFile.hpp"
 #include "domain/PokemonBank.hpp"
 #include "platform/SaveStorage.hpp"
@@ -113,15 +114,20 @@ namespace pksm::switchui
         {
             bool written = false;
             save_->finishEditing();
+            // Let's Go writes a packed copy; the other games their save as it is.
+            std::shared_ptr<u8[]> bytes = letsgo::packedForWriting(*save_);
+            if (!bytes)
+            {
+                bytes = save_->rawData();
+            }
+            const size_t size = save_->getEntireLengthIncludingFooter();
             if (console_)
             {
-                written = console::writeSave(*console_, save_->rawData().get(),
-                    save_->getEntireLengthIncludingFooter(), outputPath, error);
+                written = console::writeSave(*console_, bytes.get(), size, outputPath, error);
             }
             else
             {
-                written = storage::writeSaveFile(sourcePath_, save_->rawData().get(),
-                    save_->getEntireLengthIncludingFooter(), error);
+                written = storage::writeSaveFile(sourcePath_, bytes.get(), size, error);
                 outputPath = sourcePath_;
             }
             save_->beginEditing();

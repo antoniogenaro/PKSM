@@ -29,7 +29,10 @@
     X(GameShield)                                                                                  \
     X(GameFireRed)                                                                                 \
     X(GameLeafGreen)                                                                               \
+    X(GameLetsGoPikachu)                                                                           \
+    X(GameLetsGoEevee)                                                                             \
     X(GroupGen3Gba)                                                                                \
+    X(GroupGen7LetsGo)                                                                             \
     X(GroupGen8SwordShield)                                                                        \
     /* Start-up */                                                                                \
     X(SdlInitFailed)                                                                               \
@@ -158,6 +161,7 @@
     X(PokemonCloning)                                                                              \
     X(CloneNeedsEmptySlot)                                                                         \
     X(PartyNeedsPokemon)                                                                           \
+    X(SlotUnavailable)                                                                             \
     /* Bank */                                                                                     \
     X(BankTitle)                                                                                   \
     X(BankBankLabel)                                                                               \
@@ -272,6 +276,10 @@
     X(BagPouchTreasures)                                                                           \
     X(BagPouchIngredients)                                                                         \
     X(BagPouchOther)                                                                               \
+    X(BagPouchCandies)                                                                             \
+    X(BagPouchPowerUps)                                                                            \
+    X(BagPouchCatching)                                                                            \
+    X(BagKeyItemFixed)                                                                             \
     X(BagItemCount)                                                                                \
     X(BagAddItem)                                                                                  \
     X(BagRemoveItem)                                                                               \

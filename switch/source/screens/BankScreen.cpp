@@ -3,6 +3,7 @@
 #include "app/App.hpp"
 #include "app/Session.hpp"
 #include "domain/GameProfile.hpp"
+#include "domain/LetsGoStorage.hpp"
 #include "domain/PokemonBank.hpp"
 #include "pkx/PKX.hpp"
 #include "sav/Sav.hpp"
@@ -72,6 +73,10 @@ namespace pksm::switchui
         const int slot = static_cast<int>(place.slot);
         if (place.game)
         {
+            if (!letsgo::slotExists(session_.save(), place.box, place.slot))
+            {
+                return nullptr;
+            }
             auto pokemon = session_.save().pkm(static_cast<u8>(place.box), static_cast<u8>(slot));
             if (!pokemon || pokemon->species() == pksm::Species::None)
             {
@@ -96,6 +101,12 @@ namespace pksm::switchui
                 bool readable  = true;
                 const auto pkm = read({game, box, slot}, readable);
                 slots.push_back(pokemonSlot(pkm.get()));
+                if (game)
+                {
+                    const pksm::Sav& save    = session_.save();
+                    slots.back().locked     = !letsgo::slotExists(save, box, slot);
+                    slots.back().partyPlace = letsgo::partyPlace(save, box, slot);
+                }
                 filled += pkm || !readable ? 1 : 0;
             }
         };
@@ -321,6 +332,12 @@ namespace pksm::switchui
 
     void BankScreen::place()
     {
+        const Place to = selectedPlace();
+        if (to.game && !letsgo::slotExists(session_.save(), to.box, to.slot))
+        {
+            message_ = tr(Text::SlotUnavailable);
+            return;
+        }
         if (carried_.clone)
         {
             placeClone();
@@ -410,6 +427,15 @@ namespace pksm::switchui
             targetOut = std::move(target);
         }
 
+        // A Let's Go party Pokémon leaving the save for an empty bank slot leaves the party.
+        pksm::Sav& game = session_.save();
+        if (from.game && !to.game && !targetOut &&
+            letsgo::partyPlace(game, from.box, from.slot) != 0 && game.partyCount() <= 1)
+        {
+            message_ = tr(Text::PartyNeedsPokemon);
+            return;
+        }
+
         // Converting cannot be undone, so it waits for a second press on the same slot.
         if (changing && !(confirming_ && confirmTarget_ == to))
         {
@@ -423,6 +449,12 @@ namespace pksm::switchui
 
         write(to, movingOut.get(), !from.game);
         write(from, targetOut.get(), !to.game);
+        // A Let's Go party Pokémon moved between boxes stays in the party.
+        if (from.game && to.game)
+        {
+            letsgo::swapped(game, from.box, from.slot, to.box, to.slot);
+        }
+        letsgo::dropEmptyPartyPlaces(game);
 
         // The Pokémon that was in the slot is now where the carried one came from, and stays in
         // hand: B leaves it there, A or Y takes it on.
@@ -459,6 +491,11 @@ namespace pksm::switchui
         const u8 box    = static_cast<u8>(place.box);
         if (pokemon)
         {
+            // A Let's Go Pokémon in a box may be in the party too.
+            if (save.generation() == pksm::Generation::LGPE)
+            {
+                pokemon->updatePartyData();
+            }
             pokemon->refreshChecksum();
             // As the 3DS does, a Pokémon from the bank meets its new trainer.
             save.pkm(*pokemon, box, static_cast<u8>(slot), fromBank);
@@ -530,7 +567,7 @@ namespace pksm::switchui
         view.bank.filled  = bankFilled_;
         view.bank.slots   = bankSlots_;
         view.game.source  = tr(session_.profile().name);
-        view.game.boxName = session_.save().boxName(static_cast<u8>(gameBox_));
+        view.game.boxName = boxTitle(session_.save(), gameBox_);
         view.game.filled  = gameFilled_;
         view.game.slots   = gameSlots_;
         view.inGame       = inGame_;

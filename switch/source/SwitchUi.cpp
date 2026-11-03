@@ -55,6 +55,35 @@ namespace pksm::switchui
             0xB6A136, 0xA6B91A, 0x735797, 0xB7B7CE, 0xEE8130, 0x6390F0, 0x7AC74C, 0xF7D02C,
             0xF95587, 0x96D9D6, 0x6F35FC, 0x705746, 0xD685AD};
 
+        // Marks over a box slot: a slot the save does not have, and the party place of a
+        // Let's Go Pokémon, which stays in its box while in the party.
+        void drawSlotMarks(
+            ImDrawList* drawList, const PokemonSlot& slot, const ImVec2& min, const ImVec2& max,
+            float radius)
+        {
+            if (slot.locked)
+            {
+                drawList->AddRectFilled(min, max, theme::rgb(theme::BORDER), radius);
+                const float inset = (max.x - min.x) * 0.3f;
+                drawList->AddLine(ImVec2(min.x + inset, max.y - inset),
+                    ImVec2(max.x - inset, min.y + inset), theme::rgb(theme::TEXT_MUTED, 120),
+                    2.0f);
+            }
+            if (slot.partyPlace != 0)
+            {
+                const float radiusBadge = std::max(9.0f, (max.x - min.x) * 0.14f);
+                const ImVec2 centre(max.x - radiusBadge - 3.0f, max.y - radiusBadge - 3.0f);
+                drawList->AddCircleFilled(centre, radiusBadge, theme::rgb(theme::ACCENT), 20);
+                ImFont* bold         = theme::boldFont();
+                const float px       = radiusBadge * 1.3f;
+                const std::string number = std::to_string(slot.partyPlace);
+                const ImVec2 size    = bold->CalcTextSizeA(px, FLT_MAX, 0.0f, number.c_str());
+                drawList->AddText(bold, px,
+                    ImVec2(std::round(centre.x - size.x * 0.5f), std::round(centre.y - size.y * 0.5f)),
+                    theme::rgb(theme::ON_DARK), number.c_str());
+            }
+        }
+
         unsigned typeColor(size_t type)
         {
             return type < std::size(TYPE_COLORS) ? TYPE_COLORS[type] : theme::NEUTRAL;
@@ -1147,6 +1176,7 @@ namespace pksm::switchui
                     static_cast<int>(size - inset * 2.0f), static_cast<int>(size - inset * 2.0f)},
                 slot.formSprite);
         }
+        drawSlotMarks(drawList, slot, min, max, theme::CARD_RADIUS);
         if (selected)
         {
             widgets::drawSelectionOutline(drawList, min, max, theme::CARD_RADIUS);
@@ -1702,6 +1732,7 @@ namespace pksm::switchui
                             static_cast<int>(tile - 4.0f), static_cast<int>(tile - 4.0f)},
                         pokemon.formSprite);
                 }
+                drawSlotMarks(drawList, pokemon, slot, max, tileRadius);
                 if (view.carriedShown && view.carriedInGame == game && view.carriedSlot == i)
                 {
                     // Where the carried Pokémon came from: dimmed, with a thin accent outline.

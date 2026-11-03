@@ -108,6 +108,10 @@ namespace pksm::switchui
         size_t species = 0;
         // The types sheet's sprite for the form, or 0 for the species' own sprite.
         size_t formSprite = 0;
+        // A box slot the save does not have, such as the last 20 of Let's Go's last box.
+        bool locked = false;
+        // The party place (1 to 6) of a Let's Go Pokémon in a box, or 0.
+        size_t partyPlace = 0;
     };
 
     // What the box screen shows of the selected Pokémon.
