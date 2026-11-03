@@ -535,7 +535,7 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawSprite(SDL_Texture* texture, const std::vector<PokemonSprite>& sprites,
-        size_t index, size_t baseIndex, const SDL_Rect& destination)
+        size_t index, size_t baseIndex, const SDL_Rect& destination, ImU32 tint)
     {
         if (!texture || index > std::numeric_limits<size_t>::max() - baseIndex)
         {
@@ -578,11 +578,11 @@ namespace pksm::switchui
             bottomLeft, ImVec2(uvTopLeft.x / sprite.sheetWidth, uvTopLeft.y / sprite.sheetHeight),
             ImVec2(uvTopRight.x / sprite.sheetWidth, uvTopRight.y / sprite.sheetHeight),
             ImVec2(uvBottomRight.x / sprite.sheetWidth, uvBottomRight.y / sprite.sheetHeight),
-            ImVec2(uvBottomLeft.x / sprite.sheetWidth, uvBottomLeft.y / sprite.sheetHeight));
+            ImVec2(uvBottomLeft.x / sprite.sheetWidth, uvBottomLeft.y / sprite.sheetHeight), tint);
     }
 
     void SwitchUi::drawPokemonSprite(
-        size_t index, const SDL_Rect& destination, size_t formSprite)
+        size_t index, const SDL_Rect& destination, size_t formSprite, ImU32 tint)
     {
         if (index == 0)
         {
@@ -590,10 +590,10 @@ namespace pksm::switchui
         }
         if (formSprite != 0 && formSprite < ballSprites_.size())
         {
-            drawSprite(ballSpritesheet_, ballSprites_, formSprite, 0, destination);
+            drawSprite(ballSpritesheet_, ballSprites_, formSprite, 0, destination, tint);
             return;
         }
-        drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination);
+        drawSprite(pokemonSpritesheet_, pokemonSprites_, index, 0, destination, tint);
     }
 
     void SwitchUi::drawBallSprite(size_t index, const SDL_Rect& destination)
@@ -2707,6 +2707,8 @@ namespace pksm::switchui
         constexpr unsigned DARK_NOTE = 0xD6D6D3; // The global card's note.
         constexpr unsigned SWATCH    = 0xC9C9C5; // "Registrado" in the grid's key.
         constexpr unsigned QUESTION  = 0x6B6B68; // The "?" of a slot not registered.
+        // A Pokémon not registered: its sprite in a soft black.
+        const ImU32 SILHOUETTE = IM_COL32(0, 0, 0, 150);
         constexpr ImGuiWindowFlags fixed =
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -2753,11 +2755,13 @@ namespace pksm::switchui
             checkMark(drawList, ImVec2(left - 16.0f, top + (height - 12.0f) * 0.5f), 12.0f,
                 SUCCESS, 2.2f);
         };
-        // A Pokémon's picture: its sprite, or a dashed "?" box when it is not registered.
+        // A Pokémon's picture: its sprite, or its silhouette in a dashed box when it is not
+        // registered ("?" when there is no sprite to draw it from).
         const auto art = [&](ImDrawList* drawList, const ImVec2& min, float side, size_t species,
                              size_t formSprite, bool registered, float radius, float question)
         {
-            if (registered && species >= pokemonSprites_.size() && formSprite == 0)
+            const bool hasSprite = species < pokemonSprites_.size() || formSprite != 0;
+            if (registered && !hasSprite)
             {
                 // The sheets end before the newest Pokémon: the canvas's placeholder instead.
                 const float inset = side * 0.1f;
@@ -2775,6 +2779,16 @@ namespace pksm::switchui
             }
             widgets::drawDashedRect(drawList, min, ImVec2(min.x + side, min.y + side), radius, 2.0f,
                 theme::DASHED, 5.0f, 3.0f);
+            if (hasSprite)
+            {
+                const float inset = side * 0.1f;
+                drawPokemonSprite(species,
+                    {static_cast<int>(min.x + inset), static_cast<int>(min.y + inset),
+                        static_cast<int>(side - inset * 2.0f),
+                        static_cast<int>(side - inset * 2.0f)},
+                    formSprite, SILHOUETTE);
+                return;
+            }
             const ImVec2 mark = size(bold, question, "?");
             drawList->AddText(bold, question,
                 ImVec2(std::round(min.x + (side - mark.x) * 0.5f),
