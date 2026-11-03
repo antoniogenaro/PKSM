@@ -2688,7 +2688,7 @@ namespace pksm::switchui
 
     void SwitchUi::drawPokedex(PokedexView& view)
     {
-        // The canvas Pokédex: the games in a 250 pixel panel, an 8 x 7 grid, and a 340 pixel
+        // The canvas Pokédex: the games in a 250 pixel panel, a 9 x 7 grid, and a 340 pixel
         // summary of the focused Pokémon.
         constexpr float gamesWidth   = 250.0f;
         constexpr float summaryWidth = 340.0f;
