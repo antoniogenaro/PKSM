@@ -321,9 +321,6 @@
     X(DexGameScarletViolet)                                                                       \
     X(DexGameLegendsZA)                                                                           \
     X(DexGlobal)                                                                                  \
-    X(DexGlobalSpecies)                                                                           \
-    X(DexGlobalShiny)                                                                             \
-    X(DexGlobalForms)                                                                             \
     X(DexGlobalCaption)                                                                           \
     X(DexFilterRecord)                                                                            \
     X(DexFilterForm)                                                                              \
