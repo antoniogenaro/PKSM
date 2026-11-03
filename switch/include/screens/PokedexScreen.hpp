@@ -30,6 +30,8 @@ namespace pksm::switchui
         // Lists the cells again for the game and filters, keeping the focus on the same Pokémon
         // when it is still listed.
         void refresh();
+        // Shows another game from its first page.
+        void changeGame(size_t game);
         void moveFocus(Action action);
         // Opens the option picker of the "Registro" or the "Forma" filter.
         void pickRecordFilter(App& app);
