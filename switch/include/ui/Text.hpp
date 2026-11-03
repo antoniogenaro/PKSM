@@ -31,9 +31,12 @@
     X(GameLeafGreen)                                                                               \
     X(GameLetsGoPikachu)                                                                           \
     X(GameLetsGoEevee)                                                                             \
+    X(GameScarlet)                                                                                 \
+    X(GameViolet)                                                                                  \
     X(GroupGen3Gba)                                                                                \
     X(GroupGen7LetsGo)                                                                             \
     X(GroupGen8SwordShield)                                                                        \
+    X(GroupGen9ScarletViolet)                                                                      \
     /* Start-up */                                                                                \
     X(SdlInitFailed)                                                                               \
     X(WindowFailed)                                                                                \
@@ -245,6 +248,7 @@
     X(TrainerSid)                                                                                  \
     X(TrainerMoney)                                                                                \
     X(TrainerBattlePoints)                                                                         \
+    X(TrainerLeaguePoints)                                                                         \
     X(TrainerPlayTime)                                                                             \
     X(TrainerPlayTimeTitle)                                                                        \
     X(MoneyValue)                                                                                  \
@@ -279,6 +283,7 @@
     X(BagPouchCandies)                                                                             \
     X(BagPouchPowerUps)                                                                            \
     X(BagPouchCatching)                                                                            \
+    X(BagPouchMaterials)                                                                           \
     X(BagKeyItemFixed)                                                                             \
     X(BagItemCount)                                                                                \
     X(BagAddItem)                                                                                  \
