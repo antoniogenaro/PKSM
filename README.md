@@ -158,7 +158,7 @@ A types it and − takes the item out; items are not moved, and the bag neither
 saves nor discards. − or the Pokédex button on the game list opens the global
 Pokédex: every Pokémon in the bank is registered, by game and by form, when the
 bank is saved, in `/switch/pksm-banks/pokedex.json`. ZL/ZR change the game, X and
-Y the registered and form filters, and L/R the page. This remains an early controller-driven proof of concept, not the
+Y open the pickers of the registered and form filters, and L/R the page. This remains an early controller-driven proof of concept, not the
 full 3DS interface or a tool for accessing active game saves.
 
 ## Credits
