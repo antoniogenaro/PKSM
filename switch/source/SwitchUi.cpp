@@ -2688,13 +2688,13 @@ namespace pksm::switchui
 
     void SwitchUi::drawPokedex(PokedexView& view)
     {
-        // The canvas Pokédex: the games in a 250 pixel panel, a 7 x 6 grid, and a 340 pixel
+        // The canvas Pokédex: the games in a 250 pixel panel, an 8 x 7 grid, and a 340 pixel
         // summary of the focused Pokémon.
         constexpr float gamesWidth   = 250.0f;
         constexpr float summaryWidth = 340.0f;
-        constexpr float cellGap      = 6.0f;
-        constexpr float cellRadius   = 12.0f;
-        constexpr float cellArt      = 44.0f;
+        constexpr float cellGap      = 5.0f;
+        constexpr float cellRadius   = 10.0f;
+        constexpr float cellNumber   = 12.0f; // The number's font size.
         constexpr float filterHeight = 38.0f;
         constexpr float captionRow   = 20.0f;
         constexpr float pageRow      = 18.0f;
@@ -2991,6 +2991,9 @@ namespace pksm::switchui
             const float rows       = static_cast<float>(PokedexView::ROWS);
             const float cellWidth  = (available.x - cellGap * (columns - 1.0f)) / columns;
             const float cellHeight = (gridBottom - y - cellGap * (rows - 1.0f)) / rows;
+            // The sprite fills the cell above its number, but for a 4 pixel margin.
+            const float cellArt = std::floor(std::min(cellWidth - 8.0f,
+                cellHeight - 8.0f - 2.0f - size(bold, cellNumber, "0").y));
             if (view.cells.empty())
             {
                 ImGui::SetCursorScreenPos(ImVec2(origin.x, y + 12.0f));
@@ -3016,14 +3019,14 @@ namespace pksm::switchui
                 ImGui::PopID();
                 drawList->AddRectFilled(min, max, theme::rgb(theme::CARD), cellRadius);
 
-                const ImVec2 number = size(bold, 12.0f, cell.number);
-                const float block   = cellArt + 4.0f + number.y;
+                const ImVec2 number = size(bold, cellNumber, cell.number);
+                const float block   = cellArt + 2.0f + number.y;
                 const float top     = min.y + (cellHeight - block) * 0.5f;
                 art(drawList, ImVec2(std::round(min.x + (cellWidth - cellArt) * 0.5f), top),
                     cellArt, cell.species, cell.formSprite, cell.registered, 10.0f, 20.0f);
-                drawList->AddText(bold, 12.0f,
+                drawList->AddText(bold, cellNumber,
                     ImVec2(std::round(min.x + (cellWidth - number.x) * 0.5f),
-                        std::round(top + cellArt + 4.0f)),
+                        std::round(top + cellArt + 2.0f)),
                     theme::rgb(cell.registered ? theme::TEXT : theme::TEXT_MUTED),
                     cell.number.c_str());
                 if (!cell.badge.empty())
