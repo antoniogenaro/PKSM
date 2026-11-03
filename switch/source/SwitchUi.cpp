@@ -2835,8 +2835,11 @@ namespace pksm::switchui
                 float y           = min.y + globalPadY;
                 centredText(drawList, bold, theme::FONT_CAPTION, left, y, 30.0f, theme::ON_DARK,
                     view.global.name);
-                rightText(drawList, bold, 30.0f, right, y, 30.0f, theme::ON_DARK,
-                    percentText(view.global.percent));
+                // The count, between the name and the percentage.
+                const float percentLeft = rightText(drawList, bold, 30.0f, right, y, 30.0f,
+                    theme::ON_DARK, percentText(view.global.percent));
+                rightText(drawList, bold, theme::FONT_CAPTION, percentLeft - 10.0f, y + 4.0f,
+                    30.0f, DARK_NOTE, view.global.count);
                 y += 30.0f + 6.0f;
                 bar(drawList, ImVec2(left, y), right - left, 8.0f, view.global.percent, DARK_BAR,
                     view.global.complete ? SUCCESS : theme::ACCENT);
@@ -2870,7 +2873,8 @@ namespace pksm::switchui
 
                 const float left    = min.x + 12.0f;
                 const float right   = max.x - 12.0f;
-                const float block   = 20.0f + 6.0f + 6.0f;
+                const float countPx = 12.0f;
+                const float block   = 20.0f + 4.0f + countPx;
                 const float top     = min.y + (rowHeight - block) * 0.5f;
                 float nameRight     = right;
                 if (game.complete)
@@ -2894,7 +2898,12 @@ namespace pksm::switchui
                 const unsigned fill = game.complete ? SUCCESS
                                       : selected    ? theme::ACCENT
                                                     : theme::TEXT;
-                bar(drawList, ImVec2(left, top + 26.0f), right - left, 6.0f,
+                // The bar, and the count at its end: "12/151".
+                const float barTop = top + 24.0f;
+                const float barEnd = rightText(drawList, bold, countPx, right, barTop, countPx,
+                                         theme::TEXT_MUTED, game.count) -
+                                     8.0f;
+                bar(drawList, ImVec2(left, barTop + (countPx - 6.0f) * 0.5f), barEnd - left, 6.0f,
                     game.complete ? 100u : game.percent, theme::BORDER, fill);
                 if (selected)
                 {
