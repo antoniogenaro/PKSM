@@ -358,7 +358,7 @@ namespace pksm::switchui
     // game's Pokémon, and the focused one's summary.
     struct PokedexView
     {
-        static constexpr size_t COLUMNS = 8;
+        static constexpr size_t COLUMNS = 9;
         static constexpr size_t ROWS    = 7;
         static constexpr size_t PAGE    = COLUMNS * ROWS;
 
