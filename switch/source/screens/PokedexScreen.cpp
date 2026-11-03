@@ -177,6 +177,15 @@ namespace pksm::switchui
         selected_ = index;
     }
 
+    void PokedexScreen::changeGame(size_t game)
+    {
+        game_ = game;
+        // Without cells to stay on, refresh() starts from the first one.
+        cells_.clear();
+        selected_ = 0;
+        refresh();
+    }
+
     void PokedexScreen::moveFocus(Action action)
     {
         if (cells_.empty())
@@ -278,12 +287,10 @@ namespace pksm::switchui
                 selected_ = turnPage(selected_, cells_.size(), PAGE, 1);
                 break;
             case Action::PreviousTab:
-                game_ = game_ == 0 ? dex::GAME_COUNT : game_ - 1;
-                refresh();
+                changeGame(game_ == 0 ? dex::GAME_COUNT : game_ - 1);
                 break;
             case Action::NextTab:
-                game_ = game_ >= dex::GAME_COUNT ? 0 : game_ + 1;
-                refresh();
+                changeGame(game_ >= dex::GAME_COUNT ? 0 : game_ + 1);
                 break;
             case Action::Discard: // X
                 pickRecordFilter(app);
@@ -423,8 +430,7 @@ namespace pksm::switchui
         // Touches: a game, a cell or a filter.
         if (view.game != game_ && view.game <= dex::GAME_COUNT)
         {
-            game_ = view.game;
-            refresh();
+            changeGame(view.game);
         }
         else if (first + view.selected < cells_.size() && view.selected != selected_ % PAGE)
         {
