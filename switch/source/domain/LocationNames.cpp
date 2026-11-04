@@ -12,6 +12,7 @@ namespace pksm::switchui
         }
         return origin == pksm::GameVersion::GP || origin == pksm::GameVersion::GE ||
                origin == pksm::GameVersion::SW || origin == pksm::GameVersion::SH ||
+               origin == pksm::GameVersion::BD || origin == pksm::GameVersion::SP ||
                origin == pksm::GameVersion::PLA || origin == pksm::GameVersion::SL ||
                origin == pksm::GameVersion::VL || origin == pksm::GameVersion::ZA;
     }

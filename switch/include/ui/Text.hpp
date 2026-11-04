@@ -27,7 +27,9 @@
     /* Games */                                                                                    \
     X(GameSword)                                                                                   \
     X(GameShield)                                                                                  \
-    X(GameFireRed)                                                                                 \
+    X(GameBrilliantDiamond)                                                                        \
+    X(GameShiningPearl)                                                                            \
+    X(GameFireRed)                                                                               \
     X(GameLeafGreen)                                                                               \
     X(GameLetsGoPikachu)                                                                           \
     X(GameLetsGoEevee)                                                                             \
@@ -38,6 +40,7 @@
     X(GroupGen3Gba)                                                                                \
     X(GroupGen7LetsGo)                                                                             \
     X(GroupGen8SwordShield)                                                                        \
+    X(GroupGen8DiamondPearl)                                                                       \
     X(GroupGen8Legends)                                                                            \
     X(GroupGen9ScarletViolet)                                                                      \
     X(GroupGen9Legends)                                                                            \

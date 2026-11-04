@@ -24,9 +24,7 @@ namespace pksm::switchui::dex
                 case Game::SwordShield:
                     return pksm::GameVersion::SW;
                 case Game::BrilliantDiamondShiningPearl:
-                    // PKSM has no tables of its own for the remakes; they hold every species
-                    // and form of Platinum.
-                    return pksm::GameVersion::Pt;
+                    return pksm::GameVersion::BD;
                 case Game::LegendsArceus:
                     return pksm::GameVersion::PLA;
                 case Game::ScarletViolet:

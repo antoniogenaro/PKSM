@@ -105,9 +105,12 @@ namespace pksm::switchui
                 return;
             }
             // The Legends games keep their Pokémon in a format of their own, which the bank would
-            // store as the main games' and hand back without what that format changes.
+            // store as the main games' and hand back without what that format changes. Brilliant
+            // Diamond and Shining Pearl share Sword and Shield's layout, but the bank would keep
+            // their Pokémon as Sword and Shield's and hand them Pokémon they do not have.
             const pksm::GameVersion version = session_->save().version();
-            if (version == pksm::GameVersion::PLA || version == pksm::GameVersion::ZA)
+            if (version == pksm::GameVersion::PLA || version == pksm::GameVersion::ZA ||
+                version == pksm::GameVersion::BD || version == pksm::GameVersion::SP)
             {
                 message_ = tr(Text::BankUnavailableLegends, {tr(session_->profile().name)});
                 return;

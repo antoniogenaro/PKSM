@@ -92,9 +92,11 @@ namespace
         check(findGameProfile(GameVersion::X) == nullptr, "X is not supported");
         check(findGameProfile(GameVersion::VL) != nullptr, "Violet is supported");
         check(findGameProfile(GameVersion::ZA) != nullptr, "Legends: Z-A is supported");
+        check(findGameProfile(GameVersion::BD) != nullptr && findGameProfile(GameVersion::SP) != nullptr,
+            "both Sinnoh remakes are supported");
 
         const auto profiles = gameProfiles();
-        check(profiles.size() == 10, "ten games are listed");
+        check(profiles.size() == 12, "twelve games are listed");
         check(findGameProfile(GameVersion::GP) != nullptr && findGameProfile(GameVersion::GE) != nullptr,
             "both Let's Go games are supported");
         bool allFound = true;
@@ -113,13 +115,15 @@ namespace
     void testGameGrid()
     {
         const GameGrid real(gameProfiles());
-        check(real.gameCount() == 10, "the game list shows every game");
-        check(real.cards().size() == 6, "paired games share a card");
+        check(real.gameCount() == 12, "the game list shows every game");
+        check(real.cards().size() == 7, "paired games share a card");
+        check(real.cards()[3].games == std::vector<size_t>{6, 7}, "the Sinnoh remakes pair up");
         check(real.cards()[1].games == std::vector<size_t>{2, 3}, "the Let's Go games pair up");
         check(real.cards()[0].group == Text::GroupGen3Gba, "the GBA games come first");
         check(real.cards()[0].games == std::vector<size_t>{0, 1}, "FireRed and LeafGreen pair up");
-        check(real.down(0) == 7, "down reaches Scarlet on the second row");
-        check(real.down(2) == 9, "down from Let's Go reaches Legends: Z-A");
+        check(real.down(0) == 8, "down reaches Legends: Arceus on the second row");
+        check(real.down(2) == 9, "down from Let's Go reaches Scarlet");
+        check(real.down(4) == 11, "down from Sword reaches Legends: Z-A");
 
         // Cards: 0:{0,1} 1:{2} 2:{3,4} 3:{5,6} on the first row, 4:{7,8} 5:{9} below.
         const std::vector<GameProfile> profiles{profileIn(Text::Yes), profileIn(Text::Yes),

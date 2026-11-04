@@ -9,8 +9,9 @@ namespace pksm::switchui
 {
     namespace
     {
-        // First line of the file. Bump the number when the format changes.
-        constexpr std::string_view HEADER = "pksm-switch-saves 1";
+        // First line of the file. Bump the number when the format changes, and when PKSM learns
+        // to read saves it skipped before, so files cached as unrecognized are looked at again.
+        constexpr std::string_view HEADER = "pksm-switch-saves 2";
 
         template <typename T>
         bool readField(std::string_view& line, T& value)
