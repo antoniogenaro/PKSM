@@ -60,21 +60,6 @@ namespace pksm::switchui
         return true;
     }
 
-    ShownTrainerIds showTrainerIds(unsigned int tid, unsigned int sid)
-    {
-        const uint32_t full = (static_cast<uint32_t>(sid & 0xFFFF) << 16) | (tid & 0xFFFF);
-        return {full % 1000000, full / 1000000};
-    }
-
-    void storeTrainerIds(ShownTrainerIds shown, unsigned int& tid, unsigned int& sid)
-    {
-        const uint64_t wanted = static_cast<uint64_t>(std::min(shown.sid, MAX_SHOWN_SID)) * 1000000 +
-                                std::min(shown.tid, MAX_SHOWN_TID);
-        const uint32_t full   = static_cast<uint32_t>(std::min<uint64_t>(wanted, UINT32_MAX));
-        tid                   = full & 0xFFFF;
-        sid                   = full >> 16;
-    }
-
     std::string padDigits(unsigned int value, size_t digits)
     {
         std::string text = std::to_string(value);

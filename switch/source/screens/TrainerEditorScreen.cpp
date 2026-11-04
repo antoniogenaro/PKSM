@@ -7,6 +7,7 @@
 #include "domain/GameProfile.hpp"
 #include "sav/Sav.hpp"
 #include "screens/SaveSummary.hpp"
+#include "utils/TrainerID.hpp"
 #include "ui/Text.hpp"
 #include <cstdint>
 #include <iterator>
@@ -110,31 +111,17 @@ namespace pksm::switchui
         playTime.title = tr(Text::TrainerPlayTimeTitle);
         playTime.input = EditableField::NumberInput::PlayTime;
         fields.push_back(std::move(playTime));
-        const pksm::Generation generation = save.generation();
-        const bool shownSplit = generation == pksm::Generation::SEVEN ||
-                                generation == pksm::Generation::LGPE ||
-                                generation == pksm::Generation::EIGHT ||
-                                generation == pksm::Generation::NINE;
-        if (shownSplit)
+        if (pksm::TrainerID::sixDigits(save.generation()))
         {
             // Edit the IDs the way the game shows them; both change the two stored values.
-            const auto shown = [&save] { return showTrainerIds(save.TID(), save.SID()); };
-            const auto store = [&save](ShownTrainerIds ids)
-            {
-                unsigned int tid = 0;
-                unsigned int sid = 0;
-                storeTrainerIds(ids, tid, sid);
-                save.TID(static_cast<u16>(tid));
-                save.SID(static_cast<u16>(sid));
-            };
-            fields.push_back(counter(Text::TrainerTid, MAX_SHOWN_TID, 1,
-                [shown] { return shown().tid; },
-                [shown, store](unsigned int value) { store({value, shown().sid}); },
-                padDigits(shown().tid, 6)));
-            fields.push_back(counter(Text::TrainerSid, MAX_SHOWN_SID, 1,
-                [shown] { return shown().sid; },
-                [shown, store](unsigned int value) { store({shown().tid, value}); },
-                padDigits(shown().sid, 4)));
+            fields.push_back(counter(Text::TrainerTid, pksm::TrainerID::MAX_SIX_DIGIT_TID, 1,
+                [&save] { return save.displayTID(); },
+                [&save](unsigned int value) { save.displayTID(value); },
+                padDigits(save.displayTID(), 6)));
+            fields.push_back(counter(Text::TrainerSid, pksm::TrainerID::MAX_SIX_DIGIT_SID, 1,
+                [&save] { return save.displaySID(); },
+                [&save](unsigned int value) { save.displaySID(value); },
+                padDigits(save.displaySID(), 4)));
         }
         else
         {

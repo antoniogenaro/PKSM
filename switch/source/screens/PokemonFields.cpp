@@ -5,6 +5,7 @@
 #include "domain/FormSprites.hpp"
 #include "domain/LetsGoStorage.hpp"
 #include "domain/LocationNames.hpp"
+#include "utils/TrainerID.hpp"
 #include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
@@ -344,23 +345,13 @@ namespace pksm::switchui
             [&pokemon](const std::string& name) { pokemon.otName(name); }));
 
         // From generation VII on the ID is shown, and edited, as the game shows it.
-        const bool splitIds = generation == pksm::Generation::SEVEN ||
-                              generation == pksm::Generation::LGPE ||
-                              generation == pksm::Generation::EIGHT ||
-                              generation == pksm::Generation::NINE;
-        if (splitIds)
+        if (pksm::TrainerID::sixDigits(generation))
         {
-            const auto shown = [&pokemon] { return showTrainerIds(pokemon.TID(), pokemon.SID()); };
-            fields.push_back(numberField(display(tr(Text::TrainerTid), padDigits(shown().tid, 6)),
-                tr(Text::TrainerTid), 0, MAX_SHOWN_TID, [shown] { return shown().tid; },
-                [&pokemon, shown](unsigned int value)
-                {
-                    unsigned int tid = 0;
-                    unsigned int sid = 0;
-                    storeTrainerIds({value, shown().sid}, tid, sid);
-                    pokemon.TID(static_cast<u16>(tid));
-                    pokemon.SID(static_cast<u16>(sid));
-                }));
+            fields.push_back(numberField(
+                display(tr(Text::TrainerTid), padDigits(pokemon.formatTID(), 6)),
+                tr(Text::TrainerTid), 0, pksm::TrainerID::MAX_SIX_DIGIT_TID,
+                [&pokemon] { return pokemon.formatTID(); },
+                [&pokemon](unsigned int value) { pokemon.formatTID(value); }));
         }
         else
         {
@@ -596,12 +587,8 @@ namespace pksm::switchui
 
         // From generation VII on, the ID is shown as the game shows it.
         const pksm::Generation generation = pokemon.generation();
-        const bool splitIds = generation == pksm::Generation::SEVEN ||
-                              generation == pksm::Generation::LGPE ||
-                              generation == pksm::Generation::EIGHT ||
-                              generation == pksm::Generation::NINE;
-        const std::string tid = splitIds
-                                    ? padDigits(showTrainerIds(pokemon.TID(), pokemon.SID()).tid, 6)
+        const std::string tid = pksm::TrainerID::sixDigits(generation)
+                                    ? padDigits(pokemon.formatTID(), 6)
                                     : numericValue(pokemon.TID());
         const u16 item        = pokemon.heldItem();
         detail.info           = {

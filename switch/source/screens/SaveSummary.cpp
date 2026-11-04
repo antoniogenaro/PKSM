@@ -7,6 +7,7 @@
 #include "platform/SaveStorage.hpp"
 #include "sav/Sav.hpp"
 #include "screens/PickerScreens.hpp"
+#include "utils/TrainerID.hpp"
 #include "ui/Text.hpp"
 #include <memory>
 #include <vector>
@@ -24,11 +25,7 @@ namespace pksm::switchui
         summary.group   = tr(profile.group);
         summary.file    = slash == std::string::npos ? path : path.substr(slash + 1);
         // From generation VII on the game pads the IDs with zeros: 006800 and 3144.
-        const pksm::Generation generation = save.generation();
-        const bool padded = generation == pksm::Generation::SEVEN ||
-                            generation == pksm::Generation::LGPE ||
-                            generation == pksm::Generation::EIGHT ||
-                            generation == pksm::Generation::NINE;
+        const bool padded = pksm::TrainerID::sixDigits(save.generation());
         summary.details   = tr(Text::TrainerSummary,
               {save.otName(), padDigits(save.displayTID(), padded ? 6 : 0),
                   padDigits(save.displaySID(), padded ? 4 : 0)});

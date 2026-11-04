@@ -393,7 +393,7 @@ namespace pksm::switchui
             if (!trainer.empty() && card->otGender() < pksm::Gender::Genderless)
             {
                 otId = trainer + " · " +
-                       padDigits(showTrainerIds(card->TID(), card->SID()).tid, 6);
+                       padDigits(card->formatTID(), 6);
             }
             view.info.push_back({tr(Text::EventOtId), otId});
 
