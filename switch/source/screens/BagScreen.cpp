@@ -125,6 +125,8 @@ namespace pksm::switchui
                     return Text::BagPouchCatching;
                 case pksm::Sav::Pouch::Recipe:
                     return Text::BagPouchRecipes;
+                case pksm::Sav::Pouch::MegaStones:
+                    return Text::BagPouchMegaStones;
                 default:
                     return Text::BagPouchOther;
             }
