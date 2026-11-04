@@ -74,7 +74,7 @@ $(BUILD)/SwitchDomainTests: SwitchDomainTests.cpp ../switch/source/domain/GamePr
 		../core/source/utils/VersionTables.cpp $(BUILD)/personal.o \
 		../switch/source/ui/Text.cpp $(wildcard ../switch/strings/*.json) | $(BUILD)
 	@$(CXX) $(CXXFLAGS) -I../switch/include -I../core/include -I../external \
-		-DSWITCH_STRINGS='"../switch/strings"' -DSWITCH_I18N='"../switch/i18n/"' -o $@ $(filter %.cpp %.o,$^)
+		-DSWITCH_STRINGS='"../switch/strings"' -o $@ $(filter %.cpp %.o,$^)
 
 # Core's species tables, read from the repository instead of romfs. Tests run from this folder.
 $(BUILD)/personal.o: ../core/source/personal/personal.cpp | $(BUILD)

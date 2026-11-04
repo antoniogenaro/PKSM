@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -70,8 +71,11 @@ namespace pksm::switchui
         EditableField locationField(const pksm::PKX& pokemon, Text label,
             std::function<unsigned int()> get, std::function<void(unsigned int)> set)
         {
-            const auto& names = locationNames(pokemon.language(), pokemon.version(),
-                pokemon.generation() == pksm::Generation::THREE);
+            static const std::map<u16, std::string> none;
+            const auto& names =
+                hasLocationNames(pokemon.version(), pokemon.generation() == pksm::Generation::THREE)
+                    ? i18n::rawLocations(pokemon.language(), pokemon.version())
+                    : none;
             const unsigned int current = get();
             if (names.empty())
             {
@@ -82,18 +86,19 @@ namespace pksm::switchui
 
             auto name = [&names](unsigned int number)
             {
-                const std::string_view found = locationName(names, number);
-                return found.empty() ? tr(Text::LocationValue, {numericValue(number)})
-                                     : withId(std::string(found), number);
+                const auto found = names.find(static_cast<u16>(number));
+                return found == names.end() || number > UINT16_MAX
+                           ? tr(Text::LocationValue, {numericValue(number)})
+                           : withId(found->second, number);
             };
             return choiceField(display(tr(label), name(current)), tr(label),
                 [&names, get]
                 {
                     // The current place stays a choice even when the list does not name it.
                     std::vector<unsigned int> numbers{get()};
-                    for (const auto& location : names)
+                    for (const auto& [number, place] : names)
                     {
-                        numbers.push_back(location.number);
+                        numbers.push_back(number);
                     }
                     std::sort(numbers.begin(), numbers.end());
                     numbers.erase(std::unique(numbers.begin(), numbers.end()), numbers.end());
