@@ -13,7 +13,6 @@
 #include "screens/SaveSummary.hpp"
 #include "ui/Text.hpp"
 #include "utils/i18n.hpp"
-#include "utils/random.hpp"
 #include <algorithm>
 #include <array>
 #include <sstream>
@@ -29,16 +28,6 @@ namespace pksm::switchui
         constexpr std::array<pksm::Language, 9> LANGUAGES{pksm::Language::JPN,
             pksm::Language::ENG, pksm::Language::FRE, pksm::Language::ITA, pksm::Language::GER,
             pksm::Language::SPA, pksm::Language::KOR, pksm::Language::CHS, pksm::Language::CHT};
-
-        // How a card says the Pokémon's PID is made, as the game reads it.
-        enum class ShinyType : u8
-        {
-            Never        = 0,
-            Random       = 1,
-            AlwaysStar   = 2,
-            AlwaysSquare = 3,
-            Fixed        = 4
-        };
 
         // Captions are written in capitals; game names are plain ASCII.
         std::string upper(std::string text)
@@ -313,30 +302,6 @@ namespace pksm::switchui
             }
         }
 
-        // The save reads the card's shiny type with other numbers than the game; make the PID
-        // as the game does.
-        switch (static_cast<ShinyType>(card->PIDType()))
-        {
-            case ShinyType::Never:
-                pokemon->PID(pksm::randomNumber(0, 0xFFFFFFFF));
-                pokemon->shiny(false);
-                break;
-            case ShinyType::Random:
-                pokemon->PID(pksm::randomNumber(0, 0xFFFFFFFF));
-                break;
-            case ShinyType::AlwaysStar:
-            case ShinyType::AlwaysSquare:
-            {
-                const u32 low  = pksm::randomNumber(0, 0xFFFF);
-                const u32 xorValue = card->PIDType() == u8(ShinyType::AlwaysStar) ? 1 : 0;
-                const u32 high = (pokemon->TID() ^ pokemon->SID() ^ low ^ xorValue) & 0xFFFF;
-                pokemon->PID((high << 16) | low);
-                break;
-            }
-            case ShinyType::Fixed:
-                pokemon->PID(card->PID());
-                break;
-        }
         savePokemon(save, *pokemon, false, box, boxSlot);
     }
 
@@ -402,8 +367,7 @@ namespace pksm::switchui
             {
                 view.marks.push_back(tr(Text::EventGigantamax));
             }
-            const auto shinyType = static_cast<ShinyType>(card->PIDType());
-            if (shinyType == ShinyType::AlwaysStar || shinyType == ShinyType::AlwaysSquare)
+            if (card->shiny())
             {
                 view.marks.push_back(tr(Text::EventShiny));
             }
