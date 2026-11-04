@@ -133,8 +133,8 @@ and `switch-sdl2_ttf` packages, then build from the devkitPro MSYS2 shell:
 make switch
 ```
 
-Copy `switch/pksm-switch.nro` to the SD card. Place a Scarlet/Violet,
-Sword/Shield, Let's Go or FireRed/LeafGreen save backup anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
+Copy `switch/pksm-switch.nro` to the SD card. Place a Legends: Z-A, Scarlet/Violet,
+Legends: Arceus, Sword/Shield, Let's Go or FireRed/LeafGreen save backup anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
 backup directory) and launch the application. In folders containing a `main`
 save, the file list shows only `main`, hiding the other files in that backup
 folder. Files in folders without `main` remain available. Core language and

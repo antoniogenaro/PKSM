@@ -104,11 +104,12 @@ namespace pksm::switchui
                 message_ = tr(Text::NoBoxes);
                 return;
             }
-            // Its Pokémon have a format of their own that the bank cannot keep, and core cannot
-            // turn other Pokémon into it.
-            if (session_->save().version() == pksm::GameVersion::PLA)
+            // The Legends games keep their Pokémon in a format of their own, which the bank would
+            // store as the main games' and hand back without what that format changes.
+            const pksm::GameVersion version = session_->save().version();
+            if (version == pksm::GameVersion::PLA || version == pksm::GameVersion::ZA)
             {
-                message_ = tr(Text::BankUnavailableLegends);
+                message_ = tr(Text::BankUnavailableLegends, {tr(session_->profile().name)});
                 return;
             }
             std::string error;

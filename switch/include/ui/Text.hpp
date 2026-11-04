@@ -34,11 +34,13 @@
     X(GameScarlet)                                                                                 \
     X(GameViolet)                                                                                  \
     X(GameLegendsArceus)                                                                           \
+    X(GameLegendsZA)                                                                               \
     X(GroupGen3Gba)                                                                                \
     X(GroupGen7LetsGo)                                                                             \
     X(GroupGen8SwordShield)                                                                        \
     X(GroupGen8Legends)                                                                            \
     X(GroupGen9ScarletViolet)                                                                      \
+    X(GroupGen9Legends)                                                                            \
     /* Start-up */                                                                                \
     X(SdlInitFailed)                                                                               \
     X(WindowFailed)                                                                                \
@@ -288,6 +290,7 @@
     X(BagPouchCatching)                                                                            \
     X(BagPouchMaterials)                                                                           \
     X(BagPouchRecipes)                                                                             \
+    X(BagPouchMegaStones)                                                                          \
     X(BagKeyItemFixed)                                                                             \
     X(BagItemCount)                                                                                \
     X(BagAddItem)                                                                                  \
