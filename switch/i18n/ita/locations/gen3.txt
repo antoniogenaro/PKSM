@@ -1,0 +1,216 @@
+0	Albanova
+1	Solarosa
+2	Bluruvia
+3	Cuordilava
+4	Brunifoglia
+5	Mentania
+6	Orocea
+7	Petalipoli
+8	Porto Selcepoli
+9	Ciclamipoli
+10	Ferrugipoli
+11	Forestopoli
+12	Porto Alghepoli
+13	Verdeazzupoli
+14	Ceneride
+15	Iridopoli
+16	Percorso 101
+17	Percorso 102
+18	Percorso 103
+19	Percorso 104
+20	Percorso 105
+21	Percorso 106
+22	Percorso 107
+23	Percorso 108
+24	Percorso 109
+25	Percorso 110
+26	Percorso 111
+27	Percorso 112
+28	Percorso 113
+29	Percorso 114
+30	Percorso 115
+31	Percorso 116
+32	Percorso 117
+33	Percorso 118
+34	Percorso 119
+35	Percorso 120
+36	Percorso 121
+37	Percorso 122
+38	Percorso 123
+39	Percorso 124
+40	Percorso 125
+41	Percorso 126
+42	Percorso 127
+43	Percorso 128
+44	Percorso 129
+45	Percorso 130
+46	Percorso 131
+47	Percorso 132
+48	Percorso 133
+49	Percorso 134
+50	Sott'acqua (Percorso 124)
+51	Sott'acqua (Percorso 126)
+52	Sott'acqua (Percorso 127)
+53	Sott'acqua (Percorso 128)
+54	Sott'acqua (Ceneride)
+55	Grotta Pietrosa
+56	Monte Camino
+57	Zona Safari (RZS)
+58	Torre Lotta (RZ) / Parco Lotta (S)
+59	Bosco Petalo
+60	Tunnel Menferro
+61	Vecchia Nave
+62	Ciclanova
+63	Cascate Meteora
+64	Cascate Meteora (inutilizzato)
+65	Monte Pira
+66	Rifugio
+67	Grotta Ondosa
+68	Antro Abissale
+69	Sott'acqua (Antro Abissale)
+70	Via Vittoria (RZS)
+71	Isola Miraggio
+72	Grotta dei Tempi
+73	Isola Remota
+74	Cammino Ardente
+75	Cammino Ardente (inutilizzato)
+76	Passo Selvaggio
+77	Passo Selvaggio (inutilizzato)
+78	Sala Incisa
+79	Sott'acqua (Percorso 134)
+80	Grottino Solare
+81	Grotta Insulare
+82	Rovine Sabbiose
+83	Tomba Antica
+84	Nel Camion
+85	Torre dei Cieli
+86	Base Segreta
+87	Traghetto
+88	Biancavilla
+89	Smeraldopoli
+90	Plumbeopoli
+91	Celestopoli
+92	Lavandonia
+93	Aranciopoli
+94	Azzurropoli
+95	Fucsiapoli
+96	Isola Cannella
+97	Altopiano Blu
+98	Zafferanopoli
+99	Percorso 4 (Centro Pokémon)
+100	Percorso 10 (Centro Pokémon)
+101	Percorso 1
+102	Percorso 2
+103	Percorso 3
+104	Percorso 4
+105	Percorso 5
+106	Percorso 6
+107	Percorso 7
+108	Percorso 8
+109	Percorso 9
+110	Percorso 10
+111	Percorso 11
+112	Percorso 12
+113	Percorso 13
+114	Percorso 14
+115	Percorso 15
+116	Percorso 16
+117	Percorso 17
+118	Percorso 18
+119	Percorso 19
+120	Percorso 20
+121	Percorso 21
+122	Percorso 22
+123	Percorso 23
+124	Percorso 24
+125	Percorso 25
+126	Bosco Smeraldo
+127	Monte Luna
+128	M/N Anna
+129	Via Sotterranea (Percorsi 5-6)
+130	Via Sotterranea (Percorsi 7-8)
+131	Grotta Diglett
+132	Via Vittoria (Kanto)
+133	Rifugio Rocket
+134	Silph SpA
+135	Villa Pokémon
+136	Zona Safari (Kanto)
+137	Lega Pokémon
+138	Tunnel Roccioso
+139	Isole Spumarine
+140	Torre Pokémon
+141	Grotta Celeste
+142	Centrale Elett.
+143	Primisola
+144	Secondisola
+145	Terzisola
+146	Quartisola
+147	Quintisola
+148	Settimisola
+149	Sestisola
+150	Via Vulcanica
+151	Riva del Tesoro
+152	Capo Estremo
+153	Ponte Abbraccio
+154	Porto Terzisola
+155	Settipelago 6
+156	Settipelago 7
+157	Settipelago 8
+158	Settipelago 9
+159	Perla dei Mari
+160	Labirinto Marino
+161	Prato Quintisola
+162	Colonna Rocciosa
+163	Isola Solitaria
+164	Via Verde
+165	Via Marina
+166	Valle Antica
+167	Torre Allenatori (esterno)
+168	Ingresso Canyon
+169	Canyon Seption
+170	Rovine Florabeto
+171	Settipelago 22
+172	Settipelago 23
+173	Settipelago 24
+174	Monte Cordone (RFVF)
+175	Monte Brace
+176	Bosco Baccoso
+177	Grotta Gelata
+178	Magazzino Rocket
+179	Torre Allenatori
+180	Cripta dei Punti
+181	Grotta Sperduta
+182	Bosco Disegnato
+183	Grotta Mutevole (RFVF)
+184	Sale Florabeto
+185	Via Terzisola
+186	Chiave Florabeto
+187	Isola Materna (RFVF)
+188	Sala A-loe
+189	Sala B-etulla
+190	Sala C-iclamino
+191	Sala D-afne
+192	Sala E-dera
+193	Sala F-elce
+194	Sala G-ardenia
+195	Terme Laviche
+196	Centro Azzurrop. (RFVF)
+197	Rifugio Idro
+198	Rifugio Magma
+199	Torre Miraggio
+200	Isola Materna (S)
+201	Isola Suprema
+202	Grotta Artistica
+203	Grotta Mare
+204	Sott'acqua (Grotta Mare)
+205	Grotta Terra
+206	Sott'acqua (Percorso 105)
+207	Sott'acqua (Percorso 125)
+208	Sott'acqua (Percorso 129)
+209	Galleria Deserto
+210	Grotta Mutevole (S)
+211	Monte Cordone (S)
+212	Monte Allenatori
+253	(Uovo donato)
+254	(Scambio in gioco)
+255	(Occasione speciale)

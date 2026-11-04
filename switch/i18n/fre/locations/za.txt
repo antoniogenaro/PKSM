@@ -1,0 +1,358 @@
+0	－－－－－－－－－－
+2	Endroit mystérieux
+4	Endroit lointain
+6	Beau-Vert
+7	Valcyan
+8	Rosavilliers
+9	Maurouge
+10	Jaunemont
+11	Place Centrale
+12	Avenue Floréal
+13	Avenue Thermidor
+14	Avenue Vendémiaire
+15	Avenue Ventôse
+16	Canal des Saisons
+17	Avenue Verte
+18	Avenue Verte
+19	Rue Méridionale
+20	Rue Méridionale
+21	1ᵉʳ arrondissement de Beau-Vert
+22	3ᵉ arrondissement de Beau-Vert
+23	Canal Lacoulée
+24	6ᵉ arrondissement de Beau-Vert
+25	7ᵉ arrondissement de Beau-Vert
+26	Parvis d’Illumis Sud
+27	2ᵉ arrondissement de Beau-Vert
+28	4ᵉ arrondissement de Beau-Vert
+29	5ᵉ arrondissement de Beau-Vert
+30	8ᵉ arrondissement de Beau-Vert
+31	9ᵉ arrondissement de Beau-Vert
+32	Place Verte
+33	Avenue Cyan
+34	Avenue Cyan
+35	Rue Méridionale
+36	Rue Méridionale
+37	1ᵉʳ arrondissement de Valcyan
+38	3ᵉ arrondissement de Valcyan
+39	Parc Montprélasse
+40	5ᵉ arrondissement de Valcyan
+41	7ᵉ arrondissement de Valcyan
+42	2ᵉ arrondissement de Valcyan
+43	4ᵉ arrondissement de Valcyan
+44	Allée Ranavoir
+45	6ᵉ arrondissement de Valcyan
+46	8ᵉ arrondissement de Valcyan
+47	9ᵉ arrondissement de Valcyan
+48	10ᵉ arrondissement de Valcyan
+49	Place Cyan
+50	Avenue Rose
+51	Avenue Rose
+52	Rue Méridionale
+53	Rue Septentrionale
+54	1ᵉʳ arrondissement de Rosavilliers
+55	3ᵉ arrondissement de Rosavilliers
+56	5ᵉ arrondissement de Rosavilliers
+57	6ᵉ arrondissement de Rosavilliers
+58	Poste Électrique d’Illumis
+59	2ᵉ arrondissement de Rosavilliers
+60	4ᵉ arrondissement de Rosavilliers
+61	7ᵉ arrondissement de Rosavilliers
+62	Société Quazar
+63	8ᵉ arrondissement de Rosavilliers
+64	9ᵉ arrondissement de Rosavilliers
+65	Place Rose
+66	Avenue Rouge
+67	Avenue Rouge
+68	Rue Septentrionale
+69	Rue Septentrionale
+70	1ᵉʳ arrondissement de Maurouge
+71	3ᵉ arrondissement de Maurouge
+72	4ᵉ arrondissement de Maurouge
+73	5ᵉ arrondissement de Maurouge
+74	7ᵉ arrondissement de Maurouge
+75	2ᵉ arrondissement de Maurouge
+76	Institut Nivers
+77	6ᵉ arrondissement de Maurouge
+78	Cimetière Dussommeil
+79	8ᵉ arrondissement de Maurouge
+80	Place Rouge
+81	Avenue Jaune
+82	Avenue Jaune
+83	Rue Septentrionale
+84	Rue Septentrionale
+85	1ᵉʳ arrondissement de Jaunemont
+86	3ᵉ arrondissement de Jaunemont
+87	4ᵉ arrondissement de Jaunemont
+88	5ᵉ arrondissement de Jaunemont
+89	7ᵉ arrondissement de Jaunemont
+90	8ᵉ arrondissement de Jaunemont
+91	2ᵉ arrondissement de Jaunemont
+92	Quai du Canal des Saisons
+93	6ᵉ arrondissement de Jaunemont
+94	9ᵉ arrondissement de Jaunemont
+95	10ᵉ arrondissement de Jaunemont
+96	11ᵉ arrondissement de Jaunemont
+97	12ᵉ arrondissement de Jaunemont
+98	Place Jaune
+99	Boulevard du Vent
+100	Musée d’Illumis
+101	Centre Pokémon de Beau-Vert
+102	Hôtel Z
+103	Laboratoire Pokémon
+104	Tour Prismatique
+105	Agence Beladonis
+106	Société Quazar
+107	Bâti-Racines
+108	Place Verte
+109	Illumis Sud
+110	Place Cyan
+111	Agence Dérouillard
+112	Centre Pokémon de Valcyan
+113	Centre Pokémon de l’Avenue Floréal
+114	Place Rose
+115	Café Lysandre
+116	Centre Pokémon de Rosavilliers
+117	Centre Pokémon de la Place Rose
+118	Place Rouge
+119	Le Crésus
+120	Centre Pokémon de Maurouge
+121	Centre Pokémon de la Place Centrale
+122	Place Jaune
+123	Dojo de la Justice
+124	Centre Pokémon de Jaunemont
+125	Centre Pokémon de l’Avenue Ventôse
+126	Salon de coiffure
+127	Le Joyau de Kalos
+128	Le Ball-Bazar
+129	Gears
+130	Au Chic-à-Porter
+131	L’Étoilé
+132	La Drôle d’Embringue
+133	Le Lounge Café
+134	Les Timides
+135	Empty Room (Abandoned Building)
+136	Sewer Entrance
+137	La Pointe de la Mode
+138	Braverry
+139	Régal et Vous
+140	Halle Cyan
+141	Outlet’s Play
+142	Folha
+143	Triathlon Valcyan
+144	Optique Defog
+145	Prêt-à-Équiper
+146	Détente et Beauté
+147	Café Toutou
+148	Café Soleil
+149	Un Autre Regard
+150	Égouts d’Illumis
+151	Café Récré
+152	Café Slalom
+153	Le Café des Compères
+154	Au Coucou
+155	Comd’hab
+156	Énergie
+157	Passe-Temps
+158	Porte-Chance
+159	Pinceau
+160	Beaudodo
+161	Sol et Baskets
+162	Marquage
+163	Kawaï Joli
+164	Kawaï Choupi
+165	Kawaï Sporty
+166	Alter & Goth
+167	Mantotop
+168	Rituel Nocturne
+169	Mode Mature
+170	De Mèche
+171	Mode Magnifique
+172	Cinéfil
+173	Kaminari Illumis
+174	La Chaussure
+175	Atelier Chapelier
+176	Kawaï Mimi
+177	Kikonashi
+178	Physix
+179	Physix 4
+180	Lex & Lans
+181	Le Paradis du Vêtement
+182	Triathlon Maurouge
+183	Le Paradis du Pied
+184	Tornade
+185	Les Algolides
+186	Sushi Sans Chichis
+187	Le Firmament
+188	Égouts d’Illumis
+189	Les Partenaires
+190	L’Ultimate
+191	Café Clap
+192	La Bataille
+193	Zone sauvage nº 17
+194	Zone sauvage nº 1
+195	Zone sauvage nº 2
+196	Zone sauvage nº 12
+197	Zone sauvage nº 10
+198	Zone sauvage nº 5
+199	Zone sauvage nº 16
+200	Zone sauvage nº 14
+201	Zone sauvage nº 9
+202	Zone sauvage nº 18
+203	Zone sauvage nº 7
+204	Zone sauvage nº 13
+205	Zone sauvage nº 4
+206	Zone sauvage nº 3
+207	Zone sauvage nº 15
+208	Zone sauvage nº 19
+209	Zone sauvage nº 6
+210	Zone sauvage nº 11
+211	Zone sauvage nº 8
+212	Zone sauvage nº 20
+213	Zone de combat
+214	Passage du Bonheur
+215	Passage de l’Ombre
+216	Galerie Clair de Lune
+217	Passage du Palais
+218	Dojo de la Justice
+219	Hôtel Z
+220	Bâti-Racines
+221	Grand Hôtel Le Crésus
+222	Agence Dérouillard
+223	Illumis Sud
+224	Société Quazar
+225	L’Étoilé
+226	Les Algolides
+227	Le Firmament
+228	Sushi Sans Chichis
+229	Agence Beladonis
+230	Laboratoire Pokémon
+231	Immeuble de bureaux
+232	Musée d’Illumis
+233	Café Lysandre
+234	Labos Lysandre
+235	Égouts
+236	Chambre 201
+237	Chambre 202
+238	Chambre 203
+239	Chambre 204
+273	Extra Illumis
+274	Portail d’accès vers Extra Illumis
+275	Zone du Désastre
+276	Territoire du Chasseur Solitaire
+277	Au Mât Cassé
+278	Antre du Clairvoyant
+279	Enfer Embrasé
+280	Cauchemar de Nouvellune
+281	Mer Primaire
+282	Terre Finale
+283	Pilier des Cieux
+30001	Échange en réseau
+30002	Échange en réseau
+30003	Kanto
+30004	Johto
+30005	Hoenn
+30006	Sinnoh
+30007	Pays lointain
+30008	－－－－－－－－－－
+30009	Unys
+30010	Kalos
+30011	Poké Lien
+30012	Pokémon GO
+30013	Kanto
+30014	Hoenn
+30015	Alola
+30016	Poké Loisir
+30017	Johto
+30018	Pokémon HOME
+30019	Kanto
+30020	Galar
+30021	Hisui
+30022	Sinnoh
+30023	Pique-nique
+30024	Grotte de cristal
+30025	Paldea
+30026	Illumis
+30027	Laboratoire Pokémon
+30028	Zone sauvage nº 11
+30029	Musée d’Illumis
+30030	Institut Nivers
+30031	2ᵉ arrondissement de Rosavilliers
+30032	Rue Septentrionale
+30033	1ᵉʳ arrondissement de Maurouge
+30034	Extra Illumis
+30035	Société Quazar
+40001	Endroit superbe
+40002	Endroit lointain
+40003	Film Pokémon
+40004	Film Pokémon 2024
+40005	Film Pokémon 2025
+40006	Film Pokémon 2026
+40007	Film Pokémon 2027
+40008	Film Pokémon 2028
+40009	Dessin animé Pokémon
+40010	Pokémon Center
+40011	Pokémon Center Tohoku
+40012	WCS
+40013	WCS 2024
+40014	WCS 2025
+40015	WCS 2026
+40016	WCS 2027
+40017	WCS 2028
+40018	Worlds
+40019	Worlds 2024
+40020	Worlds 2025
+40021	Worlds 2026
+40022	Worlds 2027
+40023	Worlds 2028
+40024	Évènement Jeu Vidéo
+40025	Évènement Jeu Vidéo 2024
+40026	Évènement Jeu Vidéo 2025
+40027	Évènement Jeu Vidéo 2026
+40028	Évènement Jeu Vidéo 2027
+40029	Évènement Jeu Vidéo 2028
+40030	Évènement Pokémon
+40031	Compétition
+40032	Évènement
+40033	Pokémon Daisuki Club
+40034	Émission Pokémon
+40035	Concert
+40036	Cadeau téléchargeable
+40037	Pokémon Global Link
+40038	Évènement Pokémon 2024
+40039	Évènement Pokémon 2025
+40040	Évènement Pokémon 2026
+40041	Évènement Pokémon 2027
+40042	Évènement Pokémon 2028
+40043	Évènement Pokémon
+40044	Évènement Pokémon 2024
+40045	Évènement Pokémon 2025
+40046	Évènement Pokémon 2026
+40047	Évènement Pokémon 2027
+40048	Évènement Pokémon 2028
+40049	PokéPark
+40050	PokéPark 2024
+40051	PokéPark 2025
+40052	PokéPark 2026
+40053	PokéPark 2027
+40054	PokéPark 2028
+40055	Lieu d’évènement
+40056	GAME FREAK
+40057	Stade
+40058	VGC
+40059	VGC 2024
+40060	VGC 2025
+40061	VGC 2026
+40062	VGC 2027
+40063	VGC 2028
+40064	Console virtuelle
+40065	Pokémon GO
+40066	Banque Pokémon
+40067	Magasin Pokémon
+40068	Démo
+40069	Poké Ball Plus
+40070	Pokémon HOME
+60001	Personne lointaine
+60002	Responsable de la Garderie
+60003	Chercheur de Trésors
+60004	Dame des Eaux Thermales
+60005	Illumis

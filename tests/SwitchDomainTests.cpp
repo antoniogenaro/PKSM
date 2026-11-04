@@ -31,6 +31,7 @@
 #include "domain/GameGrid.hpp"
 #include "domain/GameGrid.hpp"
 #include "domain/GameProfile.hpp"
+#include "domain/LocationNames.hpp"
 #include "domain/PickerList.hpp"
 #include "domain/Pokedex.hpp"
 #include "domain/SaveCache.hpp"
@@ -40,6 +41,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -571,6 +573,47 @@ namespace
                   Progress{0, 0}.percent() == 0,
             "the percentage rounds down, so only a complete game shows 100");
     }
+
+    void testLocationNames()
+    {
+        const auto parsed = parseLocationNames("0\t\xEF\xBC\x8D\r\n30001\tLink Trade\nbad line\n"
+                                               "12x\tNope\n\t\n40\tPlace\twith tab");
+        check(parsed.size() == 3, "location lists keep only number<TAB>name lines");
+        check(parsed.size() == 3 && parsed[1].number == 30001 && parsed[1].name == "Link Trade",
+            "location lines give their number and name, without the CR");
+        check(parsed.size() == 3 && parsed[2].name == "Place\twith tab",
+            "a location's name runs to the end of its line");
+
+        check(locationListFile(GameVersion::FR, true) == "gen3",
+            "generation III Pokémon use the generation III list");
+        check(locationListFile(GameVersion::E, false).empty(),
+            "generation III Pokémon that left it have no list");
+        check(locationListFile(GameVersion::GE, false) == "lgpe" &&
+                  locationListFile(GameVersion::SH, false) == "swsh" &&
+                  locationListFile(GameVersion::PLA, false) == "pla" &&
+                  locationListFile(GameVersion::VL, false) == "sv" &&
+                  locationListFile(GameVersion::ZA, false) == "za",
+            "each Switch game has its own location list");
+        check(locationListFile(GameVersion::US, false).empty(),
+            "games without a list give none");
+
+        for (const auto language : {Language::ENG, Language::SPA, Language::JPN, Language::CHT})
+        {
+            for (const GameVersion game :
+                std::initializer_list<GameVersion>{GameVersion::FR, GameVersion::GP,
+                    GameVersion::SW, GameVersion::PLA, GameVersion::SL, GameVersion::ZA})
+            {
+                const auto& names = locationNames(language, game, true, SWITCH_I18N);
+                check(names.size() > 50, "every language has every location list");
+            }
+        }
+        const auto& spanish = locationNames(Language::SPA, GameVersion::SL, false, SWITCH_I18N);
+        check(locationName(spanish, 8) == "Ciudad Meseta", "Scarlet and Violet's places in Spanish");
+        check(locationName(spanish, 1).empty(), "numbers without a place have no name");
+        const auto& fallback = locationNames(Language::UNUSED, GameVersion::SW, false, SWITCH_I18N);
+        check(fallback.size() > 50, "unknown languages use the English lists");
+    }
+
 }
 
 int main()
@@ -590,6 +633,7 @@ int main()
     testBag();
     testPickerList();
     testPokedex();
+    testLocationNames();
 
     if (failures != 0)
     {

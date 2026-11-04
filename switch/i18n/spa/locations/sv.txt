@@ -1,0 +1,227 @@
+0	－
+2	lugar misterioso
+4	lugar lejano
+6	Área 1 (Sur)
+8	Ciudad Meseta
+10	Liga Pokémon
+12	Área 2 (Sur)
+14	Área 4 (Sur)
+16	Área 6 (Sur)
+18	Área 5 (Sur)
+20	Área 3 (Sur)
+22	Área 1 (Oeste)
+24	Desierto Rostiz
+26	Área 2 (Oeste)
+28	Área 3 (Oeste)
+30	Bosquejada
+32	Área 3 (Este)
+34	Área 1 (Este)
+36	Área 2 (Este)
+38	Sierra Napada
+40	Lago Cazola
+42	Sierra Napada
+44	Área 3 (Norte)
+46	Área 1 (Norte)
+48	Área 2 (Norte)
+50	foso de Paldea
+52	Puerta Cero
+54	Puerta Cero
+56	Mar Meridional de Paldea
+58	Mar Occidental de Paldea
+60	Mar Oriental de Paldea
+62	Mar Septentrional de Paldea
+64	Gruta Caleta
+66	Área 6 (Sur)
+67	Sima de Alforno
+68	Sierra Napada
+69	Gruta Vestura
+70	Sendero de Cahíz
+72	Ciudad Meseta
+74	Ciudad Meseta
+76	Ciudad Cántara
+78	Ciudad Leudal
+80	Pueblo Cahíz
+82	Pueblo Ataifor
+84	Pueblo Pirotín
+86	Pueblo Altamía
+88	Pueblo Marinada
+90	Pueblo Mestura
+92	Pueblo Veta
+94	Pueblo Hozkailu
+96	Pueblo Alforno
+98	Área 2 (Norte)
+99	Base del Escuadrón Caph
+100	Área 1 (Oeste)
+101	Base del Escuadrón Segin
+102	Área 3 (Norte)
+103	Base del Escuadrón Ruchbah
+104	Área 1 (Este)
+105	Base del Escuadrón Schedar
+106	Bosquejada
+107	Base del Escuadrón Tsih
+108	Lago Cazola
+109	Alameda Socarrada
+110	Área Cero
+111	unidad de observación 1
+112	Área Cero
+113	unidad de observación 2
+114	Área Cero
+115	unidad de observación 3
+116	Área Cero
+117	unidad de observación 4
+118	Laboratorio Cero
+120	Laboratorio Cero
+122	Laboratorio Cero
+124	Área Cero
+126	Área Cero
+128	Área Cero
+130	Academia Naranja
+131	Academia Uva
+132	Carretera de Noroteo
+134	Villa Versui
+136	Colina Manzanar
+138	Parque de los compatrones
+140	Senda Jarana
+142	centro cultural de Noroteo
+144	Monte Ogro
+146	Gruta del Pavor
+147	Monte Ogro
+148	Fauces del Ogro
+149	Monte Ogro
+150	Monte Ogro
+152	Lago Cristalino
+153	cima del Monte Ogro
+154	Lago Cristalino
+155	cima del Monte Ogro
+156	Pradera Glicina
+158	Ribera Confluencia
+160	Desfiladero del Cuerno
+162	Elíseo Baldío
+164	Campos Prístinos de Noroteo
+166	Soto Sempiterno
+167	Campos Prístinos de Noroteo
+168	Paso del Averno
+169	Monte Ogro
+170	Cueva Aguafría
+172	Academia Arándano
+174	Área Árida
+176	Área Costera
+178	Área Escarpada
+180	Área Polar
+182	Plaza Cúbica
+184	Plaza Árida
+186	Plaza Costera
+188	Plaza Escarpada
+190	Plaza Polar
+192	Gruta Electrorroca
+194	Laberinto Lumbre
+196	Caverna Abisal Cero
+198	Caverna Abisal Cero
+200	Biodomo
+30001	Intercambio en conexión
+30002	Intercambio en conexión
+30003	Kanto
+30004	Johto
+30005	Hoenn
+30006	Sinnoh
+30007	Tierra lejana
+30008	－－－－－－－－－－
+30009	Teselia
+30010	Kalos
+30011	Nexo Pokémon
+30012	Pokémon GO
+30013	Kanto
+30014	Hoenn
+30015	Alola
+30016	Poké Resort
+30017	Johto
+30018	Pokémon HOME
+30019	Kanto
+30020	Galar
+30021	Hisui
+30022	Sinnoh
+30023	Pícnic
+30024	Cueva cristalina
+40001	Lugar encantador
+40002	Lugar lejano
+40003	Película Pokémon
+40004	Película Pokémon 2023
+40005	Película Pokémon 2024
+40006	Película Pokémon 2025
+40007	Película Pokémon 2026
+40008	Película Pokémon 2027
+40009	Película Pokémon 2028
+40010	Dibujos animados Pokémon
+40011	Pokémon Center
+40012	Pokémon Center Tohoku
+40013	WCS
+40014	WCS 2023
+40015	WCS 2024
+40016	WCS 2025
+40017	WCS 2026
+40018	WCS 2027
+40019	WCS 2028
+40020	Worlds
+40021	Worlds 2023
+40022	Worlds 2024
+40023	Worlds 2025
+40024	Worlds 2026
+40025	Worlds 2027
+40026	Worlds 2028
+40027	Evento de Videojuegos
+40028	Evento de Videojuegos 2023
+40029	Evento de Videojuegos 2024
+40030	Evento de Videojuegos 2025
+40031	Evento de Videojuegos 2026
+40032	Evento de Videojuegos 2027
+40033	Evento de Videojuegos 2028
+40034	Evento Pokémon
+40035	Torneo
+40036	Evento de Videojuegos
+40037	Pokémon Daisuki Club
+40038	Programa sobre Pokémon
+40039	Concierto
+40040	Regalo en línea
+40041	Pokémon Global Link
+40042	Evento Pokémon 2023
+40043	Evento Pokémon 2024
+40044	Evento Pokémon 2025
+40045	Evento Pokémon 2026
+40046	Evento Pokémon 2027
+40047	Evento Pokémon 2028
+40048	Evento Pokémon
+40049	Evento Pokémon 2023
+40050	Evento Pokémon 2024
+40051	Evento Pokémon 2025
+40052	Evento Pokémon 2026
+40053	Evento Pokémon 2027
+40054	Evento Pokémon 2028
+40055	PokéPark
+40056	PokéPark 2023
+40057	PokéPark 2024
+40058	PokéPark 2025
+40059	PokéPark 2026
+40060	PokéPark 2027
+40061	PokéPark 2028
+40062	Evento
+40063	GAME FREAK
+40064	Estadio
+40065	VGC
+40066	VGC 2023
+40067	VGC 2024
+40068	VGC 2025
+40069	VGC 2026
+40070	VGC 2027
+40071	VGC 2028
+40072	Consola Virtual
+40073	Pokémon GO
+40074	Banco de Pokémon
+40075	Establecimiento Pokémon
+40076	Versión de prueba
+40077	Poké Ball Plus
+40078	Pokémon HOME
+60001	Persona lejana
+60002	Cuidados Pokémon
+60003	Buscatesoros
+60004	Anciana del Balneario
+60005	Cinio

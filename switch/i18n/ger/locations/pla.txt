@@ -1,0 +1,261 @@
+0	－－－－－－－－－－
+2	Mysteriöser Ort
+4	Ferner Ort
+6	Jubeldorf
+7	Obsidian-Grasland
+8	Rotes Sumpfland
+9	Kobalt-Küstenland
+10	Kraterberg-Hochland
+11	Weißes Frostland
+12	Uralte Siedlung
+13	Ambitionshügel
+14	Hufeisenwiesen
+15	Geweihbergweg
+16	Geweihanhöhe
+17	Obsidian-Wasserfall
+18	Erztunnel
+19	Waldesküche
+20	Innerwald
+21	Baumriesenkampffeld
+22	Strapazenhain
+23	See der Wahrheit
+24	Sandgemmenheide
+25	Mündungsdamm
+26	Flora-Rodefläche
+27	Hamanasu-Insel
+28	Graslandbasis
+29	Anhöhenbasis
+30	Windpassage
+31	Flora-Rodefläche
+32	Felsenbrücke
+33	Moosfelsen
+34	Güldene Felder
+35	Ruinen des Trostes
+36	Großmaulmoor
+37	Schlammplateau
+38	Purpurrotes Moor
+39	Geröllhügel
+40	Diamant-Siedlung
+41	See der Kühnheit
+42	Wolkenmeerkamm
+43	Nebelruinen
+45	Prüfungsbarre
+46	Surrende Felder
+47	Sumpflandbasis
+48	Ödnisbasis
+49	Übergangshang
+50	Ginkgo-Strand
+51	Schauriger Welkwald
+52	Versteckte Bucht
+53	Tombolo-Weg
+54	Schleierkap
+55	Seegrasidyll
+56	Feuerspei-Insel
+57	Haus von Susuki
+58	Quellenpfad
+59	Großfischfelsen
+60	Inselblickufer
+61	Windbruchwald
+63	Gezeitentunnel
+64	Kleine Meeresgrotte
+65	Strandbasis
+66	Küstenlandbasis
+67	Höhle der Umkehr
+68	Lavadom-Schrein
+69	Hochlandbasis
+70	Sakralplateau
+71	Wirrwald
+72	Uralter Steinbruch
+73	Elysien-Bergpfad
+74	Einsame Quelle
+75	Feenweiher
+76	Geröllberge
+77	Steinplattenpass
+79	Urzeitliche Höhle
+80	Kletterklippe
+81	Elysien-Tempelruinen
+82	Mondgrußkampffeld
+83	Gipfelbasis
+84	Gipfelschwadentunnel
+85	Speersäule
+86	Bizarre Höhle
+87	Schneefeldbasis
+88	Blizzardtal
+89	Gletscherpassage
+90	Eisige Ödnis
+92	Arktilas-Eisblock
+93	Gletscherstufen
+94	See der Stärke
+95	Blizzard-Tempel
+96	Winterschlafhöhle
+97	Firnfälle
+98	Lawinenhügel
+99	Pfad zum Kampffeld
+100	Perl-Siedlung
+101	Geistesfelsen
+102	Eissäulenkammer
+103	Eisgipfelbasis
+104	Wahrheitsgrotte
+105	Kühnheitsgrotte
+106	Wollgraswiese
+107	Bergbasis
+108	Steinpforte
+109	Sinnoh-Tempel
+110	Eisfelsen
+111	Stärkegrotte
+112	Eisgipfelhöhle
+113	Geheime Höhle
+114	Galaktik-Hauptsitz
+115	Gemischtwarenladen
+116	Bonbonstand
+117	Handwerksladen
+118	Ginkgo-Gilde
+119	Tauschbörse
+120	Weide
+121	Schneiderei
+122	Friseursalon
+123	Fotoatelier
+124	Acker
+125	Übungsplatz
+126	Glücksschrein
+127	Quartier
+128	Küste der Verirrten
+129	Sandfinger
+130	Pilgerpfad
+131	Platz der Huldigung
+132	Haupttor
+133	Strandtor
+134	Fleetstraße
+135	Floristraße
+136	Strand des Aufbruchs
+137	Übungsgelände
+138	Unbekannter Ort
+139	Bühnenkampffeld
+140	Lavakampffeld
+141	Eisgipfelkampffeld
+142	Schneeblicktherme
+143	Erdgeschoss
+144	Erste Etage
+145	Zweite Etage
+146	Untergeschoss
+147	Prankenplatz
+148	Diamant-Ebene
+149	Griffel-Hügel
+150	Badelagune
+151	Stilles Binnenmeer
+152	Galaktik-Hauptsitz
+153	Haupttor
+154	Acker
+155	Übungsplatz
+30001	Link-Tausch
+30002	Link-Tausch
+30003	Kanto-Region
+30004	Johto-Region
+30005	Hoenn-Region
+30006	Sinnoh-Region
+30007	Fernes Land
+30008	－－－－－－－－－－
+30009	Einall-Region
+30010	Kalos-Region
+30011	Pokémon-Link
+30012	Pokémon GO
+30013	Kanto-Region
+30014	Hoenn-Region
+30015	Alola-Region
+30016	Pokémon-Resort
+30017	Johto-Region
+30018	Pokémon HOME
+30019	Kanto-Region
+30020	Galar-Region
+30021	Hisui-Region
+30022	Sinnoh-Region
+40001	Netter Ort
+40002	Ferner Ort
+40003	Pokémon-Film
+40004	[~ 3]
+40005	Pokémon-Film 2019
+40006	Pokémon-Film 2020
+40007	Pokémon-Film 2021
+40008	Pokémon-Film 2022
+40009	Pokémon-Film 2023
+40010	Pokémon-Film 2024
+40011	Pokémon-Zeichentrickserie
+40012	Pokémon Center
+40013	Pokémon Center Tohoku
+40014	WCS
+40015	[~ 14]
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40023	[~ 22]
+40024	Worlds 2019
+40025	Worlds 2020
+40026	Worlds 2021
+40027	Worlds 2022
+40028	Worlds 2023
+40029	Worlds 2024
+40030	VGE
+40031	[~ 30]
+40032	VGE 2019
+40033	VGE 2020
+40034	VGE 2021
+40035	VGE 2022
+40036	VGE 2023
+40037	VGE 2024
+40038	Pokémon-Veranstaltung
+40039	Kampfturnier
+40040	Videospiel-Veranstaltung
+40041	Pokémon Daisuki Club
+40042	Pokémon-TV-Programm
+40043	Konzert
+40044	Online-Geschenk
+40045	PGL
+40046	[~ 45]
+40047	Pokémon-Veranstaltung 2019
+40048	Pokémon-Veranstaltung 2020
+40049	Pokémon-Veranstaltung 2021
+40050	Pokémon-Veranstaltung 2022
+40051	Pokémon-Veranstaltung 2023
+40052	Pokémon-Veranstaltung 2024
+40053	Pokémon-Veranstaltung
+40054	[~ 53]
+40055	Pokémon-Veranstaltung 2019
+40056	Pokémon-Veranstaltung 2020
+40057	Pokémon-Veranstaltung 2021
+40058	Pokémon-Veranstaltung 2022
+40059	Pokémon-Veranstaltung 2023
+40060	Pokémon-Veranstaltung 2024
+40061	PokéPark
+40062	[~ 61]
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	Veranstaltung
+40070	GAME FREAK
+40071	Stadion
+40072	VGC
+40073	[~ 72]
+40074	VGC 2019
+40075	VGC 2020
+40076	VGC 2021
+40077	VGC 2022
+40078	VGC 2023
+40079	VGC 2024
+40080	Virtual Console
+40081	Pokémon GO
+40082	Pokémon Bank
+40083	Pokémon-Geschäft
+40084	Demoversion
+40085	Pokéball Plus
+40086	Pokémon HOME
+60001	Ferne Person
+60002	Hortleiterinnen
+60003	Schatzsucher
+60004	Dame der Heißen Quellen

@@ -4,6 +4,7 @@
 #include "domain/FieldValues.hpp"
 #include "domain/FormSprites.hpp"
 #include "domain/LetsGoStorage.hpp"
+#include "domain/LocationNames.hpp"
 #include "ui/Text.hpp"
 #include "enums/Stat.hpp"
 #include "pkx/PK8.hpp"
@@ -13,6 +14,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -61,6 +63,43 @@ namespace pksm::switchui
         std::string withId(const std::string& name, unsigned int id)
         {
             return tr(Text::WithId, {name, numericValue(id)});
+        }
+
+        // A met or egg location: picked by name from the list of the Pokémon's game when there
+        // is one, else typed as a number.
+        EditableField locationField(const pksm::PKX& pokemon, Text label,
+            std::function<unsigned int()> get, std::function<void(unsigned int)> set)
+        {
+            const auto& names = locationNames(pokemon.language(), pokemon.version(),
+                pokemon.generation() == pksm::Generation::THREE);
+            const unsigned int current = get();
+            if (names.empty())
+            {
+                return numberField(
+                    display(tr(label), tr(Text::LocationValue, {numericValue(current)})),
+                    tr(label), 0, UINT16_MAX, std::move(get), std::move(set));
+            }
+
+            auto name = [&names](unsigned int number)
+            {
+                const std::string_view found = locationName(names, number);
+                return found.empty() ? tr(Text::LocationValue, {numericValue(number)})
+                                     : withId(std::string(found), number);
+            };
+            return choiceField(display(tr(label), name(current)), tr(label),
+                [&names, get]
+                {
+                    // The current place stays a choice even when the list does not name it.
+                    std::vector<unsigned int> numbers{get()};
+                    for (const auto& location : names)
+                    {
+                        numbers.push_back(location.number);
+                    }
+                    std::sort(numbers.begin(), numbers.end());
+                    numbers.erase(std::unique(numbers.begin(), numbers.end()), numbers.end());
+                    return numbers;
+                },
+                name, std::move(get), std::move(set));
         }
 
         bool setSpecies(pksm::PKX& pokemon, pksm::Species species)
@@ -367,10 +406,7 @@ namespace pksm::switchui
                 [&pokemon] { return pokemon.metDate(); },
                 [&pokemon](const Date& date) { pokemon.metDate(date); }));
         }
-        more.push_back(numberField(
-            display(tr(Text::FieldMetLocation),
-                tr(Text::LocationValue, {numericValue(pokemon.metLocation())})),
-            tr(Text::FieldMetLocation), 0, UINT16_MAX,
+        more.push_back(locationField(pokemon, Text::FieldMetLocation,
             [&pokemon] { return static_cast<unsigned int>(pokemon.metLocation()); },
             [&pokemon](unsigned int value) { pokemon.metLocation(static_cast<u16>(value)); }));
 
@@ -379,10 +415,7 @@ namespace pksm::switchui
             more.push_back(pokemonDateField(Text::FieldEggDate,
                 [&pokemon] { return pokemon.eggDate(); },
                 [&pokemon](const Date& date) { pokemon.eggDate(date); }));
-            more.push_back(numberField(
-                display(tr(Text::FieldEggLocation),
-                    tr(Text::LocationValue, {numericValue(pokemon.eggLocation())})),
-                tr(Text::FieldEggLocation), 0, UINT16_MAX,
+            more.push_back(locationField(pokemon, Text::FieldEggLocation,
                 [&pokemon] { return static_cast<unsigned int>(pokemon.eggLocation()); },
                 [&pokemon](unsigned int value) { pokemon.eggLocation(static_cast<u16>(value)); }));
         }

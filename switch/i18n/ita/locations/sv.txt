@@ -1,0 +1,227 @@
+0	----------
+2	Zona misteriosa
+4	Luogo remoto
+6	Area 1 Sud
+8	Mesapoli
+10	Lega Pokémon
+12	Area 2 Sud
+14	Area 4 Sud
+16	Area 6 Sud
+18	Area 5 Sud
+20	Area 3 Sud
+22	Area 1 Ovest
+24	Deserto Alasar
+26	Area 2 Ovest
+28	Area 3 Ovest
+30	Boschetto dei Segni
+32	Area 3 Est
+34	Area 1 Est
+36	Area 2 Est
+38	Sierra Napada
+40	Lago Gran Caldero
+42	Sierra Napada
+44	Area 3 Nord
+46	Area 1 Nord
+48	Area 2 Nord
+50	Voragine di Paldea
+52	Varco Zero
+54	Varco Zero
+56	Mare di Paldea (sud)
+58	Mare di Paldea (ovest)
+60	Mare di Paldea (est)
+62	Mare di Paldea (nord)
+64	Grotta della Baia
+66	Area 6 Sud
+67	Caverna di Las Brasas
+68	Sierra Napada
+69	Passaggio Mescadia
+70	Sentiero di Dosilla
+72	Mesapoli
+74	Mesapoli
+76	Garrafopoli
+78	Leudapoli
+80	Dosilla
+82	Platia
+84	Moldulcia
+86	Los Tazones
+88	Marinada
+90	Mesturia
+92	Picadia
+94	Neveria
+96	Las Brasas
+98	Area 2 Nord
+99	Base della Banda Caph
+100	Area 1 Ovest
+101	Base della Banda Segin
+102	Area 3 Nord
+103	Base della Banda Ruchbah
+104	Area 1 Est
+105	Base della Banda Schedar
+106	Boschetto dei Segni
+107	Base della Banda Tsih
+108	Lago Gran Caldero
+109	Bosco Torrado
+110	Area Zero
+111	Stazione di Monitoraggio 1
+112	Area Zero
+113	Stazione di Monitoraggio 2
+114	Area Zero
+115	Stazione di Monitoraggio 3
+116	Area Zero
+117	Stazione di Monitoraggio 4
+118	Laboratorio Zero
+120	Laboratorio Zero
+122	Laboratorio Zero
+124	Area Zero
+126	Area Zero
+128	Area Zero
+130	Accademia Arancia
+131	Accademia Uva
+132	Via Nordivia
+134	Verdegiada
+136	Colle Mele
+138	Parco dei beniamici
+140	Sentiero del Tripudio
+142	Centro Nordivia
+144	Monte Orco
+146	Antro del Terrore
+147	Monte Orco
+148	Bocca dell’Orco
+149	Monte Orco
+150	Monte Orco
+152	Lago Cristallìo
+153	Vetta del Monte Orco
+154	Lago Cristallìo
+155	Vetta del Monte Orco
+156	Piana dei Glicini
+158	Piana Duefiumi
+160	Canyon del Corno
+162	Landa Paradisiaca
+164	Terre Primeve di Nordivia
+166	Foresta Perpetua
+167	Terre Primeve di Nordivia
+168	Pendio Infernale
+169	Monte Orco
+170	Grotta Doccia Fredda
+172	Istituto Mirtillo
+174	Settore Savana
+176	Settore Costa
+178	Settore Canyon
+180	Settore Ghiacciai
+182	Piazza Centrale
+184	Piazza della Savana
+186	Piazza della Costa
+188	Piazza del Canyon
+190	Piazza dei Ghiacciai
+192	Grotta Pietrelettrica
+194	Labirinto dei Lumi
+196	Grande Abisso Zero
+198	Grande Abisso Zero
+200	Bioterarium
+30001	con uno scambio in link
+30002	con uno scambio in link
+30003	da Kanto
+30004	da Johto
+30005	da Hoenn
+30006	da Sinnoh
+30007	da una terra lontana
+30008	da ----------
+30009	da Unima
+30010	da Kalos
+30011	con il Pokémon Link
+30012	da Pokémon GO
+30013	da Kanto
+30014	da Hoenn
+30015	da Alola
+30016	dal Poké Resort
+30017	da Johto
+30018	da Pokémon HOME
+30019	da Kanto
+30020	da Galar
+30021	da Hisui
+30022	da Sinnoh
+30023	durante un picnic
+30024	in una grotta dei cristalli
+40001	un luogo grazioso
+40002	un luogo remoto
+40003	un film Pokémon
+40004	un film Pokémon (2023)
+40005	un film Pokémon (2024)
+40006	un film Pokémon (2025)
+40007	un film Pokémon (2026)
+40008	un film Pokémon (2027)
+40009	un film Pokémon (2028)
+40010	il cartone animato Pokémon
+40011	un Pokémon Center
+40012	il Pokémon Center Tohoku
+40013	i WCS
+40014	i WCS 2023
+40015	i WCS 2024
+40016	i WCS 2025
+40017	i WCS 2026
+40018	i WCS 2027
+40019	i WCS 2028
+40020	i Worlds
+40021	i Worlds 2023
+40022	i Worlds 2024
+40023	i Worlds 2025
+40024	i Worlds 2026
+40025	i Worlds 2027
+40026	i Worlds 2028
+40027	un VGE
+40028	un VGE (2023)
+40029	un VGE (2024)
+40030	un VGE (2025)
+40031	un VGE (2026)
+40032	un VGE (2027)
+40033	un VGE (2028)
+40034	un evento Pokémon
+40035	una gara
+40036	un evento di gioco
+40037	il Pokémon Daisuki Club
+40038	un programma TV Pokémon
+40039	un concerto
+40040	regalo online
+40041	il PGL
+40042	un evento Pokémon (2023)
+40043	un evento Pokémon (2024)
+40044	un evento Pokémon (2025)
+40045	un evento Pokémon (2026)
+40046	un evento Pokémon (2027)
+40047	un evento Pokémon (2028)
+40048	un evento Pokémon
+40049	un evento Pokémon (2023)
+40050	un evento Pokémon (2024)
+40051	un evento Pokémon (2025)
+40052	un evento Pokémon (2026)
+40053	un evento Pokémon (2027)
+40054	un evento Pokémon (2028)
+40055	PokéPark
+40056	PokéPark (2023)
+40057	PokéPark (2024)
+40058	PokéPark (2025)
+40059	PokéPark (2026)
+40060	PokéPark (2027)
+40061	PokéPark (2028)
+40062	un evento
+40063	GAME FREAK
+40064	uno stadio
+40065	i VGC
+40066	i VGC 2023
+40067	i VGC 2024
+40068	i VGC 2025
+40069	i VGC 2026
+40070	i VGC 2027
+40071	i VGC 2028
+40072	la Virtual Console
+40073	Pokémon GO
+40074	Banca Pokémon
+40075	un negozio Pokémon
+40076	una versione demo
+40077	la Poké Ball Plus
+40078	Pokémon HOME
+60001	da una persona lontana
+60002	all’Ostello Pokémon
+60003	da un Cercatesori
+60004	dalla vecchina delle terme
+60005	(regalo di Zim)
