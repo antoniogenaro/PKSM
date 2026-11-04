@@ -178,7 +178,8 @@ full 3DS interface or a tool for accessing active game saves.
   us
 - [kwsch](https://github.com/kwsch) and [SciresM](https://github.com/SciresM)
   for PKHeX, memecrypto and documentation, and the PKHeX sprites the Switch
-  app uses for the Pokémon from Hisui on
+  app uses for the Pokémon from Hisui on, and the PKHeX names it uses for the
+  newer Pokémon, moves, abilities, items and met locations
 - [fincs](https://github.com/fincs) and
   [WinterMute](https://github.com/WinterMute) for citro2d and devkitARM
 - [kamronbatman](https://github.com/kamronbatman) and ProjectPokemon.org for

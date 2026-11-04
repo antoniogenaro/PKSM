@@ -1,0 +1,216 @@
+0	Wurzelheim
+1	Rosaltstadt
+2	Faustauhaven
+3	Bad Lavastadt
+4	Laubwechselfeld
+5	Wiesenflur
+6	Floßbrunn
+7	Blütenburg City
+8	Graphitport City
+9	Malvenfroh City
+10	Metarost City
+11	Baumhausen City
+12	Seegrasulb City
+13	Moosbach City
+14	Xeneroville
+15	Prachtpolis City
+16	Route 101
+17	Route 102
+18	Route 103
+19	Route 104
+20	Route 105
+21	Route 106
+22	Route 107
+23	Route 108
+24	Route 109
+25	Route 110
+26	Route 111
+27	Route 112
+28	Route 113
+29	Route 114
+30	Route 115
+31	Route 116
+32	Route 117
+33	Route 118
+34	Route 119
+35	Route 120
+36	Route 121
+37	Route 122
+38	Route 123
+39	Route 124
+40	Route 125
+41	Route 126
+42	Route 127
+43	Route 128
+44	Route 129
+45	Route 130
+46	Route 131
+47	Route 132
+48	Route 133
+49	Route 134
+50	Unterwasser (Route 124)
+51	Unterwasser (Route 126)
+52	Unterwasser (Route 127)
+53	Unterwasser (Route 128)
+54	Unterwasser (Prachtpolis City)
+55	Granithöhle
+56	Schlotberg
+57	Safari-Zone (RSS)
+58	Duellturm (RS) / Kampfzone (Sm)
+59	Blütenburgwald
+60	Metaflurtunnel
+61	Schiffswrack
+62	Neu Malvenfroh
+63	Meteorfälle
+64	Meteorfälle (unbenutzt)
+65	Pyroberg
+66	Versteck
+67	Küstenhöhle
+68	Tiefseehöhle
+69	Unterwasser (Tiefseehöhle)
+70	Siegesstraße (RSS)
+71	Wundereiland
+72	Urzeithöhle
+73	Insel im Süden
+74	Feuriger Pfad
+75	Feuriger Pfad (unbenutzt)
+76	Steilpass
+77	Steilpass (unbenutzt)
+78	Siegelkammer
+79	Unterwasser (Route 134)
+80	Sonnengrotte
+81	Inselhöhle
+82	Wüstenruine
+83	Grabmal
+84	Im Möbelwagen
+85	Himmelturm
+86	Geheimbasis
+87	Fähre
+88	Alabastia
+89	Vertania City
+90	Marmoria City
+91	Azuria City
+92	Lavandia
+93	Orania City
+94	Prismania City
+95	Fuchsania City
+96	Zinnoberinsel
+97	Indigo Plateau
+98	Saffronia City
+99	Route 4 (Pokémon-Center)
+100	Route 10 (Pokémon-Center)
+101	Route 1
+102	Route 2
+103	Route 3
+104	Route 4
+105	Route 5
+106	Route 6
+107	Route 7
+108	Route 8
+109	Route 9
+110	Route 10
+111	Route 11
+112	Route 12
+113	Route 13
+114	Route 14
+115	Route 15
+116	Route 16
+117	Route 17
+118	Route 18
+119	Route 19
+120	Route 20
+121	Route 21
+122	Route 22
+123	Route 23
+124	Route 24
+125	Route 25
+126	Vertania-Wald
+127	Mondberg
+128	M.S. Anne
+129	Tunnelpfad (Routes 5-6)
+130	Tunnelpfad (Routes 7-8)
+131	Digdas Höhle
+132	Siegesstraße (Kanto)
+133	Rocket HQ
+134	Silph Co.
+135	Pokémon-Haus
+136	Safari-Zone (Kanto)
+137	Pokémon Liga
+138	Felstunnel
+139	Seeschauminseln
+140	Pokémon Turm
+141	Azuria-Höhle
+142	Kraftwerk
+143	Eiland Eins
+144	Eiland Zwei
+145	Eiland Drei
+146	Eiland Vier
+147	Eiland Fünf
+148	Eiland Sieben
+149	Eiland Sechs
+150	Glühweg
+151	Schatzgestade
+152	Kap Kante
+153	Bundbrücke
+154	Tri-Eiland Hafen
+155	Sevii Eiland 6
+156	Sevii Eiland 7
+157	Sevii Eiland 8
+158	Sevii Eiland 9
+159	Ferienparadies
+160	Wasserirrgarten
+161	Eiland 5-Weide
+162	Gedenksäule
+163	Fern-Eiland
+164	Grüner Pfad
+165	Wasserweg
+166	Ruinental
+167	Trainerturm (Außenbereich)
+168	Schluchteingang
+169	7-Schatzschlucht
+170	Tanibo-Ruinen
+171	Sevii Eiland 22
+172	Sevii Eiland 23
+173	Sevii Eiland 24
+174	Nabelfels (FRBG)
+175	Glutberg
+176	Beerenforst
+177	Eiskaskadenhöhle
+178	Rocket-Lager
+179	Trainerturm
+180	Punktloch
+181	Verlorene Höhle
+182	Musterbuschwald
+183	Wandelhöhle (FRBG)
+184	Tanibo-Kammer
+185	Tri-Eiland-Pfad
+186	Tanibo-Schlüssel
+187	Entstehungsinsel (FRBG)
+188	Einamon-Kammer
+189	Pezwulp-Kammer
+190	Dreicke-Kammer
+191	Vierzisse-Kammer
+192	Fünibisku-Kammer
+193	Lilechs-Kammer
+194	Sieborbia-Kammer
+195	Gluttherme
+196	Prismania Eink. (FRBG)
+197	Aquas Versteck
+198	Magmas Versteck
+199	Wunderturm
+200	Entstehungsinsel (Sm)
+201	Ferneiland
+202	Höhlenatelier
+203	Ozeanhöhle
+204	Unterwasser (Ozeanhöhle)
+205	Terrahöhle
+206	Unterwasser (Route 105)
+207	Unterwasser (Route 125)
+208	Unterwasser (Route 129)
+209	Wüstentunnel
+210	Wandelhöhle (Sm)
+211	Nabelfels (Sm)
+212	Trainerberg
+253	(Ei Geschenk)
+254	(In-game Tausch)
+255	(Schicksalhafte Begegnung)

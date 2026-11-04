@@ -1,0 +1,216 @@
+0	Bourg-en-Vol
+1	Rosyères
+2	Village Myokara
+3	Vermilava
+4	Autéquia
+5	Vergazon
+6	Pacifiville
+7	Clémenti-Ville
+8	Poivressel
+9	Lavandia
+10	Mérouville
+11	Cimetronelle
+12	Nénucrique
+13	Algatia
+14	Atalanopolis
+15	Éternara
+16	Route 101
+17	Route 102
+18	Route 103
+19	Route 104
+20	Chenal 105
+21	Chenal 106
+22	Chenal 107
+23	Chenal 108
+24	Chenal 109
+25	Route 110
+26	Route 111
+27	Route 112
+28	Route 113
+29	Route 114
+30	Route 115
+31	Route 116
+32	Route 117
+33	Route 118
+34	Route 119
+35	Route 120
+36	Route 121
+37	Chenal 122
+38	Route 123
+39	Chenal 124
+40	Chenal 125
+41	Chenal 126
+42	Chenal 127
+43	Chenal 128
+44	Chenal 129
+45	Chenal 130
+46	Chenal 131
+47	Chenal 132
+48	Chenal 133
+49	Chenal 134
+50	Fond marin (Chenal 124)
+51	Fond marin (Chenal 126)
+52	Fond marin (Chenal 127)
+53	Fond marin (Chenal 128)
+54	Fond marin (Atalanopolis)
+55	Grotte Granite
+56	Mont Chimnée
+57	Parc Safari (RSE)
+58	Tour de Combat (RS) / Zone de Combat (E)
+59	Bois Clémenti
+60	Tunnel Mérazon
+61	Épave
+62	New Lavandia
+63	Site Météore
+64	Site Météore (inutilisé)
+65	Mont Mémoria
+66	Planque
+67	Grotte Tréfonds
+68	Caverne Fondmer
+69	Fond marin (Caverne Fondmer)
+70	Route Victoire (RSE)
+71	Île Mirage
+72	Grotte Origine
+73	Île du Sud
+74	Chemin Ardent
+75	Chemin Ardent (inutilisé)
+76	Sentier Sinuroc
+77	Sentier Sinuroc (inutilisé)
+78	Sanctuaire
+79	Fond marin (Chenal 134)
+80	Grotte Zénith
+81	Grotte Island
+82	Ruines Désert
+83	Tombeau Antique
+84	Camionnette
+85	Pilier Céleste
+86	Base Secrète
+87	Ferry
+88	Bourg Palette
+89	Jadielle
+90	Argenta
+91	Azuria
+92	Lavanville
+93	Carmin sur Mer
+94	Céladopole
+95	Parmanie
+96	Cramois'Île
+97	Plateau Indigo
+98	Safrania
+99	Route 4 (Centre Pokémon)
+100	Route 10 (Centre Pokémon)
+101	Route 1
+102	Route 2
+103	Route 3
+104	Route 4
+105	Route 5
+106	Route 6
+107	Route 7
+108	Route 8
+109	Route 9
+110	Route 10
+111	Route 11
+112	Route 12
+113	Route 13
+114	Route 14
+115	Route 15
+116	Route 16
+117	Route 17
+118	Route 18
+119	Chenal 19
+120	Chenal 20
+121	Chenal 21
+122	Route 22
+123	Route 23
+124	Route 24
+125	Route 25
+126	Forêt de Jade
+127	Mont Sélénite
+128	L'Océane
+129	Souterrain (Routes 5-6)
+130	Souterrain (Routes 7-8)
+131	Cave Taupiqueur
+132	Route Victoire (Kanto)
+133	Repaire Rocket
+134	Sylphe SARL
+135	Manoir Pokémon
+136	Parc Safari (Kanto)
+137	Ligue Pokémon
+138	Grotte
+139	Îles Écume
+140	Tour Pokémon
+141	Caverne Azurée
+142	Centrale
+143	Île 1
+144	Île 2
+145	Île 3
+146	Île 4
+147	Île 5
+148	Île 7
+149	Île 6
+150	Route Tison
+151	Plage Trésor
+152	Cap Falaise
+153	Pont du Lien
+154	Port Île 3
+155	Île Sevii 6
+156	Île Sevii 7
+157	Île Sevii 8
+158	Île Sevii 9
+159	Camp de Vacances
+160	Labyrinthe d'O
+161	Pré de l'Île 5
+162	Mémorial
+163	Île du Lointain
+164	Chemin Vert
+165	Agualcanal
+166	Vallée Ruine
+167	Tour Dresseurs (extérieur)
+168	Entrée Canyon
+169	Canyon Sesor
+170	Ruines Tanoby
+171	Île Sevii 22
+172	Île Sevii 23
+173	Île Sevii 24
+174	Roc Nombri (RFVF)
+175	Mont Braise
+176	Bois Baies
+177	Grotte de Glace
+178	Entrepôt
+179	Tour Dresseurs
+180	Trou Percé
+181	Grotte Perdue
+182	Forbuissons
+183	Grotte Métamo (RFVF)
+184	Chambres Tanoby
+185	Chemin Île 3
+186	Clé Tanoby
+187	Île Aurore (RFVF)
+188	Chambre Anémune
+189	Chambre Deulipe
+190	Chambre Prois
+191	Chambre Jonquatr
+192	Chambre Hibicinq
+193	Chambre Irix
+194	Chambre Poinsept
+195	Source Braise
+196	Cent. Commercial (RFVF)
+197	Planque Aqua
+198	Planque Magma
+199	Tour Mirage
+200	Île Aurore (E)
+201	Île Lointaine
+202	Grotte Atelier
+203	Grotte Marine
+204	Fond marin (Grotte Marine)
+205	Grotte Terra
+206	Fond marin (Chenal 105)
+207	Fond marin (Chenal 125)
+208	Fond marin (Chenal 129)
+209	Voie du Désert
+210	Grotte Métamo (E)
+211	Roc Nombri (E)
+212	Mont Dresseurs
+253	(Œuf reçu en cadeau)
+254	(Échange in-game)
+255	(Évenèment spécial)

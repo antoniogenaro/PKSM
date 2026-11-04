@@ -1,0 +1,306 @@
+0	－
+2	Lugar misterioso
+4	Lugar lejano
+6	Pueblo Yarda
+8	Bosque Oniria
+12	Ruta 1
+14	Pueblo Par
+16	Estación de Par
+18	Ruta 2
+20	Ciudad Pistón
+22	Estación de Pistón
+24	Estadio de Pistón
+28	Ruta 3
+30	Mina de Galar
+32	Ruta 4
+34	Pueblo Hoyuelo
+36	Estadio de Hoyuelo
+40	Ruta 5
+44	Pueblo Amura
+46	Estación de Amura
+48	Estadio de Amura
+52	Afueras de Pistón
+54	Mina de Galar n.º 2
+56	Ciudad Artejo
+58	Estación de Artejo
+60	Estadio de Artejo
+64	Planta Eléctrica
+66	Corona de la Torre
+68	Ruta 6
+70	Pueblo Ladera
+72	Estadio de Ladera
+76	Bosque Lumirinto
+78	Pueblo Plié
+80	Estadio de Plié
+84	Ruta 7
+86	Ruta 8
+88	Ruta 8
+89	Senda Vaporosa
+90	Ruta 9
+92	Ruta 9
+93	Bahía de Auriga
+94	Ruta 9
+95	Afueras de Crampón
+96	Pueblo Auriga
+98	Estadio de Auriga
+102	Pueblo Crampón
+104	Túnel de la Ruta 9
+106	Ruta 10
+108	Est. Colinablanca
+110	Ciudad Puntera
+112	Estación de Puntera
+114	Estadio de Puntera
+115	Sede de la Liga
+116	Estadio de Puntera
+117	Antesala
+118	Estadio de Puntera
+120	Punto de Encuentro
+121	Área Silvestre
+122	Pradera Radiante
+123	Área Silvestre
+124	Arboleda Claroscuro
+125	Área Silvestre
+126	Antigua Atalaya
+127	Área Silvestre
+128	Lago Axew (este)
+129	Área Silvestre
+130	Lago Axew (oeste)
+131	Área Silvestre
+132	Ojo de Axew
+133	Área Silvestre
+134	Lago Milotic (sur)
+135	Área Silvestre
+136	Silla del Gigante
+137	Área Silvestre
+138	Lago Milotic (norte)
+139	Área Silvestre
+140	Ribera de Pistón
+141	Área Silvestre
+142	Valle Entrepuentes
+143	Área Silvestre
+144	Llanura Pétrea
+145	Área Silvestre
+146	Cuenca Polvorienta
+147	Área Silvestre
+148	Espejo del Gigante
+149	Área Silvestre
+150	Cornisa de Artejo
+151	Área Silvestre
+152	Gorro del Gigante
+153	Área Silvestre
+154	Lago del Enfado
+155	Área Silvestre
+156	Est. Área Silvestre
+158	Torre Batalla
+160	Torre Rose
+162	Nido Pokémon
+164	Prado Reverencia
+165	Isla de la Armadura
+166	Humedal Frescor
+167	Isla de la Armadura
+168	Bosque Concentración
+169	Isla de la Armadura
+170	Playa Desafío
+171	Isla de la Armadura
+172	Cueva Contienda
+173	Isla de la Armadura
+174	Ruta Desafío
+175	Isla de la Armadura
+176	Cueva Tenacidad
+177	Isla de la Armadura
+178	Bahía Circular
+179	Isla de la Armadura
+180	Llano Entrenamiento
+181	Isla de la Armadura
+182	Gruta Calentamiento
+183	Isla de la Armadura
+184	Cuenca Arenosa
+185	Isla de la Armadura
+186	Mar Gimnástico
+187	Isla de la Armadura
+188	Mar Andana
+189	Isla de la Armadura
+190	Mar Islejos
+191	Isla de la Armadura
+192	Mar Meloso
+193	Isla de la Armadura
+194	Isla Melosa
+195	Isla de la Armadura
+196	Dojo Maestro
+198	Torre de las Sombras
+200	Torre de las Aguas
+202	Estación Armadura
+204	Campo Deslizante
+205	Nieves de la Corona
+206	Villa Helada
+207	Nieves de la Corona
+208	Campo Bajocero
+209	Nieves de la Corona
+210	Lecho del Gigante
+211	Nieves de la Corona
+212	Viejo Cementerio
+213	Nieves de la Corona
+214	Desfiladero Nevado
+215	Nieves de la Corona
+216	Túnel Ascensión
+217	Nieves de la Corona
+218	Senda Blancacima
+219	Nieves de la Corona
+220	Templo Corona
+221	Nieves de la Corona
+222	Suela del Gigante
+223	Nieves de la Corona
+224	Grutas Sonamar
+225	Nieves de la Corona
+226	Mar Gélido
+227	Nieves de la Corona
+228	Encrucijada Tresvías
+229	Nieves de la Corona
+230	Lago Bolaguna
+231	Nieves de la Corona
+232	Gruta del Lago
+233	Nieves de la Corona
+234	Colina del Maxiárbol
+235	Nieves de la Corona
+236	Ruinas Pico Roca
+238	Ruinas Iceberg
+240	Ruinas Hierro
+242	Ruinas del Dilema
+244	Supernido Dinamax
+246	Estación Corona
+30001	Intercambio en conexión
+30002	Intercambio en conexión
+30003	Kanto
+30004	Johto
+30005	Hoenn
+30006	Sinnoh
+30007	Tierra lejana
+30008	－－－－－－－－－－
+30009	Teselia
+30010	Kalos
+30011	Nexo Pokémon
+30012	Pokémon GO
+30013	Kanto
+30014	Hoenn
+30015	Alola
+30016	Poké Resort
+30017	Johto
+30018	Pokémon HOME
+30019	Kanto
+40001	Lugar encantador
+40002	Lugar lejano
+40003	Película Pokémon
+40004	[~ 3]
+40005	Película Pokémon 2019
+40006	Película Pokémon 2020
+40007	Película Pokémon 2021
+40008	Película Pokémon 2022
+40009	Película Pokémon 2023
+40010	Película Pokémon 2024
+40011	Dibujos animados Pokémon
+40012	Pokémon Center
+40013	Pokémon Center Tohoku
+40014	WCS
+40015	[~ 14]
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40023	[~ 22]
+40024	Worlds 2019
+40025	Worlds 2020
+40026	Worlds 2021
+40027	Worlds 2022
+40028	Worlds 2023
+40029	Worlds 2024
+40030	Evento de Videojuegos
+40031	[~ 30]
+40032	Evento Videojuegos 2019
+40033	Evento Videojuegos 2020
+40034	Evento Videojuegos 2021
+40035	Evento Videojuegos 2022
+40036	Evento Videojuegos 2023
+40037	Evento Videojuegos 2024
+40038	Evento Pokémon
+40039	Torneo
+40040	Evento de Videojuegos
+40041	Pokémon Daisuki Club
+40042	Programa sobre Pokémon
+40043	Concierto
+40044	Regalo en línea
+40045	Pokémon Global Link
+40046	[~ 45]
+40047	Evento Pokémon 2019
+40048	Evento Pokémon 2020
+40049	Evento Pokémon 2021
+40050	Evento Pokémon 2022
+40051	Evento Pokémon 2023
+40052	Evento Pokémon 2024
+40053	Evento Pokémon
+40054	[~ 53]
+40055	Evento Pokémon 2019
+40056	Evento Pokémon 2020
+40057	Evento Pokémon 2021
+40058	Evento Pokémon 2022
+40059	Evento Pokémon 2023
+40060	Evento Pokémon 2024
+40061	PokéPark
+40062	[~ 61]
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	Evento
+40070	GAME FREAK
+40071	Estadio
+40072	VGC
+40073	[~ 72]
+40074	VGC 2019
+40075	VGC 2020
+40076	VGC 2021
+40077	VGC 2022
+40078	VGC 2023
+40079	VGC 2024
+40080	Consola Virtual
+40081	Pokémon GO
+40082	Banco de Pokémon
+40083	Establecimiento Pokémon
+40084	Versión de prueba
+40085	Poké Ball Plus
+40086	Pokémon HOME
+40087	[~ 86]
+40088	[~ 87]
+40089	[~ 88]
+40090	[~ 89]
+40091	[~ 90]
+40092	[~ 91]
+40093	[~ 92]
+40094	[~ 93]
+40095	[~ 94]
+40096	[~ 95]
+40097	[~ 96]
+40098	[~ 97]
+40099	[~ 98]
+40100	[~ 99]
+40101	[~ 100]
+40102	[~ 101]
+40103	[~ 102]
+40104	[~ 103]
+40105	[~ 104]
+40106	[~ 105]
+40107	[~ 106]
+40108	[~ 107]
+40109	[~ 108]
+40110	[~ 109]
+40111	[~ 110]
+40112	[~ 111]
+40113	[~ 112]
+60001	Persona lejana
+60002	Cuidados Pokémon
+60003	Buscatesoros
+60004	Anciana del Balneario

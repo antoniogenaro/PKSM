@@ -1,0 +1,306 @@
+0	－－－－－－－－－－
+2	Endroit mystérieux
+4	Endroit lointain
+6	Paddoxton
+8	Forêt de Sleepwood
+12	Route 1
+14	Brasswick
+16	Gare de Brasswick
+18	Route 2
+20	Motorby
+22	Gare de Motorby
+24	Stade de Motorby
+28	Route 3
+30	Mine de Galar
+32	Route 4
+34	Greenbury
+36	Stade de Greenbury
+40	Route 5
+44	Skifford
+46	Gare de Skifford
+48	Stade de Skifford
+52	Abords de Motorby
+54	Mine de Galar nº 2
+56	Kickenham
+58	Gare de Kickenham
+60	Stade de Kickenham
+64	Salle du réacteur
+66	Sommet de la tour
+68	Route 6
+70	Old Chister
+72	Stade d’Old Chister
+76	Forêt de Lumirinth
+78	Corrifey
+80	Stade de Corrifey
+84	Route 7
+86	Route 8
+88	Route 8
+89	Sentier des Sources
+90	Route 9
+92	Route 9
+93	Baie de Ludester
+94	Route 9
+95	Abords de Smashings
+96	Ludester
+98	Stade de Ludester
+102	Smashings
+104	Tunnel de la Route 9
+106	Route 10
+108	Gare de White Hill
+110	Winscor
+112	Gare de Winscor
+114	Stade de Winscor
+115	Siège de la Ligue
+116	Stade de Winscor
+117	Vestiaires
+118	Stade de Winscor
+120	Sentier de la Gare
+121	Terres Sauvages
+122	Plaine Verdoyante
+123	Terres Sauvages
+124	Bois de Clairjour
+125	Terres Sauvages
+126	Tour en ruines
+127	Terres Sauvages
+128	Lac Coupenotte Est
+129	Terres Sauvages
+130	Lac Coupenotte Ouest
+131	Terres Sauvages
+132	Œil du Lac
+133	Terres Sauvages
+134	Lac Milobellus Sud
+135	Terres Sauvages
+136	Siège du Géant
+137	Terres Sauvages
+138	Lac Milobellus Nord
+139	Terres Sauvages
+140	Berges de Motorby
+141	Terres Sauvages
+142	Prairie Entre-Ponts
+143	Terres Sauvages
+144	Plaine Rocheuse
+145	Terres Sauvages
+146	Fosse des Sables
+147	Terres Sauvages
+148	Miroir du Géant
+149	Terres Sauvages
+150	Plateau de Kickenham
+151	Terres Sauvages
+152	Coiffe du Géant
+153	Terres Sauvages
+154	Lac Ouragan
+155	Terres Sauvages
+156	Gare Terres Sauvages
+158	Tour de Combat
+160	Shehroz Tower
+162	Antre
+164	Plaine Salutation
+165	Isolarmure
+166	Lande Boldair
+167	Isolarmure
+168	Forêt Flexion
+169	Isolarmure
+170	Plage de l’Épreuve
+171	Isolarmure
+172	Grotte du Pugilat
+173	Isolarmure
+174	Route de l’Épreuve
+175	Isolarmure
+176	Caverne Pugnacité
+177	Isolarmure
+178	Lagune Circulaire
+179	Isolarmure
+180	Plaine des Efforts
+181	Isolarmure
+182	Voie des Étirements
+183	Isolarmure
+184	Sables de Kudsac
+185	Isolarmure
+186	Mer Eau-Hisse
+187	Isolarmure
+188	Mer Align’Îlots
+189	Isolarmure
+190	Mer Isol’Îlots
+191	Isolarmure
+192	Mer Calméole
+193	Isolarmure
+194	Îlot Calméole
+195	Isolarmure
+196	Dojo de la Maîtrise
+198	Tour des Ténèbres
+200	Tour de l’Eau
+202	Gare d’Isolarmure
+204	Plateau Beau-Gant
+205	Couronneige
+206	Hameau Gelé
+207	Couronneige
+208	Plaine Granfroy
+209	Couronneige
+210	Repos du Géant
+211	Couronneige
+212	Cimetière Ancien
+213	Couronneige
+214	Pente Enneigée
+215	Couronneige
+216	Galeries Monte-Pic
+217	Couronneige
+218	Sentier Blanche-Cime
+219	Couronneige
+220	Temple Couronne
+221	Couronneige
+222	Empreinte du Géant
+223	Couronneige
+224	Cavernes Gronde-Mer
+225	Couronneige
+226	Mer Banquise
+227	Couronneige
+228	Croisée Trois-Voies
+229	Couronneige
+230	Lac Poké Ball
+231	Couronneige
+232	Grotte du Lac
+233	Couronneige
+234	Butte du Dynarbre
+235	Couronneige
+236	Ruines Pic Roche
+238	Ruines Iceberg
+240	Ruines de Fer
+242	Ruines du Choix
+244	Grand Antre Dynamax
+246	Gare de Couronneige
+30001	Échange en réseau
+30002	Échange en réseau
+30003	Kanto
+30004	Johto
+30005	Hoenn
+30006	Sinnoh
+30007	Pays lointain
+30008	－－－－－－－－－－
+30009	Unys
+30010	Kalos
+30011	Poké Lien
+30012	Pokémon GO
+30013	Kanto
+30014	Hoenn
+30015	Alola
+30016	Poké Loisir
+30017	Johto
+30018	Pokémon HOME
+30019	Kanto
+40001	Endroit superbe
+40002	Endroit lointain
+40003	Film Pokémon
+40004	[~ 3]
+40005	Film Pokémon 2019
+40006	Film Pokémon 2020
+40007	Film Pokémon 2021
+40008	Film Pokémon 2022
+40009	Film Pokémon 2023
+40010	Film Pokémon 2024
+40011	Dessin animé Pokémon
+40012	Pokémon Center
+40013	Pokémon Center Tohoku
+40014	WCS
+40015	[~ 14]
+40016	WCS 2019
+40017	WCS 2020
+40018	WCS 2021
+40019	WCS 2022
+40020	WCS 2023
+40021	WCS 2024
+40022	Worlds
+40023	[~ 22]
+40024	Worlds 2019
+40025	Worlds 2020
+40026	Worlds 2021
+40027	Worlds 2022
+40028	Worlds 2023
+40029	Worlds 2024
+40030	Évènement Jeu Vidéo
+40031	[~ 30]
+40032	Évènement Jeu Vidéo 2019
+40033	Évènement Jeu Vidéo 2020
+40034	Évènement Jeu Vidéo 2021
+40035	Évènement Jeu Vidéo 2022
+40036	Évènement Jeu Vidéo 2023
+40037	Évènement Jeu Vidéo 2024
+40038	Évènement Pokémon
+40039	Compétition
+40040	Évènement
+40041	Pokémon Daisuki Club
+40042	Émission Pokémon
+40043	Concert
+40044	Cadeau téléchargeable
+40045	Pokémon Global Link
+40046	[~ 45]
+40047	Évènement Pokémon 2019
+40048	Évènement Pokémon 2020
+40049	Évènement Pokémon 2021
+40050	Évènement Pokémon 2022
+40051	Évènement Pokémon 2023
+40052	Évènement Pokémon 2024
+40053	Pokémon Festa
+40054	[~ 53]
+40055	Pokémon Festa 2019
+40056	Pokémon Festa 2020
+40057	Pokémon Festa 2021
+40058	Pokémon Festa 2022
+40059	Pokémon Festa 2023
+40060	Pokémon Festa 2024
+40061	PokéPark
+40062	[~ 61]
+40063	PokéPark 2019
+40064	PokéPark 2020
+40065	PokéPark 2021
+40066	PokéPark 2022
+40067	PokéPark 2023
+40068	PokéPark 2024
+40069	Lieu d’Évènement
+40070	GAME FREAK
+40071	Stade
+40072	VGC
+40073	[~ 72]
+40074	VGC 2019
+40075	VGC 2020
+40076	VGC 2021
+40077	VGC 2022
+40078	VGC 2023
+40079	VGC 2024
+40080	Console Virtuelle
+40081	Pokémon GO
+40082	Banque Pokémon
+40083	Boutique Pokémon
+40084	Démo
+40085	Poké Ball Plus
+40086	Pokémon HOME
+40087	[~ 86]
+40088	[~ 87]
+40089	[~ 88]
+40090	[~ 89]
+40091	[~ 90]
+40092	[~ 91]
+40093	[~ 92]
+40094	[~ 93]
+40095	[~ 94]
+40096	[~ 95]
+40097	[~ 96]
+40098	[~ 97]
+40099	[~ 98]
+40100	[~ 99]
+40101	[~ 100]
+40102	[~ 101]
+40103	[~ 102]
+40104	[~ 103]
+40105	[~ 104]
+40106	[~ 105]
+40107	[~ 106]
+40108	[~ 107]
+40109	[~ 108]
+40110	[~ 109]
+40111	[~ 110]
+40112	[~ 111]
+40113	[~ 112]
+60001	Personne lointaine
+60002	Responsable de la Garderie
+60003	Chercheur de Trésors
+60004	Dame des Eaux Thermales

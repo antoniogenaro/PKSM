@@ -89,6 +89,9 @@ export CPPFLAGS	:=	$(INCLUDE)
 export LIBPATHS	:=	-L$(DEVKITPRO)/libnx/lib -L$(PORTLIBS)/lib
 
 export CORE_STRING_FILES	:=	$(shell find $(TOPDIR)/../core/strings -type f)
+# The names core lacks and the met locations, from PKHeX (GPLv3), imported by
+# tools/import_pkhex_text.py. They go over core's strings.
+export SWITCH_I18N_FILES	:=	$(shell find $(TOPDIR)/i18n -type f)
 export SWITCH_STRING_FILES	:=	$(wildcard $(TOPDIR)/strings/*.json)
 export SWITCH_ICON_FILES	:=	$(wildcard $(TOPDIR)/icons/*.svg)
 # The Sword and Shield wonder cards, packed by tools/pack_events.py.
@@ -135,9 +138,11 @@ $(EXTRA_SPRITESHEET): $(EXTRA_SPRITESHEET_SOURCE)
 	@mkdir -p $(dir $@)
 	@cp $< $@
 
-$(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) | $(DEPSDIR)
+$(DEPSDIR)/i18n.stamp: $(CORE_STRING_FILES) $(SWITCH_I18N_FILES) | $(DEPSDIR)
+	@rm -rf $(ROMFS_PATH)/i18n
 	@mkdir -p $(ROMFS_PATH)/i18n
 	@cp -R $(TOPDIR)/../core/strings/* $(ROMFS_PATH)/i18n/
+	@cp -R $(TOPDIR)/i18n/* $(ROMFS_PATH)/i18n/
 	@touch $@
 
 $(DEPSDIR)/strings.stamp: $(SWITCH_STRING_FILES) | $(DEPSDIR)
