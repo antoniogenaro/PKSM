@@ -1123,7 +1123,7 @@ namespace pksm::switchui
     void SwitchUi::drawSavePanel(const SaveSummary& save, const std::string& message)
     {
         drawGamePanel(save.game, save.group,
-            {{save.file, 15.0f, theme::TEXT_SOFT, true, 0},
+            {{save.file, theme::FONT_BODY, theme::TEXT_SOFT, true, 0},
                 {save.details, theme::FONT_SMALL, theme::TEXT_MUTED, false, 0},
                 {save.path, theme::FONT_PATH, theme::TEXT_PATH, false, 0}},
             message, theme::ACCENT);
@@ -1222,13 +1222,16 @@ namespace pksm::switchui
             float moveHeight, moveGap, moveFont, moveRadius;
             size_t moveColumns;
         };
-        static constexpr Metrics regularMetrics{12.0f, 170.0f, 16.0f, 6.0f, 24.0f, 14.0f, 30.0f,
-            theme::FONT_BODY, 26.0f, 32.0f, theme::FONT_SMALL, 12.0f, 52.0f, 8.0f,
-            theme::FONT_PATH, theme::FONT_BODY, 58.0f, 6.0f, theme::FONT_PATH, 20.0f, 8.0f,
-            44.0f, 8.0f, theme::FONT_SMALL, 12.0f, 4};
-        static constexpr Metrics compactMetrics{8.0f, 116.0f, 12.0f, 4.0f, 20.0f, 12.0f, 22.0f,
-            theme::FONT_SMALL, 22.0f, 26.0f, theme::FONT_CAPTION, 10.0f, 46.0f, 6.0f, 11.0f,
-            15.0f, 48.0f, 5.0f, 11.0f, 17.0f, 6.0f, 36.0f, 6.0f, theme::FONT_CAPTION, 10.0f, 2};
+        static constexpr Metrics regularMetrics{12.0f, 170.0f, 16.0f, 6.0f, 24.0f,
+            theme::FONT_SMALL, theme::FONT_TITLE, theme::FONT_BODY, 26.0f, 32.0f,
+            theme::FONT_SMALL, 12.0f, 52.0f, 8.0f, theme::FONT_PATH, theme::FONT_BODY, 58.0f,
+            6.0f, theme::FONT_PATH, theme::FONT_HEADING, 8.0f, 44.0f, 8.0f, theme::FONT_SMALL,
+            12.0f, 4};
+        static constexpr Metrics compactMetrics{8.0f, 116.0f, 12.0f, 4.0f, 20.0f,
+            theme::FONT_PATH, theme::FONT_HEADING, theme::FONT_SMALL, 22.0f, 26.0f,
+            theme::FONT_CAPTION, 10.0f, 46.0f, 6.0f, theme::FONT_PATH, theme::FONT_BODY, 48.0f,
+            5.0f, theme::FONT_PATH, theme::FONT_ROW_TITLE, 6.0f, 36.0f, 6.0f, theme::FONT_CAPTION,
+            10.0f, 2};
         const Metrics& m       = compact ? compactMetrics : regularMetrics;
         const float sectionGap = m.sectionGap;
         const float artSize    = m.artSize;
@@ -1879,14 +1882,14 @@ namespace pksm::switchui
             // Number, species, level with ball and types, centred against the art.
             const float left      = origin.x + artSize + artGap;
             const float textWidth = origin.x + available.x - left;
-            const float numberH   = size(bold, 14.0f, header.number).y;
-            const float nameH     = size(bold, 28.0f, header.name).y;
+            const float numberH   = size(bold, theme::FONT_SMALL, header.number).y;
+            const float nameH     = size(bold, theme::FONT_TITLE, header.name).y;
             const float column    = numberH + 6.0f + nameH + 6.0f + 26.0f + 6.0f + 32.0f;
             float y               = origin.y + (artSize - column) * 0.5f;
-            widgets::drawTextEllipsis(drawList, bold, 14.0f, ImVec2(left, y),
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_SMALL, ImVec2(left, y),
                 theme::rgb(theme::TEXT_MUTED), header.number.c_str(), textWidth);
             y += numberH + 6.0f;
-            widgets::drawTextEllipsis(drawList, bold, 28.0f, ImVec2(left, y),
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_TITLE, ImVec2(left, y),
                 theme::rgb(theme::TEXT), header.name.c_str(), textWidth);
             y += nameH + 6.0f;
             const float levelH = size(regular, theme::FONT_BODY, header.level).y;
@@ -2297,8 +2300,8 @@ namespace pksm::switchui
                 view.pouch < view.pouches.size() ? view.pouches[view.pouch].name : std::string{};
             float x = origin.x + 4.0f;
             x += chip(x, "L") + 12.0f;
-            centredText(drawList, 20.0f, x, origin.y, titleRow, theme::TEXT, pouchName);
-            x += size(20.0f, pouchName).x + 12.0f;
+            centredText(drawList, theme::FONT_HEADING, x, origin.y, titleRow, theme::TEXT, pouchName);
+            x += size(theme::FONT_HEADING, pouchName).x + 12.0f;
             chip(x, "R");
             const float countWidth = size(theme::FONT_SMALL, view.itemCount).x;
             centredText(drawList, theme::FONT_SMALL, origin.x + available.x - 4.0f - countWidth,
@@ -2362,8 +2365,8 @@ namespace pksm::switchui
                             drawList->AddRectFilled(bMin,
                                 ImVec2(bMin.x + stepButton, bMin.y + stepButton),
                                 theme::rgb(theme::CARD), 8.0f);
-                            const ImVec2 signSize = size(18.0f, sign);
-                            drawList->AddText(bold, 18.0f,
+                            const ImVec2 signSize = size(theme::FONT_ROW_TITLE, sign);
+                            drawList->AddText(bold, theme::FONT_ROW_TITLE,
                                 ImVec2(std::round(bMin.x + (stepButton - signSize.x) * 0.5f),
                                     std::round(bMin.y + (stepButton - signSize.y) * 0.5f)),
                                 theme::rgb(theme::ACCENT), sign);
@@ -2390,8 +2393,8 @@ namespace pksm::switchui
                     else if (!item.count.empty())
                     {
                         const std::string count = tr(Text::BagItemCount, {item.count});
-                        const float width       = size(15.0f, count).x;
-                        centredText(drawList, 15.0f, max.x - 14.0f - width, min.y, cardHeight,
+                        const float width       = size(theme::FONT_BODY, count).x;
+                        centredText(drawList, theme::FONT_BODY, max.x - 14.0f - width, min.y, cardHeight,
                             theme::TEXT_SOFT, count);
                         nameRight = max.x - 14.0f - width - 12.0f;
                     }
@@ -2554,7 +2557,7 @@ namespace pksm::switchui
                 kindPill(drawList, card,
                     ImVec2(textLeft + size(bold, theme::FONT_CAPTION, card.number).x + 8.0f,
                         infoTop),
-                    18.0f, 11.0f);
+                    18.0f, theme::FONT_PATH);
                 if (selected)
                 {
                     widgets::drawSelectionOutline(drawList, min, max, cardRadius);
@@ -2602,7 +2605,7 @@ namespace pksm::switchui
                     card.name.c_str(), nullptr, width);
                 drawList->PopClipRect();
                 top += nameHeight + 8.0f;
-                float x = left + kindPill(drawList, card, ImVec2(left, top), 22.0f, 13.0f) + 6.0f;
+                float x = left + kindPill(drawList, card, ImVec2(left, top), 22.0f, theme::FONT_CAPTION) + 6.0f;
                 for (const std::string& mark : view.marks)
                 {
                     x += pill(drawList, ImVec2(x, top), 22.0f, 13.0f, theme::CONTROL,
@@ -2615,7 +2618,7 @@ namespace pksm::switchui
             // Species, ball, trainer and held item; or what an item card holds.
             for (const EventsView::Info& info : view.info)
             {
-                centredText(drawList, bold, 15.0f, origin.x, y, infoRow, theme::TEXT_MUTED,
+                centredText(drawList, bold, theme::FONT_BODY, origin.x, y, infoRow, theme::TEXT_MUTED,
                     info.label);
                 float valueLeft = origin.x + infoLabel;
                 if (info.ball && view.ball != 0)
@@ -2625,8 +2628,8 @@ namespace pksm::switchui
                                                   static_cast<int>(infoRow - 2.0f)});
                     valueLeft += infoRow + 4.0f;
                 }
-                const float valueHeight = size(bold, 15.0f, info.value).y;
-                widgets::drawTextEllipsis(drawList, bold, 15.0f,
+                const float valueHeight = size(bold, theme::FONT_BODY, info.value).y;
+                widgets::drawTextEllipsis(drawList, bold, theme::FONT_BODY,
                     ImVec2(valueLeft, std::round(y + (infoRow - valueHeight) * 0.5f)),
                     theme::rgb(theme::TEXT), info.value.c_str(), right - valueLeft);
                 y += infoRow;
@@ -2663,11 +2666,11 @@ namespace pksm::switchui
                 const size_t last = std::min(count, first + shownLanguages);
                 const auto button = [&](float x, const char* name)
                 {
-                    const float width = size(bold, 12.0f, name).x + 12.0f;
+                    const float width = size(bold, theme::FONT_PATH, name).x + 12.0f;
                     const ImVec2 min(x, y + 2.0f);
                     drawList->AddRectFilled(min, ImVec2(min.x + width, min.y + 22.0f),
                         theme::rgb(theme::BUTTON_FACE), 6.0f);
-                    centredText(drawList, bold, 12.0f, min.x + 6.0f, min.y, 22.0f, theme::ON_DARK,
+                    centredText(drawList, bold, theme::FONT_PATH, min.x + 6.0f, min.y, 22.0f, theme::ON_DARK,
                         name);
                     return width;
                 };
@@ -2717,16 +2720,16 @@ namespace pksm::switchui
             }
             drawList->AddRectFilled(buttonMin, buttonMax, theme::rgb(theme::ACCENT), 14.0f);
             const std::string label = tr(Text::EventAdd);
-            const float labelWidth  = size(bold, 17.0f, label).x;
+            const float labelWidth  = size(bold, theme::FONT_ROW_TITLE, label).x;
             const float circle      = 26.0f;
             const float startX      = std::round(origin.x + (available.x - circle - 10.0f - labelWidth) * 0.5f);
             const ImVec2 center(startX + circle * 0.5f, buttonTop + buttonHeight * 0.5f);
             drawList->AddCircleFilled(center, circle * 0.5f, theme::rgb(theme::ON_DARK), 24);
-            const ImVec2 aSize = size(bold, 15.0f, "A");
-            drawList->AddText(bold, 15.0f,
+            const ImVec2 aSize = size(bold, theme::FONT_BODY, "A");
+            drawList->AddText(bold, theme::FONT_BODY,
                 ImVec2(std::round(center.x - aSize.x * 0.5f), std::round(center.y - aSize.y * 0.5f)),
                 theme::rgb(theme::TEXT), "A");
-            centredText(drawList, bold, 17.0f, startX + circle + 10.0f, buttonTop, buttonHeight,
+            centredText(drawList, bold, theme::FONT_ROW_TITLE, startX + circle + 10.0f, buttonTop, buttonHeight,
                 theme::ON_DARK, label);
         }
         widgets::endPanel();
@@ -2893,7 +2896,7 @@ namespace pksm::switchui
                 centredText(drawList, bold, theme::FONT_CAPTION, left, y, 30.0f, theme::ON_DARK,
                     view.global.name);
                 // The count, between the name and the percentage.
-                const float percentLeft = rightText(drawList, bold, 30.0f, right, y, 30.0f,
+                const float percentLeft = rightText(drawList, bold, theme::FONT_TITLE, right, y, 30.0f,
                     theme::ON_DARK, percentText(view.global.percent));
                 rightText(drawList, bold, theme::FONT_CAPTION, percentLeft - 10.0f, y + 4.0f,
                     30.0f, DARK_NOTE, view.global.count);
@@ -2981,12 +2984,12 @@ namespace pksm::switchui
 
             // The game's name, and the key: a registered slot and a silhouette.
             {
-                float x = rightText(drawList, bold, 12.0f, right, y, captionRow, theme::TEXT_MUTED,
+                float x = rightText(drawList, bold, theme::FONT_PATH, right, y, captionRow, theme::TEXT_MUTED,
                     tr(Text::DexUnregistered));
                 x -= 6.0f + 12.0f;
                 drawList->AddRectFilled(
                     ImVec2(x, y + 4.0f), ImVec2(x + 12.0f, y + 16.0f), SILHOUETTE, 3.0f);
-                x = rightText(drawList, bold, 12.0f, x - 14.0f, y, captionRow, theme::TEXT_MUTED,
+                x = rightText(drawList, bold, theme::FONT_PATH, x - 14.0f, y, captionRow, theme::TEXT_MUTED,
                     tr(Text::DexRegistered));
                 x -= 6.0f + 12.0f;
                 drawList->AddRectFilled(
@@ -3094,12 +3097,12 @@ namespace pksm::switchui
                     cell.number.c_str());
                 if (!cell.badge.empty())
                 {
-                    const float width = size(bold, 10.0f, cell.badge).x + 10.0f;
+                    const float width = size(bold, theme::FONT_PATH, cell.badge).x + 10.0f;
                     const ImVec2 badgeMin(max.x - 4.0f - width, min.y + 4.0f);
                     drawList->AddRectFilled(badgeMin,
                         ImVec2(badgeMin.x + width, badgeMin.y + 16.0f),
                         theme::rgb(theme::BUTTON_FACE), 8.0f);
-                    centredText(drawList, bold, 10.0f, badgeMin.x + 5.0f, badgeMin.y, 16.0f,
+                    centredText(drawList, bold, theme::FONT_PATH, badgeMin.x + 5.0f, badgeMin.y, 16.0f,
                         theme::ON_DARK, cell.badge);
                 }
                 if (cell.shiny)
@@ -3190,12 +3193,12 @@ namespace pksm::switchui
                     if (form.registered)
                     {
                         checkMark(drawList, ImVec2(left, stateTop + 2.0f), 12.0f, SUCCESS, 2.2f);
-                        centredText(drawList, bold, 12.0f, left + 16.0f, stateTop, 16.0f, SUCCESS,
+                        centredText(drawList, bold, theme::FONT_PATH, left + 16.0f, stateTop, 16.0f, SUCCESS,
                             tr(Text::DexFormRegistered));
                     }
                     else
                     {
-                        centredText(drawList, bold, 12.0f, left, stateTop, 16.0f,
+                        centredText(drawList, bold, theme::FONT_PATH, left, stateTop, 16.0f,
                             theme::TEXT_MUTED, tr(Text::DexFormUnregistered));
                     }
                     if (form.focused)
@@ -3336,15 +3339,15 @@ namespace pksm::switchui
         };
 
         // The title, and on the right the value before picking.
-        drawList->AddText(bold, 26.0f, ImVec2(origin.x, origin.y + (titleRow - size(26.0f, view.title).y) * 0.5f),
+        drawList->AddText(bold, theme::FONT_TITLE, ImVec2(origin.x, origin.y + (titleRow - size(theme::FONT_TITLE, view.title).y) * 0.5f),
             theme::rgb(theme::TEXT), view.title.c_str());
         if (!view.current.empty())
         {
             const std::string label = tr(Text::PickerCurrent);
-            const float valueWidth  = std::min(size(22.0f, view.current).x, inner * 0.45f);
+            const float valueWidth  = std::min(size(theme::FONT_HEADING, view.current).x, inner * 0.45f);
             const float valueX      = origin.x + inner - valueWidth;
-            widgets::drawTextEllipsis(drawList, bold, 22.0f,
-                ImVec2(valueX, origin.y + (titleRow - size(22.0f, view.current).y) * 0.5f),
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_HEADING,
+                ImVec2(valueX, origin.y + (titleRow - size(theme::FONT_HEADING, view.current).y) * 0.5f),
                 theme::rgb(theme::TEXT), view.current.c_str(), valueWidth);
             drawList->AddText(bold, theme::FONT_SMALL,
                 ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
@@ -3579,17 +3582,17 @@ namespace pksm::switchui
 
         // The title, and on the right the Pokémon's nature before picking, as in the other pickers.
         const std::string title = tr(Text::FieldNature);
-        drawList->AddText(bold, 26.0f,
-            ImVec2(origin.x, origin.y + (titleHeight - size(26.0f, title).y) * 0.5f),
+        drawList->AddText(bold, theme::FONT_TITLE,
+            ImVec2(origin.x, origin.y + (titleHeight - size(theme::FONT_TITLE, title).y) * 0.5f),
             theme::rgb(theme::TEXT), title.c_str());
         if (natures.size() == 25 && current < 25)
         {
             const std::string& name = natures[current];
             const std::string label = tr(Text::PickerCurrent);
-            const float valueWidth  = std::min(size(22.0f, name).x, inner * 0.45f);
+            const float valueWidth  = std::min(size(theme::FONT_HEADING, name).x, inner * 0.45f);
             const float valueX      = origin.x + inner - valueWidth;
-            widgets::drawTextEllipsis(drawList, bold, 22.0f,
-                ImVec2(valueX, origin.y + (titleHeight - size(22.0f, name).y) * 0.5f),
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_HEADING,
+                ImVec2(valueX, origin.y + (titleHeight - size(theme::FONT_HEADING, name).y) * 0.5f),
                 theme::rgb(theme::TEXT), name.c_str(), valueWidth);
             drawList->AddText(bold, theme::FONT_SMALL,
                 ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,
@@ -3669,7 +3672,7 @@ namespace pksm::switchui
         constexpr float avatarSize  = 96.0f;
         constexpr float avatarTop   = 18.0f;
         constexpr float nameGap     = 10.0f;
-        constexpr float nameSize    = 17.0f;
+        constexpr float nameSize    = theme::FONT_ROW_TITLE;
         constexpr float badgeHeight = 22.0f;
         constexpr float cardBottom  = 16.0f;
         constexpr size_t perRow     = 4;
@@ -3761,14 +3764,14 @@ namespace pksm::switchui
             if (i == current)
             {
                 const char* badge     = tr(Text::UserCurrent);
-                const ImVec2 textSize = bold->CalcTextSizeA(12.0f, FLT_MAX, 0.0f, badge);
+                const ImVec2 textSize = bold->CalcTextSizeA(theme::FONT_PATH, FLT_MAX, 0.0f, badge);
                 const float badgeWidth = textSize.x + 20.0f;
                 const ImVec2 badgeMin(std::round(cardMin.x + (cardWidth - badgeWidth) * 0.5f),
                     nameTop + nameHeight + nameGap);
                 drawList->AddRectFilled(badgeMin,
                     ImVec2(badgeMin.x + badgeWidth, badgeMin.y + badgeHeight),
                     theme::rgb(theme::ACCENT), badgeHeight * 0.5f);
-                drawList->AddText(bold, 12.0f,
+                drawList->AddText(bold, theme::FONT_PATH,
                     ImVec2(badgeMin.x + 10.0f, std::round(badgeMin.y + (badgeHeight - textSize.y) * 0.5f)),
                     theme::rgb(theme::ON_DARK), badge);
             }
@@ -3818,16 +3821,16 @@ namespace pksm::switchui
         };
 
         // The title, and on the right the date before picking.
-        drawList->AddText(bold, 26.0f,
-            ImVec2(origin.x, origin.y + (titleRow - size(26.0f, view.title).y) * 0.5f),
+        drawList->AddText(bold, theme::FONT_TITLE,
+            ImVec2(origin.x, origin.y + (titleRow - size(theme::FONT_TITLE, view.title).y) * 0.5f),
             theme::rgb(theme::TEXT), view.title.c_str());
         if (!view.current.empty())
         {
             const std::string label = tr(Text::PickerCurrent);
-            const float valueWidth  = std::min(size(22.0f, view.current).x, inner * 0.45f);
+            const float valueWidth  = std::min(size(theme::FONT_HEADING, view.current).x, inner * 0.45f);
             const float valueX      = origin.x + inner - valueWidth;
-            widgets::drawTextEllipsis(drawList, bold, 22.0f,
-                ImVec2(valueX, origin.y + (titleRow - size(22.0f, view.current).y) * 0.5f),
+            widgets::drawTextEllipsis(drawList, bold, theme::FONT_HEADING,
+                ImVec2(valueX, origin.y + (titleRow - size(theme::FONT_HEADING, view.current).y) * 0.5f),
                 theme::rgb(theme::TEXT), view.current.c_str(), valueWidth);
             drawList->AddText(bold, theme::FONT_SMALL,
                 ImVec2(valueX - 12.0f - size(theme::FONT_SMALL, label).x,

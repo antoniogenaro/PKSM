@@ -422,14 +422,14 @@ namespace pksm::switchui::widgets
     bool drawFieldCard(const char* id, const char* label, const char* value, const ImVec2& size,
         bool selected, bool editable)
     {
-        // The canvas card: 16 pixels above and below, 20 at the sides, a 15 pixel label with a
-        // 22 pixel pencil, and the value at 26 pixels.
+        // The canvas card: 16 pixels above and below, 20 at the sides, a body-sized label with a
+        // 22 pixel pencil, and the value at title size.
         constexpr float paddingX  = 20.0f;
         constexpr float paddingY  = 16.0f;
         constexpr int pencilSize  = 22;
         constexpr float pencilGap = 12.0f;
-        constexpr float labelSize = 15.0f;
-        constexpr float valueSize = 26.0f;
+        constexpr float labelSize = theme::FONT_BODY;
+        constexpr float valueSize = theme::FONT_TITLE;
 
         const ImVec2 min   = ImGui::GetCursorScreenPos();
         const bool touched = ImGui::InvisibleButton(id, size);
@@ -529,7 +529,7 @@ namespace pksm::switchui::widgets
         constexpr float tagPadding  = 7.0f;
         constexpr float tagGap      = 8.0f;
         constexpr float tagRadius   = 7.0f;
-        constexpr float tagFont     = 12.0f;
+        constexpr float tagFont     = theme::FONT_PATH;
         const bool hasTag           = row.tag && row.tag[0] != '\0';
         const float tagWidth =
             hasTag ? std::max(tagMinWidth, textSize(row.tag, tagFont, true).x + tagPadding * 2.0f)
