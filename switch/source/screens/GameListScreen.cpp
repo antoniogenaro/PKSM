@@ -41,7 +41,7 @@ namespace pksm::switchui
         {
             games_.push_back(GameCard{tr(profiles[i].name), profiles[i].mascotSpecies,
                 library_.filesByGame[i].size(), profiles[i].artColor,
-                library_.consoleSaveByGame[i]});
+                !library_.consoleTitlesByGame[i].empty()});
         }
     }
 
@@ -106,7 +106,7 @@ namespace pksm::switchui
                     }
                     app.push(std::make_unique<SaveListScreen>(selected_,
                         library_.filesByGame[selected_], std::move(owner),
-                        games_[selected_].consoleSave));
+                        library_.consoleTitlesByGame[selected_]));
                 }
                 break;
             default:

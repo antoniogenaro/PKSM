@@ -43,16 +43,29 @@ namespace pksm::switchui
         SaveLibrary library;
         const auto profiles = gameProfiles();
         library.filesByGame.resize(profiles.size());
-        library.consoleSaveByGame.assign(profiles.size(), false);
+        library.consoleTitlesByGame.resize(profiles.size());
         if (user)
         {
-            std::vector<uint64_t> titles;
-            titles.reserve(profiles.size());
-            for (const auto& profile : profiles)
+            std::vector<uint64_t> ids;
+            std::vector<size_t> games;
+            std::vector<ConsoleTitle> titles;
+            for (size_t game = 0; game < profiles.size(); ++game)
             {
-                titles.push_back(profile.consoleTitleId);
+                for (const ConsoleTitle& title : profiles[game].consoleTitles)
+                {
+                    ids.push_back(title.id);
+                    games.push_back(game);
+                    titles.push_back(title);
+                }
             }
-            library.consoleSaveByGame = console::savesPresent(titles, *user);
+            const std::vector<bool> present = console::savesPresent(ids, *user);
+            for (size_t i = 0; i < titles.size(); ++i)
+            {
+                if (present[i])
+                {
+                    library.consoleTitlesByGame[games[i]].push_back(titles[i]);
+                }
+            }
         }
 
         std::vector<std::string> files = storage::prepareSaveDirectory(library.error)
@@ -62,9 +75,9 @@ namespace pksm::switchui
         std::vector<storage::ManagedTitle> titles;
         for (const auto& profile : profiles)
         {
-            if (profile.hasConsoleSaves())
+            for (const ConsoleTitle& title : profile.consoleTitles)
             {
-                titles.push_back({profile.consoleTitleId, profile.consoleSaveFile});
+                titles.push_back({title.id, profile.consoleSaveFile});
             }
         }
         for (auto& file : storage::listManagerSaveFiles(titles))

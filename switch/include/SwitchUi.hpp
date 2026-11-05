@@ -453,12 +453,13 @@ namespace pksm::switchui
         // the header's Pokédex button is touched.
         bool drawGameList(const GameGrid& grid, const std::vector<GameCard>& games,
             size_t& selected, const std::string& error, bool canSwitchUser);
-        // The saves of one game: first `consoleUser`'s console save when the game card says
-        // there is one, then `files`, as paths relative to the save folder. `selected` counts
-        // the console save as the first row.
+        // The saves of one game: first `consoleUser`'s console saves, one row per entry of
+        // `consoleLabels` with that label (a language such as "ES") when it is not empty, then
+        // `files`, as paths relative to the save folder. `selected` counts the console saves
+        // as the first rows.
         void drawSaveList(const GameCard& game, const std::string& group,
-            const std::string& consoleUser, const std::vector<std::string>& files,
-            size_t& selected, const std::string& error);
+            const std::string& consoleUser, const std::vector<std::string>& consoleLabels,
+            const std::vector<std::string>& files, size_t& selected, const std::string& error);
         // The console users as cards with their names; `current` is the one in use.
         void drawUserPicker(const std::vector<std::string>& users, size_t current, size_t& selected);
         // The actions for an open save. `message` is shown under the game card.

@@ -522,16 +522,50 @@ namespace pksm::switchui::widgets
                           textSize(line.text, line.size, line.bold).y;
             }
         }
+        // The tag after the title, as on the canvas: 22 pixels tall, at least 30 wide, bold
+        // 12-pixel white text on black, 8 pixels after the title.
+        constexpr float tagHeight   = 22.0f;
+        constexpr float tagMinWidth = 30.0f;
+        constexpr float tagPadding  = 7.0f;
+        constexpr float tagGap      = 8.0f;
+        constexpr float tagRadius   = 7.0f;
+        constexpr float tagFont     = 12.0f;
+        const bool hasTag           = row.tag && row.tag[0] != '\0';
+        const float tagWidth =
+            hasTag ? std::max(tagMinWidth, textSize(row.tag, tagFont, true).x + tagPadding * 2.0f)
+                   : 0.0f;
+
         float y = min.y + (theme::LIST_ROW_HEIGHT - height) * 0.5f;
+        bool first = true;
         for (const Line& line : lines)
         {
             if (!line.text || line.text[0] == '\0')
             {
                 continue;
             }
+            const float lineHeight = textSize(line.text, line.size, line.bold).y;
+            const bool tagged      = first && hasTag;
+            const float room =
+                textRight - textLeft - (tagged ? tagWidth + tagGap : 0.0f);
             drawTextEllipsis(drawList, fontFor(line.bold), line.size, ImVec2(textLeft, y),
-                theme::rgb(line.color), line.text, textRight - textLeft);
-            y += textSize(line.text, line.size, line.bold).y + lineGap;
+                theme::rgb(line.color), line.text, room);
+            if (tagged)
+            {
+                const float titleWidth =
+                    std::min(textSize(line.text, line.size, line.bold).x, room);
+                const ImVec2 tagMin(std::round(textLeft + titleWidth + tagGap),
+                    std::round(y + (lineHeight - tagHeight) * 0.5f));
+                const ImVec2 tagMax(tagMin.x + tagWidth, tagMin.y + tagHeight);
+                drawList->AddRectFilled(
+                    tagMin, tagMax, theme::rgb(theme::BUTTON_FACE), tagRadius);
+                const ImVec2 labelSize = textSize(row.tag, tagFont, true);
+                drawList->AddText(theme::boldFont(), tagFont,
+                    ImVec2(std::round(tagMin.x + (tagWidth - labelSize.x) * 0.5f),
+                        std::round(tagMin.y + (tagHeight - labelSize.y) * 0.5f)),
+                    theme::rgb(theme::ON_DARK), row.tag);
+            }
+            first = false;
+            y += lineHeight + lineGap;
         }
 
         drawChevron(drawList,

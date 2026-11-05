@@ -9,6 +9,15 @@
 
 namespace pksm::switchui
 {
+    // One title of a game on the Switch.
+    struct ConsoleTitle
+    {
+        uint64_t id = 0;
+        // The code shown on its saves, such as "ES", for games that are a title of their own
+        // in each language; empty otherwise.
+        const char* language = "";
+    };
+
     // Everything the Switch app needs to know about one supported game. Adding a game
     // means adding one row to the table in GameProfile.cpp.
     struct GameProfile
@@ -25,9 +34,10 @@ namespace pksm::switchui
         size_t trainerNameLengthJapanese;
         // The background of the game's art on its card, as 0xRRGGBB.
         unsigned artColor;
-        // The game's title on the Switch, whose saves are kept on the console, and the save
-        // file inside them. 0 for games that are not Switch games.
-        uint64_t consoleTitleId     = 0;
+        // The game's titles on the Switch, whose saves are kept on the console, and the save
+        // file inside them. Some games are a title of their own in each language. Empty for
+        // games that are not Switch games.
+        std::span<const ConsoleTitle> consoleTitles{};
         const char* consoleSaveFile = "";
         // The SD folder that gets a backup of a console save before it is replaced.
         const char* backupFolder = "";
@@ -35,7 +45,7 @@ namespace pksm::switchui
         Text pointsName    = Text::TrainerBattlePoints;
         uint32_t maxPoints = 9999;
 
-        bool hasConsoleSaves() const { return consoleTitleId != 0; }
+        bool hasConsoleSaves() const { return !consoleTitles.empty(); }
 
         size_t trainerNameLengthFor(pksm::Language language) const
         {

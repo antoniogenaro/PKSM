@@ -14,39 +14,49 @@
 namespace pksm::switchui
 {
     SaveListScreen::SaveListScreen(size_t game, std::vector<std::string> files,
-        std::optional<ConsoleUser> user, bool consoleSave)
-        : game_(game), user_(std::move(user)), files_(std::move(files))
+        std::optional<ConsoleUser> user, std::vector<ConsoleTitle> consoleTitles)
+        : game_(game), user_(std::move(user)), consoleTitles_(std::move(consoleTitles)),
+          files_(std::move(files))
     {
         const GameProfile& profile = gameProfiles()[game_];
         card_  = GameCard{tr(profile.name), profile.mascotSpecies, files_.size(), profile.artColor,
-             consoleSave && user_.has_value()};
+             consoleCount() > 0};
         group_ = tr(profile.group);
+    }
+
+    size_t SaveListScreen::consoleCount() const
+    {
+        return user_ ? consoleTitles_.size() : 0;
     }
 
     size_t SaveListScreen::rowCount() const
     {
-        return files_.size() + (card_.consoleSave ? 1 : 0);
+        return consoleCount() + files_.size();
     }
 
     void SaveListScreen::onResume()
     {
-        const size_t firstFile    = card_.consoleSave ? 1 : 0;
-        const bool onConsole      = card_.consoleSave && selected_ == 0;
-        const std::string current = !onConsole && selected_ - firstFile < files_.size()
+        const size_t firstFile = consoleCount();
+        const uint64_t currentTitle =
+            selected_ < firstFile ? consoleTitles_[selected_].id : uint64_t{0};
+        const std::string current = selected_ >= firstFile && selected_ - firstFile < files_.size()
                                         ? files_[selected_ - firstFile]
                                         : std::string{};
         SaveLibrary library = SaveLibrary::scan(user_ ? &*user_ : nullptr);
         storageError_       = std::move(library.error);
         files_              = std::move(library.filesByGame[game_]);
         card_.saveCount     = files_.size();
-        card_.consoleSave   = library.consoleSaveByGame[game_] && user_.has_value();
+        consoleTitles_      = std::move(library.consoleTitlesByGame[game_]);
+        card_.consoleSave   = consoleCount() > 0;
 
         // Keep the same save selected when it is still there.
-        const size_t first = card_.consoleSave ? 1 : 0;
-        const auto found   = std::find(files_.begin(), files_.end(), current);
-        if (onConsole && card_.consoleSave)
+        const size_t first    = consoleCount();
+        const auto foundTitle = std::find_if(consoleTitles_.begin(), consoleTitles_.end(),
+            [currentTitle](const ConsoleTitle& title) { return title.id == currentTitle; });
+        const auto found      = std::find(files_.begin(), files_.end(), current);
+        if (currentTitle != 0 && foundTitle != consoleTitles_.end())
         {
-            selected_ = 0;
+            selected_ = static_cast<size_t>(foundTitle - consoleTitles_.begin());
         }
         else if (!current.empty() && found != files_.end())
         {
@@ -61,10 +71,17 @@ namespace pksm::switchui
     void SaveListScreen::open(App& app)
     {
         const GameProfile& profile = gameProfiles()[game_];
-        if (card_.consoleSave && selected_ == 0)
+        if (selected_ < consoleCount())
         {
+            // Each language gets a backup folder of its own, such as "FireRed ES".
+            const ConsoleTitle& title = consoleTitles_[selected_];
+            std::string backupFolder  = profile.backupFolder;
+            if (title.language[0] != '\0')
+            {
+                backupFolder += std::string(" ") + title.language;
+            }
             const console::SaveLocation location{
-                profile.consoleTitleId, profile.consoleSaveFile, *user_, profile.backupFolder};
+                title.id, profile.consoleSaveFile, *user_, std::move(backupFolder)};
             if (auto session = Session::openConsole(location, loadError_))
             {
                 app.push(std::make_unique<GameMenuScreen>(std::move(session), std::string{}));
@@ -76,7 +93,7 @@ namespace pksm::switchui
             return;
         }
 
-        const std::string& file = files_[selected_ - (card_.consoleSave ? 1 : 0)];
+        const std::string& file = files_[selected_ - consoleCount()];
         if (auto session = Session::open(storage::savePath(file), loadError_))
         {
             app.push(std::make_unique<GameMenuScreen>(std::move(session), file));
@@ -129,7 +146,12 @@ namespace pksm::switchui
 
     void SaveListScreen::draw(SwitchUi& ui)
     {
-        ui.drawSaveList(card_, group_, user_ ? user_->name : std::string{}, files_, selected_,
-            showingLoadError_ ? loadError_ : storageError_);
+        std::vector<std::string> consoleLabels;
+        for (size_t i = 0; i < consoleCount(); ++i)
+        {
+            consoleLabels.emplace_back(consoleTitles_[i].language);
+        }
+        ui.drawSaveList(card_, group_, user_ ? user_->name : std::string{}, consoleLabels, files_,
+            selected_, showingLoadError_ ? loadError_ : storageError_);
     }
 }

@@ -1028,8 +1028,8 @@ namespace pksm::switchui
     }
 
     void SwitchUi::drawSaveList(const GameCard& game, const std::string& group,
-        const std::string& consoleUser, const std::vector<std::string>& files, size_t& selected,
-        const std::string& error)
+        const std::string& consoleUser, const std::vector<std::string>& consoleLabels,
+        const std::vector<std::string>& files, size_t& selected, const std::string& error)
     {
         beginFrame();
         widgets::drawHeader(tr(Text::SaveListTitle), status_.current());
@@ -1038,7 +1038,7 @@ namespace pksm::switchui
         drawGamePanel(game, group,
             {{saveStatusText(game), theme::FONT_CAPTION, theme::TEXT_MUTED, false,
                 hasSaves(game) ? theme::POSITIVE : theme::NEUTRAL}});
-        const size_t firstFile = game.consoleSave ? 1 : 0;
+        const size_t firstFile = consoleLabels.size();
 
         ImGui::SameLine(0.0f, theme::PANEL_GAP);
         widgets::beginPanel("save-files", ImVec2(0.0f, -SCREEN_BOTTOM_SPACE));
@@ -1055,22 +1055,25 @@ namespace pksm::switchui
             ImGui::TextWrapped("%s", tr(Text::NoSavesHint));
             ImGui::PopStyleColor();
         }
-        if (game.consoleSave)
+        // The user's saves on the console, one per language they play, above the backups on
+        // the SD card.
+        const std::string user = tr(Text::ConsoleSaveOf, {consoleUser});
+        for (size_t i = 0; i < consoleLabels.size(); ++i)
         {
-            // The user's save on the console, above the backups on the SD card.
-            const std::string user = tr(Text::ConsoleSaveOf, {consoleUser});
+            widgets::ListRow row{tr(Text::ConsoleSaveTitle), user.c_str(),
+                tr(Text::ConsoleSaveDetail), icons::Icon::Trainer};
+            row.tag = consoleLabels[i].c_str();
             ImGui::PushID("console");
-            if (widgets::drawListRow("save",
-                    {tr(Text::ConsoleSaveTitle), user.c_str(), tr(Text::ConsoleSaveDetail),
-                        icons::Icon::Trainer},
-                    selected == 0))
+            ImGui::PushID(static_cast<int>(i));
+            if (widgets::drawListRow("save", row, selected == i))
             {
-                selected = 0;
+                selected = i;
             }
-            if (selected == 0)
+            if (selected == i)
             {
                 ImGui::SetScrollHereY();
             }
+            ImGui::PopID();
             ImGui::PopID();
         }
         for (size_t file = 0; file < files.size(); ++file)

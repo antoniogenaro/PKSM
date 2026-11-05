@@ -73,6 +73,8 @@ namespace pksm::switchui::widgets
         const char* detail   = nullptr;
         icons::Icon icon     = icons::Icon::None;
         bool enabled         = true;
+        // A short label on a dark tag after the title, such as a language code ("ES").
+        const char* tag = nullptr;
     };
 
     // A card of `size` for one editable value, as on the canvas trainer screen: `label` and a
