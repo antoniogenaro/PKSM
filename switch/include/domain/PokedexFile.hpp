@@ -11,7 +11,7 @@ namespace pksm::switchui
 // The global Pokédex's records on the SD card, beside the bank they come from.
 namespace pksm::switchui::dex
 {
-    inline constexpr char RECORDS_PATH[] = "sdmc:/switch/pksm-banks/pokedex.json";
+    inline constexpr char RECORDS_PATH[] = "sdmc:/switch/pksm/banks/pokedex.json";
 
     // Reads the records. Without a file yet they are empty. Returns false, with a message in
     // `error`, when the file is there but cannot be read or is not a records file.

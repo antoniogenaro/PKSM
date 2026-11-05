@@ -78,6 +78,10 @@ namespace pksm::switchui::dex
             return true;
         }
 
+        if (!storage::prepareAppDirectory(error))
+        {
+            return false;
+        }
         if (mkdir(PokemonBank::DIRECTORY, 0777) != 0 && errno != EEXIST)
         {
             error = tr(Text::DexWriteFailed, {std::strerror(errno)});

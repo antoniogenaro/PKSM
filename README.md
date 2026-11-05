@@ -133,8 +133,10 @@ and `switch-sdl2_ttf` packages, then build from the devkitPro MSYS2 shell:
 make switch
 ```
 
-Copy `switch/pksm-switch.nro` to the SD card. Place a Legends: Z-A, Scarlet/Violet,
-Legends: Arceus, Brilliant Diamond/Shining Pearl, Sword/Shield, Let's Go or FireRed/LeafGreen save backup anywhere under `/switch/pksm/` (including subfolders such as a Checkpoint
+Copy `switch/pksm-switch.nro` to `/switch/pksm/` on the SD card. Everything the
+application keeps under `/switch` goes in that folder: saves in `/switch/pksm/saves/`
+and the bank in `/switch/pksm/banks/`. Place a Legends: Z-A, Scarlet/Violet,
+Legends: Arceus, Brilliant Diamond/Shining Pearl, Sword/Shield, Let's Go or FireRed/LeafGreen save backup anywhere under `/switch/pksm/saves/` (including subfolders such as a Checkpoint
 backup directory) and launch the application. In folders containing a `main`
 save, the file list shows only `main`, hiding the other files in that backup
 folder. Files in folders without `main` remain available. Core language and
@@ -157,7 +159,7 @@ pouch: L/R change pouch, X picks the item in a slot, ZL/ZR change its quantity,
 A types it and − takes the item out; items are not moved, and the bag neither
 saves nor discards. − or the Pokédex button on the game list opens the global
 Pokédex: every Pokémon in the bank is registered, by game and by form, when the
-bank is saved, in `/switch/pksm-banks/pokedex.json`. ZL/ZR change the game, X and
+bank is saved, in `/switch/pksm/banks/pokedex.json`. ZL/ZR change the game, X and
 Y open the pickers of the registered and form filters, and L/R the page. This remains an early controller-driven proof of concept, not the
 full 3DS interface or a tool for accessing active game saves.
 

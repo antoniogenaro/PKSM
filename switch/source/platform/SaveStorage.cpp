@@ -229,11 +229,25 @@ namespace pksm::switchui::storage
         }
     }
 
-    bool prepareSaveDirectory(std::string& error)
+    bool prepareAppDirectory(std::string& error)
     {
         if (mkdir("sdmc:/switch", 0777) != 0 && errno != EEXIST)
         {
             error = tr(Text::SdAccessFailed, {std::strerror(errno)});
+            return false;
+        }
+        if (mkdir(APP_DIRECTORY, 0777) != 0 && errno != EEXIST)
+        {
+            error = tr(Text::SaveDirectoryFailed, {std::strerror(errno)});
+            return false;
+        }
+        return true;
+    }
+
+    bool prepareSaveDirectory(std::string& error)
+    {
+        if (!prepareAppDirectory(error))
+        {
             return false;
         }
         if (mkdir(SAVE_DIRECTORY, 0777) != 0 && errno != EEXIST)

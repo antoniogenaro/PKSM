@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BankFile.hpp"
+#include "platform/SaveStorage.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ namespace pksm::switchui
     class PokemonBank
     {
     public:
-        static constexpr char DIRECTORY[]    = "sdmc:/switch/pksm-banks";
+        static constexpr const char* DIRECTORY = storage::BANK_DIRECTORY;
         static constexpr char DEFAULT_NAME[] = "pksm_1";
         static constexpr int DEFAULT_BOXES   = 50;
         static constexpr int SLOTS           = BankFile::SLOTS_PER_BOX;

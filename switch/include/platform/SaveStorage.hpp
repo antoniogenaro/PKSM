@@ -11,8 +11,14 @@
 // Save files on the SD card. Errors are returned as user-facing messages.
 namespace pksm::switchui::storage
 {
-    inline constexpr char SAVE_DIRECTORY[] = "sdmc:/switch/pksm";
+    // Everything PKSM keeps under sdmc:/switch goes in this one folder.
+    inline constexpr char APP_DIRECTORY[]  = "sdmc:/switch/pksm";
+    inline constexpr char SAVE_DIRECTORY[] = "sdmc:/switch/pksm/saves";
+    inline constexpr char BANK_DIRECTORY[] = "sdmc:/switch/pksm/banks";
     inline constexpr size_t MAX_SAVE_SIZE  = 16 * 1024 * 1024;
+
+    // Creates APP_DIRECTORY when it does not exist yet. `error` is a user-facing message.
+    bool prepareAppDirectory(std::string& error);
 
     // Creates the backup folder when it does not exist yet.
     bool prepareSaveDirectory(std::string& error);

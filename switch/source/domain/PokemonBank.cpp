@@ -201,6 +201,10 @@ namespace pksm::switchui
 
     bool PokemonBank::save(std::string& error)
     {
+        if (!storage::prepareAppDirectory(error))
+        {
+            return false;
+        }
         if (mkdir(DIRECTORY, 0777) != 0 && errno != EEXIST)
         {
             error = tr(Text::BankWriteFailed, {std::strerror(errno)});

@@ -122,7 +122,7 @@
     "ConsoleSaveStatus": "On the console",
     "SaveListTitle": "Choose a backup",
     "NoSavesFound": "No backups of this game were found.",
-    "NoSavesHint": "Copy your files to /switch/pksm/ on the SD card.",
+    "NoSavesHint": "Copy your files to /switch/pksm/saves/ on the SD card.",
     "ConsoleSaveTitle": "Console save",
     "ConsoleSaveOf": "User: {}",
     "ConsoleSaveDetail": "Saved to the console, after a copy on the SD card",

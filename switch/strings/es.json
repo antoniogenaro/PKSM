@@ -122,7 +122,7 @@
     "ConsoleSaveStatus": "En la consola",
     "SaveListTitle": "Selecciona un respaldo",
     "NoSavesFound": "No se encontraron respaldos de este juego.",
-    "NoSavesHint": "Copia tus archivos a /switch/pksm/ en la tarjeta SD.",
+    "NoSavesHint": "Copia tus archivos a /switch/pksm/saves/ en la tarjeta SD.",
     "ConsoleSaveTitle": "Partida de la consola",
     "ConsoleSaveOf": "Usuario: {}",
     "ConsoleSaveDetail": "Se guarda en la consola, tras copiarla a la SD",
